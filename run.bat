@@ -1,0 +1,1 @@
+.\bin\rsc.exe test\test.rsc

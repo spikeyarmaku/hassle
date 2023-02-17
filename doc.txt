@@ -1,0 +1,4 @@
+- compile:
+tcc -o main.exe main.c
+- test:
+./main.exe hello.rsc
