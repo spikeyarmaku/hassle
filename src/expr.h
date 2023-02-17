@@ -7,14 +7,6 @@
 
 enum ExprType { ExprSymbol, ExprList };
 
-struct Expr {
-    enum ExprType expr_type;
-    union {
-        struct Symbol s;
-        struct List l;
-    };
-};
-
 struct Symbol {
     int char_count;
     char* symbol;
@@ -23,6 +15,14 @@ struct Symbol {
 struct List {
     int child_count;
     struct Expr* children;
+};
+
+struct Expr {
+    enum ExprType expr_type;
+    union {
+        struct Symbol s;
+        struct List l;
+    };
 };
 
 struct Expr create_list();

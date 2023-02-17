@@ -45,7 +45,7 @@ int read_symbol(struct Parser* p, struct Token* t) {
 }
 
 // Read a string enclosed in quotes and trailed by at least one whitespace
-// character or a closing parenthesis
+// character or a closing parenthesis or EOF
 int read_string(struct Parser* p, struct Token* t) {
     int starting_position = p->counter;
     int ending_position = p->counter;
@@ -76,10 +76,10 @@ int read_string(struct Parser* p, struct Token* t) {
     }
 
     // Check if the character after the identifier is either a whitespace
-    // character or a closing parenthesis, and the size of the identifier is
-    // greater than zero
+    // character or a closing parenthesis or EOF, and the size of the identifier
+    // is greater than zero
     c = get_current_char(p);
-    if ((!is_whitespace(c) && c != ')') ||
+    if ((!is_whitespace(c) && c != ')' && c != 0) ||
             ending_position - starting_position == 0) {
         return 1;
     }
@@ -113,7 +113,7 @@ int read_string(struct Parser* p, struct Token* t) {
 }
 
 // Read an identifier that is either trailed by a whitespace character or a
-// closing parenthesis
+// closing parenthesis or EOF
 int read_identifier(struct Parser* p, struct Token* t) {
     int starting_position = p->counter;
     int ending_position = p->counter;
@@ -123,7 +123,7 @@ int read_identifier(struct Parser* p, struct Token* t) {
     int go_on = 1;
     while (go_on) {
         if (c == '\\' || c == '(' || c == ')' || c == '"' || c == ';'
-                || is_whitespace(c)) {
+                || is_whitespace(c) || c == 0) {
             // escape a character
             go_on = 0;
             ending_position = p->counter;
@@ -133,10 +133,10 @@ int read_identifier(struct Parser* p, struct Token* t) {
     }
 
     // Check if the character after the identifier is either a whitespace
-    // character or a closing parenthesis, and the size of the identifier is
-    // greater than zero
+    // character or a closing parenthesis or EOF, and the size of the identifier
+    // is greater than zero
     c = get_current_char(p);
-    if ((!is_whitespace(c) && c != ')') ||
+    if ((!is_whitespace(c) && c != ')' && c != 0) ||
             ending_position - starting_position == 0) {
         return 1;
     }
@@ -164,7 +164,7 @@ char get_next_char(struct Parser* p) {
 }
 
 char get_current_char(struct Parser* p) {
-    if (p->counter < p->size) {
+    if (p->counter >= 0 && p->counter < p->size) {
         return p->stream[p->counter];
     } else {
         return 0;
@@ -201,19 +201,30 @@ int parse(struct Parser parser, struct Expr* expr) {
     struct Token t;
     while (go_on) {
         if (get_next_token(&parser, &t)) {
-            printf("Error\n");
+            printf("Error while lexing tokens.\n");
             return 1;
         }
         switch (t.type) {
             case OpenParen:
+                if (parse_list(parser, expr)) {
+                    printf("Error while parsing list.\n");
+                }
                 break;
             case CloseParen:
+                printf("Error: Unexpected closing parenthesis.\n");
                 break;
             case Symbol:
+                expr->expr_type = Symbol;
+                expr->s.char_count = t.size;
+                expr->s.symbol = t.str;
                 break;
             case Eos:
                 break;
         }
     }
     return 0;
+}
+
+int parse_list(struct Parser parser, struct Expr* expr) {
+
 }

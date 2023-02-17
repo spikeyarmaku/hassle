@@ -2,6 +2,7 @@
 #define _PARSE_H_
 
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "expr.h"
 
@@ -29,5 +30,6 @@ int is_whitespace(char);
 int consume_whitespace(struct Parser*);
 
 int parse(struct Parser, struct Expr*);
+int parse_list(struct Parser, struct Expr*);
 
 #endif

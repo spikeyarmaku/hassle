@@ -34,6 +34,7 @@ int main(int argc, char *argv[]) {
                     printf(">\n");
                     break;
                 case Eos:        printf("EOF\n"); go_on = 0; break;
+                default: printf("PANIC! Unknown token type."); break;
             }
         }
     } else {
@@ -48,19 +49,22 @@ struct Parser create_parser(char* file_name) {
     FILE* fp = fopen(file_name, "r");
 
     // Get file size
+    rewind(fp);
+    long int start = ftell(fp);
     fseek(fp, 0L, SEEK_END);
-    long int size = ftell(fp);
+    long int size = ftell(fp) - start;
+    printf("FILE SIZE: %d\n", size);
     rewind(fp); // fseek(fp, 0L, SEEK_SET);
 
     char* file_content = (char*)malloc(sizeof(char) * size);
-    for (long int i = 0; i < size; i++) {
-        file_content[i] = fgetc(fp);
-    }
+    
+    size_t chars_read = fread(file_content, sizeof(char), size, fp);
+    // file_content[chars_read] = 0;
 
     fclose(fp);
 
     p.stream = file_content;
-    p.size = size;
+    p.size = chars_read;
     p.counter = 0;
     return p;
 }
