@@ -26,5 +26,6 @@ struct Expr {
 
 struct Expr* append(struct Expr*);
 struct Expr* get_head(struct Expr*);
+void destroy_expr(struct Expr*);
 
 #endif

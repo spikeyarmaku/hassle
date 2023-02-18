@@ -19,6 +19,8 @@ int main(int argc, char *argv[]) {
         printf("%s\n", filename);
         struct Expr* expr = parse(filename);
         print_expr(expr);
+        destroy_expr(expr);
+        printf("\nCLEAN\n");
     } else {
         // There are no arguments, start a REPL
         printf("REPL TIME");

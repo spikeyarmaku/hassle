@@ -19,3 +19,17 @@ struct Expr* get_head(struct Expr* expr) {
     }
     return current;
 }
+
+void destroy_expr(struct Expr* expr) {
+    while (expr != NULL) {
+        if (expr->type == ExprAtom) {
+            free(expr->atom.symbol);
+        } else {
+            destroy_expr(expr->list);
+        }
+
+        struct Expr* next = expr->next;
+        free(expr);
+        expr = next;
+    }
+}
