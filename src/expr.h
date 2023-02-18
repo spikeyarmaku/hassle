@@ -1,31 +1,30 @@
 #ifndef _EXPR_H_
 #define _EXPR_H_
 
+#include <stdlib.h>
 #include <string.h>
 
 // Expr: Symbol or List
 
-enum ExprType { ExprSymbol, ExprList };
+enum ExprType {ExprAtom, ExprList};
 
-struct Symbol {
-    int char_count;
-    char* symbol;
+struct Atom {
+    long int char_count;
+    char *symbol;
 };
 
-struct List {
-    int child_count;
-    struct Expr* children;
-};
-
+// https://benpaulhanna.com/writing-a-game-in-c-parsing-s-expressions.html
 struct Expr {
-    enum ExprType expr_type;
-    union {
-        struct Symbol s;
-        struct List l;
-    };
+  struct Expr *next;
+  struct Expr* prev;
+  enum ExprType type;
+  union {
+    struct Expr *list;
+    struct Atom atom;
+  };
 };
 
-struct Expr create_list();
-struct Expr create_symbol(char* symbol_name);
+struct Expr* append(struct Expr*);
+struct Expr* get_head(struct Expr*);
 
 #endif

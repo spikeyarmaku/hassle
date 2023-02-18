@@ -1,5 +1,34 @@
 #include "parse.h"
 
+struct Parser create_parser(char* file_name) {
+    struct Parser p;
+    FILE* fp = fopen(file_name, "r");
+
+    // Get file size
+    rewind(fp);
+    long int start = ftell(fp);
+    fseek(fp, 0L, SEEK_END);
+    long int size = ftell(fp) - start;
+    printf("FILE SIZE: %d\n", size);
+    rewind(fp); // fseek(fp, 0L, SEEK_SET);
+
+    char* file_content = (char*)malloc(sizeof(char) * size);
+    
+    size_t chars_read = fread(file_content, sizeof(char), size, fp);
+    // file_content[chars_read] = 0;
+
+    fclose(fp);
+
+    p.stream = file_content;
+    p.size = chars_read;
+    p.counter = 0;
+    return p;
+}
+
+void destroy_parser(struct Parser p) {
+    free(p.stream);
+}
+
 // Reads the next token, and sets the stream pointer to the next non-whitespace
 // character.
 int get_next_token(struct Parser* p, struct Token* t) {
@@ -21,6 +50,7 @@ int get_next_token(struct Parser* p, struct Token* t) {
     // If it is a simple token, advance the stream pointer
     if (t->type != Symbol) {
         get_next_char(p);
+        t->size = 1;
     }
 
     // Set the stream pointer to the next non-whitespace character
@@ -47,8 +77,8 @@ int read_symbol(struct Parser* p, struct Token* t) {
 // Read a string enclosed in quotes and trailed by at least one whitespace
 // character or a closing parenthesis or EOF
 int read_string(struct Parser* p, struct Token* t) {
-    int starting_position = p->counter;
-    int ending_position = p->counter;
+    long int starting_position = p->counter;
+    long int ending_position = p->counter;
     int escape_counter = 0;
     char c = get_next_char(p);
 
@@ -85,12 +115,12 @@ int read_string(struct Parser* p, struct Token* t) {
     }
 
     // Copy the string into a buffer, without the escape characters
-    int total_char_count = ending_position - starting_position;
-    int char_count = total_char_count - escape_counter;
+    long int total_char_count = ending_position - starting_position;
+    long int char_count = total_char_count - escape_counter;
     escape_counter = 0;
     is_escaped = 0;
     char* str = (char*)malloc(sizeof(char) * char_count);
-    for (int i = 0; i < total_char_count; i++) {
+    for (long int i = 0; i < total_char_count; i++) {
         char c = p->stream[starting_position + i];
         if (is_escaped) {
             str[i - escape_counter] = c;
@@ -106,8 +136,8 @@ int read_string(struct Parser* p, struct Token* t) {
     }
 
     // Fill the token
-    t->str = str;
     t->type = Symbol;
+    t->str = str;
     t->size = char_count;
     return 0;
 }
@@ -115,8 +145,8 @@ int read_string(struct Parser* p, struct Token* t) {
 // Read an identifier that is either trailed by a whitespace character or a
 // closing parenthesis or EOF
 int read_identifier(struct Parser* p, struct Token* t) {
-    int starting_position = p->counter;
-    int ending_position = p->counter;
+    long int starting_position = p->counter;
+    long int ending_position = p->counter;
     char c = get_current_char(p);
 
     // Find the end position of the identifier
@@ -142,16 +172,16 @@ int read_identifier(struct Parser* p, struct Token* t) {
     }
 
     // Copy the string into a buffer
-    int char_count = ending_position - starting_position;
+    long int char_count = ending_position - starting_position;
     char* str = (char*)malloc(sizeof(char) * char_count);
-    for (int i = 0; i < char_count; i++) {
+    for (long int i = 0; i < char_count; i++) {
         char c = p->stream[starting_position + i];
         str[i] = c;
     }
 
     // Fill the token
-    t->str = str;
     t->type = Symbol;
+    t->str = str;
     t->size = char_count;
     return 0;
 }
@@ -195,36 +225,67 @@ int consume_whitespace(struct Parser* p) {
     }
 }
 
-int parse(struct Parser parser, struct Expr* expr) {
-    int go_on = 1;
-    int error = 0;
+struct Expr* parse(char* file_name) {
+    struct Expr* expr = NULL;
+    struct Stack* stack = NULL;
+    struct Parser parser = create_parser(file_name);
     struct Token t;
+
+    int go_on = 1;
     while (go_on) {
         if (get_next_token(&parser, &t)) {
-            printf("Error while lexing tokens.\n");
-            return 1;
+            printf("parse: error reading next token\n");
+            break;
         }
-        switch (t.type) {
-            case OpenParen:
-                if (parse_list(parser, expr)) {
-                    printf("Error while parsing list.\n");
-                }
+
+        switch(t.type) {
+            case OpenParen: {
+                expr = append(expr);
+                expr->type = ExprList;
+                push(&stack, expr);
+                expr = NULL;
                 break;
-            case CloseParen:
-                printf("Error: Unexpected closing parenthesis.\n");
+            }
+            case CloseParen: {
+                struct Expr* old_expr = pop(&stack);
+                struct Expr* head = get_head(expr);
+                old_expr->list = head;
+                expr = old_expr;
                 break;
-            case Symbol:
-                expr->expr_type = Symbol;
-                expr->s.char_count = t.size;
-                expr->s.symbol = t.str;
+            }
+            case Symbol: {
+                expr = append(expr);
+                expr->type = ExprAtom;
+                expr->atom.char_count = t.size;
+                expr->atom.symbol = t.str;
                 break;
-            case Eos:
+            }
+            case Eos: {
+                go_on = 0;
                 break;
+            }
         }
     }
-    return 0;
+    destroy_parser(parser);
+    return get_head(expr);
 }
 
-int parse_list(struct Parser parser, struct Expr* expr) {
 
+void print_expr(struct Expr* expr) {
+    if (expr->type == ExprList) {
+        printf("(");
+        expr = expr->list;
+        while (expr != NULL) {
+            print_expr(expr);
+            if (expr->next != NULL) {
+                putchar(' ');
+            }
+            expr = expr->next;
+        }
+        printf(")");
+    } else {
+        for (long int i = 0; i < expr->atom.char_count; i++) {
+            putchar(expr->atom.symbol[i]);
+        }
+    }
 }

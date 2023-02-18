@@ -5,13 +5,14 @@
 #include <stdio.h>
 
 #include "expr.h"
+#include "stack.h"
 
 enum TokenType {OpenParen, CloseParen, Symbol, Eos};
 
 struct Token {
     enum TokenType type;
     char* str;
-    int size;
+    long int size;
 };
 
 struct Parser {
@@ -20,16 +21,22 @@ struct Parser {
     long int size;
 };
 
-int get_next_token(struct Parser*, struct Token*);
-int read_symbol(struct Parser*, struct Token*);
-int read_string(struct Parser*, struct Token*);
-int read_identifier(struct Parser*, struct Token*);
-char get_next_char(struct Parser*);
-char get_current_char(struct Parser*);
-int is_whitespace(char);
-int consume_whitespace(struct Parser*);
+struct Parser   create_parser       (char*);
+void            destroy_parser      (struct Parser);
 
-int parse(struct Parser, struct Expr*);
-int parse_list(struct Parser, struct Expr*);
+int             get_next_token      (struct Parser*, struct Token*);
+int             read_symbol         (struct Parser*, struct Token*);
+int             read_string         (struct Parser*, struct Token*);
+int             read_identifier     (struct Parser*, struct Token*);
+
+char            get_next_char       (struct Parser*);
+char            get_current_char    (struct Parser*);
+
+int             is_whitespace       (char);
+int             consume_whitespace  (struct Parser*);
+
+struct Expr*    parse               (char*);
+
+void            print_expr          (struct Expr*);
 
 #endif
