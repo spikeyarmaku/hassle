@@ -35,7 +35,9 @@ char            get_current_char    (struct Parser*);
 int             is_whitespace       (char);
 int             consume_whitespace  (struct Parser*);
 
-struct Expr*    parse               (char*);
+struct Expr*    parse_from_file     (char*);
+struct Expr*    parse_from_str      (char*);
+struct Expr*    parse               (struct Parser);
 
 void            print_expr          (struct Expr*);
 

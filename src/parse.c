@@ -9,7 +9,6 @@ struct Parser create_parser(char* file_name) {
     long int start = ftell(fp);
     fseek(fp, 0L, SEEK_END);
     long int size = ftell(fp) - start;
-    printf("FILE SIZE: %d\n", size);
     rewind(fp); // fseek(fp, 0L, SEEK_SET);
 
     char* file_content = (char*)malloc(sizeof(char) * size);
@@ -225,10 +224,24 @@ int consume_whitespace(struct Parser* p) {
     }
 }
 
-struct Expr* parse(char* file_name) {
+struct Expr* parse_from_file(char* file_name) {
+    struct Parser parser = create_parser(file_name);
+
+    return parse(parser);
+}
+
+struct Expr* parse_from_str(char* input) {
+    struct Parser parser;
+    parser.stream = input;
+    parser.counter = 0;
+    parser.size = strlen(input);
+    
+    return parse(parser);
+}
+
+struct Expr* parse(struct Parser parser) {
     struct Expr* expr = NULL;
     struct Stack* stack = NULL;
-    struct Parser parser = create_parser(file_name);
     struct Token t;
 
     int go_on = 1;
@@ -269,7 +282,6 @@ struct Expr* parse(char* file_name) {
     destroy_parser(parser);
     return get_head(expr);
 }
-
 
 void print_expr(struct Expr* expr) {
     if (expr->type == ExprList) {
