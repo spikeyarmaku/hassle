@@ -8,6 +8,7 @@
 #include <stdlib.h>
 
 #include "parse.h"
+#include "rational.h"
 
 struct Parser create_parser(char* filename);
 
@@ -38,16 +39,21 @@ void repl() {
 }
 #endif
 
+void interpret_file(char* file_name) {
+    printf("%s\n", file_name);
+    struct Expr* expr = parse_from_file(file_name);
+    print_expr(expr);
+    destroy_expr(expr);
+}
+
 // If called with a file, run it, else start a REPL
 int main(int argc, char *argv[]) {
     printf("----------\nRealScript\n----------\n\n");
     if (argc > 1) {
         // There is at least one parameter
-        char* filename = argv[1];
-        printf("%s\n", filename);
-        struct Expr* expr = parse_from_file(filename);
-        print_expr(expr);
-        destroy_expr(expr);
+        // interpret_file(argv[1]);
+        struct Alint* alint = string_to_alint("283756238567");
+        debug_print_alint(alint);
     } else {
         #ifdef REPL_ENABLED
         // There are no arguments, start a REPL
