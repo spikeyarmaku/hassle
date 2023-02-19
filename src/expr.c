@@ -23,7 +23,7 @@ struct Expr* get_head(struct Expr* expr) {
 void destroy_expr(struct Expr* expr) {
     while (expr != NULL) {
         if (expr->type == ExprAtom) {
-            free(expr->atom.symbol);
+            free(expr->symbol);
         } else {
             destroy_expr(expr->list);
         }

@@ -8,19 +8,14 @@
 
 enum ExprType {ExprAtom, ExprList};
 
-struct Atom {
-    long int char_count;
-    char *symbol;
-};
-
 // https://benpaulhanna.com/writing-a-game-in-c-parsing-s-expressions.html
 struct Expr {
   struct Expr *next;
-  struct Expr* prev;
+  struct Expr *prev;
   enum ExprType type;
   union {
     struct Expr *list;
-    struct Atom atom;
+    char *symbol;
   };
 };
 

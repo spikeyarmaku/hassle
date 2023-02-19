@@ -12,13 +12,11 @@ enum TokenType {OpenParen, CloseParen, Symbol, Eos};
 struct Token {
     enum TokenType type;
     char* str;
-    long int size;
 };
 
 struct Parser {
     char* stream;
     long int counter;
-    long int size;
 };
 
 struct Parser   create_parser       (char*);

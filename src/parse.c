@@ -11,15 +11,19 @@ struct Parser create_parser(char* file_name) {
     long int size = ftell(fp) - start;
     rewind(fp); // fseek(fp, 0L, SEEK_SET);
 
-    char* file_content = (char*)malloc(sizeof(char) * size);
+    char* file_content = (char*)malloc(sizeof(char) * (size + 1));
     
     size_t chars_read = fread(file_content, sizeof(char), size, fp);
-    // file_content[chars_read] = 0;
+    
+    // Add terminating null.
+    // Sometimes multiple bytes are read, but one byte is reported (like on
+    // Windows "\r\n" is read as "\n"). Thus, `chars_read is used instead of
+    // `size`.
+    file_content[chars_read] = 0;
 
     fclose(fp);
 
     p.stream = file_content;
-    p.size = chars_read;
     p.counter = 0;
     return p;
 }
@@ -49,7 +53,6 @@ int get_next_token(struct Parser* p, struct Token* t) {
     // If it is a simple token, advance the stream pointer
     if (t->type != Symbol) {
         get_next_char(p);
-        t->size = 1;
     }
 
     // Set the stream pointer to the next non-whitespace character
@@ -58,7 +61,7 @@ int get_next_token(struct Parser* p, struct Token* t) {
     return error;
 }
 
-// Read a string enclosed in quotes or an identifier
+// Read a string (enclosed in quotes) or an identifier
 int read_symbol(struct Parser* p, struct Token* t) {
     int error = 0;
 
@@ -118,7 +121,7 @@ int read_string(struct Parser* p, struct Token* t) {
     long int char_count = total_char_count - escape_counter;
     escape_counter = 0;
     is_escaped = 0;
-    char* str = (char*)malloc(sizeof(char) * char_count);
+    char* str = (char*)malloc(sizeof(char) * (char_count + 1));
     for (long int i = 0; i < total_char_count; i++) {
         char c = p->stream[starting_position + i];
         if (is_escaped) {
@@ -133,11 +136,11 @@ int read_string(struct Parser* p, struct Token* t) {
             }
         }
     }
+    str[char_count] = 0; // Terminating null
 
     // Fill the token
     t->type = Symbol;
     t->str = str;
-    t->size = char_count;
     return 0;
 }
 
@@ -172,28 +175,28 @@ int read_identifier(struct Parser* p, struct Token* t) {
 
     // Copy the string into a buffer
     long int char_count = ending_position - starting_position;
-    char* str = (char*)malloc(sizeof(char) * char_count);
+    char* str = (char*)malloc(sizeof(char) * (char_count + 1));
     for (long int i = 0; i < char_count; i++) {
         char c = p->stream[starting_position + i];
         str[i] = c;
     }
+    str[char_count] = 0; // Terminating null
 
     // Fill the token
     t->type = Symbol;
     t->str = str;
-    t->size = char_count;
     return 0;
 }
 
 char get_next_char(struct Parser* p) {
-    if (p->counter < p->size) {
+    if (p->stream[p->counter] != 0) {
         p->counter++;
     }
     return get_current_char(p);
 }
 
 char get_current_char(struct Parser* p) {
-    if (p->counter >= 0 && p->counter < p->size) {
+    if (p->counter >= 0) {
         return p->stream[p->counter];
     } else {
         return 0;
@@ -234,7 +237,6 @@ struct Expr* parse_from_str(char* input) {
     struct Parser parser;
     parser.stream = input;
     parser.counter = 0;
-    parser.size = strlen(input);
     
     return parse(parser);
 }
@@ -269,8 +271,7 @@ struct Expr* parse(struct Parser parser) {
             case Symbol: {
                 expr = append(expr);
                 expr->type = ExprAtom;
-                expr->atom.char_count = t.size;
-                expr->atom.symbol = t.str;
+                expr->symbol = t.str;
                 break;
             }
             case Eos: {
@@ -296,8 +297,6 @@ void print_expr(struct Expr* expr) {
         }
         printf(")");
     } else {
-        for (long int i = 0; i < expr->atom.char_count; i++) {
-            putchar(expr->atom.symbol[i]);
-        }
+        printf("%s", expr->symbol);
     }
 }
