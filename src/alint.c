@@ -189,18 +189,24 @@ struct Alint* make_complement_alint(struct Alint* alint) {
 }
 
 struct Alint* sub_alint(struct Alint* a1, struct Alint* a2, int8_t* sign) {
-    int8_t a1_gt_a2 = compare_alint(a1, a2) > 0;
-    struct Alint* a1_new = a1_gt_a2 ? make_complement_alint(a1) : a1;
-    struct Alint* a2_new = a1_gt_a2 ? a2 : make_complement_alint(a2);
-    struct Alint* sum = add_alint(a1_new, a2_new);
-    struct Alint* result = make_complement_alint(sum);
-    free(sum);
-    a1_gt_a2 ? free(a1_new) : free(a2_new);
-    strip_alint(result);
-    if (sign != NULL) {
-        *sign = a1_gt_a2 ? 1 : -1;
+    int8_t a1_gt_a2 = compare_alint(a1, a2);
+    if (a1_gt_a2 == 0) {
+        return make_null_alint();
+    } else {
+        a1_gt_a2 = a1_gt_a2 > 0 ? 1 : 0;
+    
+        struct Alint* a1_new = a1_gt_a2 ? make_complement_alint(a1) : a1;
+        struct Alint* a2_new = a1_gt_a2 ? a2 : make_complement_alint(a2);
+        struct Alint* sum = add_alint(a1_new, a2_new);
+        struct Alint* result = make_complement_alint(sum);
+        free(sum);
+        a1_gt_a2 ? free(a1_new) : free(a2_new);
+        strip_alint(result);
+        if (sign != NULL) {
+            *sign = a1_gt_a2 ? 1 : -1;
+        }
+        return result;
     }
-    return result;
 }
 
 // Strips an alint from useless zeroes
@@ -283,6 +289,33 @@ struct Alint* gcd_alint(struct Alint* a1, struct Alint* a2) {
     return greater;
 }
 
+struct Alint* mul_alint(struct Alint* multiplicand, struct Alint* multiplier) {
+    struct Alint* result = NULL;
+    // Copy the multiplier
+    struct Alint* multiplier_inter = add_alint(multiplier, NULL);
+    struct Alint* one = make_null_alint();
+    one->num = 1;
+
+    while (!is_null_alint(multiplier_inter)) {
+        struct Alint* result_inter = add_alint(result, multiplicand);
+        free(result);
+        result = result_inter;
+        
+        struct Alint* multiplier_inter_inter =
+            sub_alint(multiplier_inter, one, NULL);
+        free(multiplier_inter);
+        multiplier_inter = multiplier_inter_inter;
+
+        if (multiplier_inter->next == NULL) {
+            debug_print_alint(multiplier_inter);
+        }
+    }
+    free(one);
+    free(multiplier_inter);
+
+    return result;
+}
+
 // TODO it could be made more efficient: instead of always adding `one`, these
 // additions could be batched, e.g. add ALINT_MAX-1 each time that much
 // subtraction is done
@@ -308,6 +341,7 @@ struct Alint* div_alint(struct Alint* dividend, struct Alint* divisor) {
         free(result);
         result = new_result;
     }
+    free(one);
 
     return result;
 }

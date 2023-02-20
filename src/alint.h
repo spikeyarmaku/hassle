@@ -29,12 +29,13 @@ struct Alint* make_null_alint();
 uint8_t is_null_alint(struct Alint*);
 
 struct Alint* add_alint(struct Alint*, struct Alint*);
+struct Alint* sub_alint(struct Alint*, struct Alint*, int8_t*);
+struct Alint* mul_alint(struct Alint*, struct Alint*);
+struct Alint* div_alint(struct Alint*, struct Alint*);
+
 struct Alint* make_complement_alint(struct Alint*);
-struct Alint* sub_alint(struct Alint*, struct Alint*, int8_t* sign);
 void strip_alint(struct Alint*);
 int8_t compare_alint(struct Alint*, struct Alint*);
-
 struct Alint* gcd_alint(struct Alint*, struct Alint*);
-struct Alint* div_alint(struct Alint*, struct Alint*);
 
 #endif
