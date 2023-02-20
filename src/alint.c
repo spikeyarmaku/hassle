@@ -75,20 +75,22 @@ struct Alint* string_to_alint(char* string) {
     return b;
 }
 
+// Only works with alints that fit into an uint64_t
 void debug_print_alint(struct Alint* alint) {
-    long long int sum = 0;
+    uint64_t sum = 0;
     long long int place = 1;
-    printf("<");
+    // printf("<");
     while (alint != NULL) {
         sum += alint->num * place;
         place = place << 8;
-        printf("%d", alint->num);
-        if (alint->next != NULL) {
-            printf(" ");
-        }
+        // printf("%d", alint->num);
+        // if (alint->next != NULL) {
+        //     printf(" ");
+        // }
         alint = alint->next;
     }
-    printf("> (%d)\n", sum);
+    // printf("> (%d)\n", sum);
+    printf("%d", sum);
 }
 
 char* alint_to_string(struct Alint* alint) {
@@ -96,11 +98,16 @@ char* alint_to_string(struct Alint* alint) {
 }
 
 void destroy_alint(struct Alint* alint) {
+    // printf("\nDestroying ");
+    // debug_print_alint(alint);
+    // printf(" | ");
     while (alint != NULL) {
         struct Alint* next = alint->next;
+        // printf("%d -> %d | ", alint, next);
         free(alint);
         alint = next;
     }
+    // printf("Done\n");
 }
 
 struct Alint* make_null_alint() {
@@ -177,7 +184,7 @@ struct Alint* make_complement_alint(struct Alint* alint) {
     
     alint = start;
     struct Alint* result = add_alint(alint, one);
-    free(one);
+    destroy_alint(one);
 
     // Change the number back
     while (alint != NULL) {
@@ -199,8 +206,8 @@ struct Alint* sub_alint(struct Alint* a1, struct Alint* a2, int8_t* sign) {
         struct Alint* a2_new = a1_gt_a2 ? a2 : make_complement_alint(a2);
         struct Alint* sum = add_alint(a1_new, a2_new);
         struct Alint* result = make_complement_alint(sum);
-        free(sum);
-        a1_gt_a2 ? free(a1_new) : free(a2_new);
+        destroy_alint(sum);
+        a1_gt_a2 ? destroy_alint(a1_new) : destroy_alint(a2_new);
         strip_alint(result);
         if (sign != NULL) {
             *sign = a1_gt_a2 ? 1 : -1;
@@ -269,13 +276,10 @@ struct Alint* gcd_alint(struct Alint* a1, struct Alint* a2) {
     // Then we keep subtracting the lesser from the greater until the lesser
     // becomes greater
     while (!is_null_alint(lesser)) {
-        printf("Greater: "); debug_print_alint(greater);
-        printf("Lesser:  "); debug_print_alint(lesser);
-        printf("\n");
-        while (a1_gt_a2 >= 0) {
-            struct Alint* new_greater = sub_alint(greater, lesser, &a1_gt_a2);
+        while (compare_alint(greater, lesser) >= 0) {
+            struct Alint* new_greater = sub_alint(greater, lesser, NULL);
             if (greater != a1 && greater != a2) {
-                free(greater);
+                destroy_alint(greater);
             }
             greater = new_greater;
         }
@@ -284,11 +288,20 @@ struct Alint* gcd_alint(struct Alint* a1, struct Alint* a2) {
         lesser = temp;
     }
     if (lesser != a1 && lesser != a2) {
-        free(lesser);
+        destroy_alint(lesser);
+    }
+    // If we allow the return value to share memory address with either of the
+    // inputs, there is a danger of double deleting
+    if (greater == a1 || greater == a2) {
+        struct Alint* result = make_null_alint();
+        result = add_alint(result, greater);
+        return result;
     }
     return greater;
 }
 
+// TODO maybe there is a more efficient method
+// https://en.wikipedia.org/wiki/Multiplication_algorithm
 struct Alint* mul_alint(struct Alint* multiplicand, struct Alint* multiplier) {
     struct Alint* result = NULL;
     // Copy the multiplier
@@ -298,20 +311,16 @@ struct Alint* mul_alint(struct Alint* multiplicand, struct Alint* multiplier) {
 
     while (!is_null_alint(multiplier_inter)) {
         struct Alint* result_inter = add_alint(result, multiplicand);
-        free(result);
+        destroy_alint(result);
         result = result_inter;
         
         struct Alint* multiplier_inter_inter =
             sub_alint(multiplier_inter, one, NULL);
-        free(multiplier_inter);
+        destroy_alint(multiplier_inter);
         multiplier_inter = multiplier_inter_inter;
-
-        if (multiplier_inter->next == NULL) {
-            debug_print_alint(multiplier_inter);
-        }
     }
-    free(one);
-    free(multiplier_inter);
+    destroy_alint(one);
+    destroy_alint(multiplier_inter);
 
     return result;
 }
@@ -321,27 +330,28 @@ struct Alint* mul_alint(struct Alint* multiplicand, struct Alint* multiplier) {
 // subtraction is done
 // TODO maybe it could return the remainder, too?
 struct Alint* div_alint(struct Alint* dividend, struct Alint* divisor) {
-    struct Alint* result = make_null_alint();
     struct Alint* one = make_null_alint();
     one->num = 1;
 
-    int counter = 0;
-    int8_t a1_gt_a2 = compare_alint(dividend, divisor);
+    if (compare_alint(dividend, divisor) == 0) {
+        // If the dividend equals to the divisor, return 1
+        return one;
+    }
 
+    struct Alint* result = make_null_alint();
     struct Alint* inter = dividend;
-    while (a1_gt_a2 >= 0) {
-        struct Alint* new_inter = sub_alint(inter, divisor, &a1_gt_a2);
-        a1_gt_a2 ? printf(" ") : printf("-");
+    while (compare_alint(inter, divisor) >= 0) {
+        struct Alint* new_inter = sub_alint(inter, divisor, NULL);
         if (inter != dividend) {
-            free(inter);
+            destroy_alint(inter);
         }
         inter = new_inter;
 
         struct Alint* new_result = add_alint(result, one);
-        free(result);
+        destroy_alint(result);
         result = new_result;
     }
-    free(one);
+    destroy_alint(one);
 
     return result;
 }

@@ -59,9 +59,22 @@ int main(int argc, char *argv[]) {
         // struct Alint* alint2 = string_to_alint("350108375");
         // debug_print_alint(gcd_alint(alint1, alint2)); // should give 4765
 
-        struct Alint* alint1 = string_to_alint("64643");
-        struct Alint* alint2 = string_to_alint("4765");
-        debug_print_alint(mul_alint(alint1, alint2)); // should give 308023895
+        // struct Alint* one1 = make_null_alint();
+        // one1->num = 4;
+        // struct Alint* one2 = make_null_alint();
+        // one2->num = 1;
+        // debug_print_alint(mul_alint(one1, one2));
+
+        struct Rational r1 = string_to_rational("1.0");
+        struct Rational r2 = string_to_rational("3");
+        // debug_print_rational(r1);
+        // printf("\n");
+        // debug_print_rational(r2);
+        // printf("\n");
+        debug_print_rational(add_rational(r1, r2)); printf("\n");
+        debug_print_rational(sub_rational(r1, r2)); printf("\n");
+        debug_print_rational(mul_rational(r1, r2)); printf("\n");
+        debug_print_rational(div_rational(r1, r2)); printf("\n");
     } else {
         #ifdef REPL_ENABLED
         // There are no arguments, start a REPL
