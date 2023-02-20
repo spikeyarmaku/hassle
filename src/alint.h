@@ -34,6 +34,6 @@ struct Alint* sub_alint(struct Alint*, struct Alint*);
 void strip_alint(struct Alint*);
 int8_t compare_alint(struct Alint*, struct Alint*);
 
-void gcd(struct Alint*, struct Alint*);
+struct Alint* gcd(struct Alint*, struct Alint*);
 
 #endif

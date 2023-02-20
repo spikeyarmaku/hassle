@@ -22,25 +22,33 @@ struct Alint* string_to_alint(char* string) {
     int go_on = 1;
     while (go_on) {
         struct Alint* b_inter = (struct Alint*)malloc(sizeof(struct Alint));
-        // Read in enough digits to make the number greater than 255
+        
+// printf("New pass!\n");
+        // Read the number, and provide the digits for the next pass
         while (intermediate < ALINT_MAX) {
+            // Skip non-digit characters
             while (!isdigit(*current_char_ptr)) {
                 current_char_ptr++;
             }
+// printf("New char: %c\n",*current_char_ptr);
             intermediate = intermediate * 10 + *current_char_ptr - '0';
             current_char_ptr++;
             // Divide it by `divider`, and get the remainder and quotient
             div_t result = div(intermediate, ALINT_MAX);
             // Write the digits to the next pass, except for leading zeroes
             if (!(next_pass_cursor == string && result.quot == 0)) {
+// printf("Writing %c, new intermediate: %d\n", result.quot + '0', result.rem);
                 *next_pass_cursor = result.quot + '0';
                 next_pass_cursor++;
             }
 
             // If we reached the end of the string, go to the next pass
             if (*current_char_ptr == 0) {
-                // If the read in value is less than the divider, we're finished
-                if (intermediate < ALINT_MAX) {
+// printf("End of string reached, intermediate: %d\n", intermediate);
+                // If the read in value is less than the divider, and we haven't
+                // written any new digits for the next pass, we're finished
+                if (intermediate < ALINT_MAX && next_pass_cursor == string) {
+// printf("End reached (%d < %d)\n", intermediate, ALINT_MAX);
                     go_on = 0;
                 }
                 // If we reach the end of the string, finish up
@@ -48,6 +56,7 @@ struct Alint* string_to_alint(char* string) {
             }
             intermediate = result.rem;
         }
+        
         b_inter->num = intermediate;
         b_inter->next = NULL;
         if (b_counter == NULL) {
@@ -67,15 +76,19 @@ struct Alint* string_to_alint(char* string) {
 }
 
 void debug_print_alint(struct Alint* alint) {
+    long long int sum = 0;
+    long long int place = 1;
     printf("<");
     while (alint != NULL) {
+        sum += alint->num * place;
+        place = place << 8;
         printf("%d", alint->num);
         if (alint->next != NULL) {
             printf(" ");
         }
         alint = alint->next;
     }
-    printf(">");
+    printf("> (%d)\n", sum);
 }
 
 char* alint_to_string(struct Alint* alint) {
@@ -231,7 +244,32 @@ int8_t compare_alint(struct Alint* a1, struct Alint* a2) {
 
 // Reduce by the GCD of two alints using the Euclidean method
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
-void gcd(struct Alint* a1, struct Alint* a2) {
-    // TODO
+struct Alint* gcd(struct Alint* a1, struct Alint* a2) {
+    // First we check which number is greater
+    uint8_t a1_gt_a2 = compare_alint(a1, a2);
+    struct Alint* greater = a1_gt_a2 ? a1 : a2;
+    struct Alint* lesser = a1_gt_a2 ? a2 : a1;
+
+    // Then we keep subtracting the lesser from the greater until the lesser
+    // becomes greater
+    while (!is_null_alint(lesser)) {
+        printf("Greater: "); debug_print_alint(greater);
+        printf("Lesser:  "); debug_print_alint(lesser);
+        printf("\n");
+        while (compare_alint(greater, lesser) >= 0) {
+            struct Alint* new_greater = sub_alint(greater, lesser);
+            if (greater != a1 && greater != a2) {
+                free(greater);
+            }
+            greater = new_greater;
+        }
+        struct Alint* temp = greater;
+        greater = lesser;
+        lesser = temp;
+    }
+    if (lesser != a1 && lesser != a2) {
+        free(lesser);
+    }
+    return greater;
 }
 

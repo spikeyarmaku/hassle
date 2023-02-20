@@ -54,12 +54,11 @@ int main(int argc, char *argv[]) {
         // interpret_file(argv[1]);
 
         // string_to_alint("283,756,238,567") should give back 231 150 48 17 66
-        struct Alint* alint1 = string_to_alint("283,756,238,567");
-        struct Alint* alint2 = string_to_alint("283,756,238,567");
-        if (compare_alint(alint1, alint2) < 0) {
-            printf("-");
-        }
-        debug_print_alint(sub_alint(alint1, alint2));
+        struct Alint* alint1 = string_to_alint("308023895");
+        // struct Alint* alint1 = string_to_alint("256");
+        struct Alint* alint2 = string_to_alint("350108375");
+        // debug_print_alint(alint1);
+        debug_print_alint(gcd(alint1, alint2));
     } else {
         #ifdef REPL_ENABLED
         // There are no arguments, start a REPL
