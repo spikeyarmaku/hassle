@@ -3,30 +3,19 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <stdio.h> // DEBUG
 
-// Arbitrary Length INTeger
-// TODO Think about a more memory-efficient representation
-// The current way of storing an alint is very wasteful, as each byte comes with
-// a pointer's worth of overhead
-struct Alint {
-    uint8_t byte; // If its typew changes, `divider` must be changed too in
-                  // the method `string_to_alint`
-    struct Alint* next;
-};
-
-struct Alint* string_to_alint(char*);
-void debug_print_alint(struct Alint*);
-char* alint_to_string(struct Alint*);
-void destroy_alint(struct Alint);
+#include "alint.h"
 
 struct Rational {
-    //
-    struct Alint numerator;
-    struct Alint denominator;
+    uint8_t sign;
+    struct Alint* numerator;
+    struct Alint* denominator; // If it is NULL, treat it as 1
 };
 
 struct Rational string_to_rational(char*);
 void destroy_rational(struct Rational);
+uint8_t is_valid_rational(struct Rational*);
 
 #endif

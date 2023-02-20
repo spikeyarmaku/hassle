@@ -52,8 +52,14 @@ int main(int argc, char *argv[]) {
     if (argc > 1) {
         // There is at least one parameter
         // interpret_file(argv[1]);
-        struct Alint* alint = string_to_alint("283756238567");
-        debug_print_alint(alint);
+
+        // string_to_alint("283,756,238,567") should give back 231 150 48 17 66
+        struct Alint* alint1 = string_to_alint("283,756,238,567");
+        struct Alint* alint2 = string_to_alint("283,756,238,567");
+        if (compare_alint(alint1, alint2) < 0) {
+            printf("-");
+        }
+        debug_print_alint(sub_alint(alint1, alint2));
     } else {
         #ifdef REPL_ENABLED
         // There are no arguments, start a REPL

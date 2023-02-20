@@ -34,7 +34,7 @@ void destroy_parser(struct Parser p) {
 
 // Reads the next token, and sets the stream pointer to the next non-whitespace
 // character.
-int get_next_token(struct Parser* p, struct Token* t) {
+uint8_t get_next_token(struct Parser* p, struct Token* t) {
     t->str = NULL;
     int error = 0;
     
@@ -56,13 +56,13 @@ int get_next_token(struct Parser* p, struct Token* t) {
     }
 
     // Set the stream pointer to the next non-whitespace character
-    long int space_counter = consume_whitespace(p);
+    consume_whitespace(p);
 
     return error;
 }
 
 // Read a string (enclosed in quotes) or an identifier
-int read_symbol(struct Parser* p, struct Token* t) {
+uint8_t read_symbol(struct Parser* p, struct Token* t) {
     int error = 0;
 
     char c = get_current_char(p);
@@ -78,7 +78,7 @@ int read_symbol(struct Parser* p, struct Token* t) {
 
 // Read a string enclosed in quotes and trailed by at least one whitespace
 // character or a closing parenthesis or EOF
-int read_string(struct Parser* p, struct Token* t) {
+uint8_t read_string(struct Parser* p, struct Token* t) {
     long int starting_position = p->counter;
     long int ending_position = p->counter;
     int escape_counter = 0;
@@ -146,7 +146,7 @@ int read_string(struct Parser* p, struct Token* t) {
 
 // Read an identifier that is either trailed by a whitespace character or a
 // closing parenthesis or EOF
-int read_identifier(struct Parser* p, struct Token* t) {
+uint8_t read_identifier(struct Parser* p, struct Token* t) {
     long int starting_position = p->counter;
     long int ending_position = p->counter;
     char c = get_current_char(p);
@@ -203,15 +203,13 @@ char get_current_char(struct Parser* p) {
     }
 }
 
-int is_whitespace(char c) {
+uint8_t is_whitespace(char c) {
     return c == ' '  || c == '\n' || c == '\t'
         || c == '\v' || c == '\f' || c == '\r';
 }
 
-// Set the pointer to the next non-whitespace character, and report back the
-// number of characters skipped.
-int consume_whitespace(struct Parser* p) {
-    long int counter = 0;
+// Set the pointer to the next non-whitespace character
+void consume_whitespace(struct Parser* p) {
     int go_on = 1;
     char c;
     while (go_on) {
@@ -219,10 +217,9 @@ int consume_whitespace(struct Parser* p) {
         c = get_current_char(p);
         // If it is not a whitespace, or it is EOF, stop
         if (!is_whitespace(c) || c == 0) {
-            return counter;
+            return;
         } else {
             get_next_char(p);
-            counter++;
         }
     }
 }

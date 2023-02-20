@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include "expr.h"
 #include "stack.h"
@@ -22,16 +23,16 @@ struct Parser {
 struct Parser   create_parser       (char*);
 void            destroy_parser      (struct Parser);
 
-int             get_next_token      (struct Parser*, struct Token*);
-int             read_symbol         (struct Parser*, struct Token*);
-int             read_string         (struct Parser*, struct Token*);
-int             read_identifier     (struct Parser*, struct Token*);
+uint8_t         get_next_token      (struct Parser*, struct Token*);
+uint8_t         read_symbol         (struct Parser*, struct Token*);
+uint8_t         read_string         (struct Parser*, struct Token*);
+uint8_t         read_identifier     (struct Parser*, struct Token*);
 
 char            get_next_char       (struct Parser*);
 char            get_current_char    (struct Parser*);
 
-int             is_whitespace       (char);
-int             consume_whitespace  (struct Parser*);
+uint8_t         is_whitespace       (char);
+void            consume_whitespace  (struct Parser*);
 
 struct Expr*    parse_from_file     (char*);
 struct Expr*    parse_from_str      (char*);
