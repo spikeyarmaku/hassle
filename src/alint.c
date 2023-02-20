@@ -152,6 +152,13 @@ struct Alint* add_alint(struct Alint* a1, struct Alint* a2) {
         pointer = next_num;
     }
 
+    if (carry) {
+        struct Alint* next_num = (struct Alint*)malloc(sizeof(struct Alint));
+        next_num->num = carry;
+        next_num->next = NULL;
+        pointer->next = next_num;
+    }
+
     return result;
 }
 
@@ -181,8 +188,8 @@ struct Alint* make_complement_alint(struct Alint* alint) {
     return result;
 }
 
-struct Alint* sub_alint(struct Alint* a1, struct Alint* a2) {
-    uint8_t a1_gt_a2 = compare_alint(a1, a2) > 0;
+struct Alint* sub_alint(struct Alint* a1, struct Alint* a2, int8_t* sign) {
+    int8_t a1_gt_a2 = compare_alint(a1, a2) > 0;
     struct Alint* a1_new = a1_gt_a2 ? make_complement_alint(a1) : a1;
     struct Alint* a2_new = a1_gt_a2 ? a2 : make_complement_alint(a2);
     struct Alint* sum = add_alint(a1_new, a2_new);
@@ -190,6 +197,9 @@ struct Alint* sub_alint(struct Alint* a1, struct Alint* a2) {
     free(sum);
     a1_gt_a2 ? free(a1_new) : free(a2_new);
     strip_alint(result);
+    if (sign != NULL) {
+        *sign = a1_gt_a2 ? 1 : -1;
+    }
     return result;
 }
 
@@ -222,7 +232,7 @@ void strip_alint(struct Alint* alint) {
 
 // Return 1 if first alint is greater, -1 if second is greater, 0 if equal
 int8_t compare_alint(struct Alint* a1, struct Alint* a2) {
-    uint8_t a1_gt_a2 = 0;
+    int8_t a1_gt_a2 = 0;
     while (a1 != NULL || a2 != NULL) {
         // If either pointer is null, whichever is not null is the bigger one
         int8_t a1null = a1 == NULL ? 0 : 1;
@@ -244,9 +254,9 @@ int8_t compare_alint(struct Alint* a1, struct Alint* a2) {
 
 // Reduce by the GCD of two alints using the Euclidean method
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
-struct Alint* gcd(struct Alint* a1, struct Alint* a2) {
+struct Alint* gcd_alint(struct Alint* a1, struct Alint* a2) {
     // First we check which number is greater
-    uint8_t a1_gt_a2 = compare_alint(a1, a2);
+    int8_t a1_gt_a2 = compare_alint(a1, a2);
     struct Alint* greater = a1_gt_a2 ? a1 : a2;
     struct Alint* lesser = a1_gt_a2 ? a2 : a1;
 
@@ -256,8 +266,8 @@ struct Alint* gcd(struct Alint* a1, struct Alint* a2) {
         printf("Greater: "); debug_print_alint(greater);
         printf("Lesser:  "); debug_print_alint(lesser);
         printf("\n");
-        while (compare_alint(greater, lesser) >= 0) {
-            struct Alint* new_greater = sub_alint(greater, lesser);
+        while (a1_gt_a2 >= 0) {
+            struct Alint* new_greater = sub_alint(greater, lesser, &a1_gt_a2);
             if (greater != a1 && greater != a2) {
                 free(greater);
             }
@@ -273,3 +283,31 @@ struct Alint* gcd(struct Alint* a1, struct Alint* a2) {
     return greater;
 }
 
+// TODO it could be made more efficient: instead of always adding `one`, these
+// additions could be batched, e.g. add ALINT_MAX-1 each time that much
+// subtraction is done
+// TODO maybe it could return the remainder, too?
+struct Alint* div_alint(struct Alint* dividend, struct Alint* divisor) {
+    struct Alint* result = make_null_alint();
+    struct Alint* one = make_null_alint();
+    one->num = 1;
+
+    int counter = 0;
+    int8_t a1_gt_a2 = compare_alint(dividend, divisor);
+
+    struct Alint* inter = dividend;
+    while (a1_gt_a2 >= 0) {
+        struct Alint* new_inter = sub_alint(inter, divisor, &a1_gt_a2);
+        a1_gt_a2 ? printf(" ") : printf("-");
+        if (inter != dividend) {
+            free(inter);
+        }
+        inter = new_inter;
+
+        struct Alint* new_result = add_alint(result, one);
+        free(result);
+        result = new_result;
+    }
+
+    return result;
+}

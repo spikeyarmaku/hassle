@@ -47,6 +47,7 @@ struct Rational string_to_rational(char* string) {
     struct Alint* denominator = string_to_alint(fraction_digits);
 
     // Find the greatest common divisor
+    struct Alint* gcd = gcd_alint(numerator, denominator);
     // Construct a rational from these two integers
 }
 

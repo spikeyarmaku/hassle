@@ -9,7 +9,7 @@
 #include "alint.h"
 
 struct Rational {
-    uint8_t sign;
+    int8_t sign;
     struct Alint* numerator;
     struct Alint* denominator; // If it is NULL, treat it as 1
 };
