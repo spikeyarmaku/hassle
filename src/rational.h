@@ -10,8 +10,8 @@
 
 struct Rational {
     int8_t sign;
-    struct Alint* numerator;
-    struct Alint* denominator; // If it is NULL, treat it as 1
+    Alint numerator;
+    Alint denominator; // If it is NULL, treat it as 1
 };
 
 struct Rational string_to_rational(char*);

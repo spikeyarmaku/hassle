@@ -1,7 +1,6 @@
 #ifndef _TERM_H_
 #define _TERM_H_
 
-#include "term.h"
 #include "env.h"
 #include "expr.h"
 

@@ -1,214 +1,307 @@
 #include "alint.h"
 
+void debug_print_alint_builder(struct AlintBuilder b) {
+    printf("AlintBuilder:\n  ptr:  %llu\n  size: %d\n  next: %d\n",
+        b._ptr, b._size, b._next);
+}
+
+struct AlintBuilder create_alint_builder() {
+    struct AlintBuilder b;
+    b._ptr = NULL;
+    b._next = 0;
+    b._size = 0;
+    return b;
+}
+
+Alint get_alint(struct AlintBuilder b) {
+    return b._ptr;
+}
+
+// Add a new block to the alint's memory
+ErrorCode expand_alint(struct AlintBuilder* b) {
+    size_t new_size = b->_size + ALINT_BUFFER_SIZE;
+    Alint new_ptr = NULL;
+    if (b->_ptr == NULL) {
+        new_ptr = (Alint)malloc(sizeof(uint8_t) * new_size);
+    } else {
+        new_ptr = (Alint)realloc(b->_ptr, sizeof(uint8_t) * new_size);
+    }
+    if (new_ptr == NULL) {
+        printf("expand_alint: error while allocating.\n");
+        return 1;
+    }
+    b->_size = new_size;
+    b->_ptr = new_ptr;
+    return 0;
+}
+
+// Add a new digit to alint
+ErrorCode add_digit_to_alint(uint8_t digit, struct AlintBuilder* b) {
+    // Check if the new digit is smaller than ALINT_MAX
+    if (digit >= ALINT_MAX) {
+        printf("add_byte_to_alint: digit %d exceeds the maximum (%d)\n", digit,
+            ALINT_MAX - 1);
+        return 1;
+    }
+
+    // Check if the alint has digits
+    if (b->_size != 0) {
+        // If there is, set the last digit's mask to 1
+        unsafe_mark_digit_alint(b->_next - 1, 1, b->_ptr);
+    }
+    // Check if we have enough space to extend the number with a new digit
+    if (b->_next == b->_size) {
+        if(expand_alint(b)) {
+            printf("add_byte_to_alint: error while expanding alint.\n");
+            return 1;
+        }
+    }
+    b->_ptr[b->_next] = digit;
+    b->_next++;
+    return 0;
+}
+
+// Free up unused memory and set last byte to 0
+ErrorCode finalize_alint(struct AlintBuilder* b) {
+    if (b->_ptr != NULL) {
+        Alint new_ptr = realloc(b->_ptr, sizeof(uint8_t) * b->_next);
+        if (new_ptr == NULL) {
+            printf("finalize_alint: error while reallocating.\n");
+            return 1;
+        }
+        b->_ptr = new_ptr;
+        b->_size = b->_next;
+    }
+    return 0;
+}
+
+struct AlintMarcher create_alint_marcher(Alint a) {
+    struct AlintMarcher m;
+    m._ptr = a;
+    m._counter = 0;
+    m._finished = a == NULL ? 1 : 0;
+    return m;
+}
+
+uint8_t get_next_alint_digit(struct AlintMarcher* m) {
+    if (m->_finished) {
+        return 0;
+    } else {
+        uint8_t b = m->_ptr[m->_counter];
+        if ((b & ALINT_MAX) == ALINT_MAX) {
+            m->_counter++;
+        } else {
+            m->_finished = 1;
+        }
+        return b & ~ALINT_MAX;
+    }
+}
+
+uint8_t is_end_of_alint(struct AlintMarcher m) {
+    return m._finished;
+}
+
+size_t get_marcher_position(struct AlintMarcher m) {
+    return m._counter;
+}
+
+void rewind_marcher(struct AlintMarcher* m) {
+    *m = create_alint_marcher(m->_ptr);
+}
+
+ErrorCode unsafe_get_digit_alint(size_t n, Alint a) {
+    return a[n] & ~ALINT_MAX;
+}
+
+ErrorCode unsafe_is_last_digit_alint(size_t n, Alint a) {
+    return (a[n] & ALINT_MAX) == ALINT_MAX ? 0 : 1;
+}
+
+void unsafe_mark_digit_alint(size_t n, uint8_t is_non_last, Alint a) {
+    if (is_non_last) {
+        a[n] |= ALINT_MAX;
+    } else {
+        a[n] &= ~ALINT_MAX;
+    }
+}
+
 // TODO Support bases other than 10 (2, 8 and 16 would be nice)
 
 // Construct an alint from a string containing a base-10 representation of a
 // number, disregarding any non-digit characters in the process
 // The way it is done is to take the first n digits, that together form a number
-// greater than 255, divide it with 256, take the quotient, and that will be the
-// first byte. Then take the remainder, add enough characters to make it greater
-// than 255, and repeat. It's like how they teach in elementary school, e.g.:
-// 92537 : 256 = 361      361 : 256 = 1
-// 1573                   105
+// greater than ALINT_MAX-1, divide it with ALINT_MAX, take the quotient, and
+// that will be the first digit. Then take the remainder, add enough characters
+// to make it greater than ALINT_MAX-1, and repeat. It's like how they teach in
+// elementary school, e.g. if ALINT_MAX is 256, the result is 121 105 1:
+// 92537 : 256 = 361      361 : 256 = 1   1 : 256 = 0
+// 1573                   105             1
 //   377
 //   121
-struct Alint* string_to_alint(char* string) {
-    struct Alint* b = NULL;
-    struct Alint* b_counter = NULL;
-    int intermediate = 0;
+Alint string_to_alint(char* string) {
+    struct AlintBuilder b = create_alint_builder();
+    uint16_t intermediate = 0;
     char *current_char_ptr = string;
     char *next_pass_cursor = string;
-    
+
     int go_on = 1;
     while (go_on) {
-        struct Alint* b_inter = (struct Alint*)malloc(sizeof(struct Alint));
-        
-// printf("New pass!\n");
         // Read the number, and provide the digits for the next pass
         while (intermediate < ALINT_MAX) {
             // Skip non-digit characters
             while (!isdigit(*current_char_ptr)) {
                 current_char_ptr++;
             }
-// printf("New char: %c\n",*current_char_ptr);
             intermediate = intermediate * 10 + *current_char_ptr - '0';
             current_char_ptr++;
             // Divide it by `divider`, and get the remainder and quotient
-            div_t result = div(intermediate, ALINT_MAX);
+            div_t div_result = div(intermediate, ALINT_MAX);
             // Write the digits to the next pass, except for leading zeroes
-            if (!(next_pass_cursor == string && result.quot == 0)) {
-// printf("Writing %c, new intermediate: %d\n", result.quot + '0', result.rem);
-                *next_pass_cursor = result.quot + '0';
+            if (!(next_pass_cursor == string && div_result.quot == 0)) {
+                *next_pass_cursor = div_result.quot + '0';
                 next_pass_cursor++;
             }
 
             // If we reached the end of the string, go to the next pass
             if (*current_char_ptr == 0) {
-// printf("End of string reached, intermediate: %d\n", intermediate);
                 // If the read in value is less than the divider, and we haven't
                 // written any new digits for the next pass, we're finished
                 if (intermediate < ALINT_MAX && next_pass_cursor == string) {
-// printf("End reached (%d < %d)\n", intermediate, ALINT_MAX);
                     go_on = 0;
                 }
                 // If we reach the end of the string, finish up
+                intermediate = div_result.rem;
                 break;
             }
-            intermediate = result.rem;
+            intermediate = div_result.rem;
         }
         
-        b_inter->num = intermediate;
-        b_inter->next = NULL;
-        if (b_counter == NULL) {
-            b_counter = b_inter;
-            b = b_counter;
-        } else {
-            b_counter->next = b_inter;
+        if (add_digit_to_alint(intermediate, &b)) {
+            printf("string_to_alint: couldn't add %d to alint\n", intermediate);
+            destroy_alint(get_alint(b));
+            return NULL;
         }
-        b_counter = b_inter;
         *next_pass_cursor = 0;
         current_char_ptr = string;
         next_pass_cursor = string;
         intermediate = 0;
     }
 
-    return b;
+    if (finalize_alint(&b)) {
+        printf("string_to_alint: couldn't finalize alint\n");
+        destroy_alint(get_alint(b));
+        return NULL;
+    }
+
+    return get_alint(b);
 }
 
 // Only works with alints that fit into an uint64_t
-void debug_print_alint(struct Alint* alint) {
-    uint64_t sum = 0;
-    long long int place = 1;
-    // printf("<");
-    while (alint != NULL) {
-        sum += alint->num * place;
-        place = place << 8;
-        // printf("%d", alint->num);
-        // if (alint->next != NULL) {
-        //     printf(" ");
-        // }
-        alint = alint->next;
+char* debug_print_alint(Alint alint) {
+    if (alint == NULL) {
+        return NULL;
     }
-    // printf("> (%d)\n", sum);
-    printf("%d", sum);
+    uint64_t sum = 0;
+    uint64_t place = 1;
+    size_t current = 0;
+    do {
+        sum += unsafe_get_digit_alint(current, alint) * place;
+        place = place * ALINT_MAX;
+        current++;
+    } while (!unsafe_is_last_digit_alint(current-1, alint));
+    char* result = (char*)malloc(sizeof(char) * 30);
+    sprintf(result, "%llu", sum);
+    return result;
 }
 
-char* alint_to_string(struct Alint* alint) {
+char* alint_to_string(Alint alint) {
     // TODO
 }
 
-void destroy_alint(struct Alint* alint) {
-    // printf("\nDestroying ");
-    // debug_print_alint(alint);
-    // printf(" | ");
-    while (alint != NULL) {
-        struct Alint* next = alint->next;
-        // printf("%d -> %d | ", alint, next);
+Alint destroy_alint(Alint alint) {
+    if (alint != NULL) {
         free(alint);
-        alint = next;
     }
-    // printf("Done\n");
+    return NULL;
 }
 
-struct Alint* make_null_alint() {
-    struct Alint* alint = (struct Alint*)malloc(sizeof(struct Alint));
-    alint->num = 0;
-    alint->next = NULL;
+Alint make_single_digit_alint(uint8_t digit) {
+    Alint alint = (uint8_t*)malloc(sizeof(uint8_t));
+    alint[0] = digit;
     return alint;
 }
 
-uint8_t is_null_alint(struct Alint* alint) {
-    return alint->num == 0 && alint->next == NULL;
+uint8_t is_null_alint(Alint alint) {
+    return alint[0] == 0;
 }
 
-struct Alint* add_alint(struct Alint* a1, struct Alint* a2) {
-    struct Alint* result = NULL;
-    struct Alint* pointer = NULL;
+Alint copy_alint(Alint a) {
+    Alint result;
+    size_t count = 0;
+    do {
+        count++;
+    } while (!unsafe_is_last_digit_alint(count-1, a));
+    result = (Alint)malloc(sizeof(uint8_t) * count);
+    count = 0;
+    do {
+        result[count] = a[count];
+        count++;
+    } while (!unsafe_is_last_digit_alint(count-1, a));
+    return result;
+}
+
+Alint add_alint(Alint a1, Alint a2) {
+    struct AlintBuilder b = create_alint_builder();
+    struct AlintMarcher m1 = create_alint_marcher(a1);
+    struct AlintMarcher m2 = create_alint_marcher(a2);
     uint8_t carry = 0;
-    if (a1 == NULL && a2 == NULL) {
-        return result;
-    }
 
-    carry = 0;
-    while (a1 != NULL || a2 != NULL) {
-        struct Alint* next_num = (struct Alint*)malloc(sizeof(struct Alint));
-        next_num->next = NULL;
-        ALINT_TYPE num1 = a1 == NULL ? 0 : a1->num;
-        ALINT_TYPE num2 = a2 == NULL ? 0 : a2->num;
-
+    uint8_t a1digit = 0;
+    uint8_t a2digit = 0;
+    while (is_end_of_alint(m1) * is_end_of_alint(m2) == 0) {
+        uint8_t a1digit = get_next_alint_digit(&m1);
+        uint8_t a2digit = get_next_alint_digit(&m2);
         // Check if the sum of the two is bigger than the highest value they can
         // hold
-        next_num->num = (ALINT_TYPE)(num1 + num2 + carry);
-        carry = next_num->num < num1 ? 1 : 0;
-
-        // printf("num1: %d, num2: %d, result: %d, carry: %d\n",
-        //     num1, num2, next_num->num, carry);
-
-        if (a1 != NULL) {
-            a1 = a1->next;
+        uint8_t next_byte = a1digit + a2digit + carry;
+        carry = next_byte < ALINT_MAX ? 0 : 1;
+        next_byte = next_byte < ALINT_MAX ? next_byte : next_byte - ALINT_MAX;
+        
+        if (add_digit_to_alint(next_byte, &b)) {
+            printf("add_alint: couldn't add %d to alint\n", next_byte);
+            destroy_alint(get_alint(b));
+            return NULL;
         }
-        if (a2 != NULL) {
-            a2 = a2->next;
-        }
-        if (pointer == NULL) {
-            result = next_num;
-            pointer = next_num;
-        } else {
-            pointer->next = next_num;
-        }
-        pointer = next_num;
     }
-
     if (carry) {
-        struct Alint* next_num = (struct Alint*)malloc(sizeof(struct Alint));
-        next_num->num = carry;
-        next_num->next = NULL;
-        pointer->next = next_num;
+        if (add_digit_to_alint(carry, &b)) {
+            printf("add_alint: couldn't add %d to alint\n", carry);
+            destroy_alint(get_alint(b));
+            return NULL;
+        }
+    }
+    if (finalize_alint(&b)) {
+        printf("Error while finalizing alint\n");
+        destroy_alint(get_alint(b));
+        return NULL;
     }
 
-    return result;
+    return get_alint(b);
 }
 
-struct Alint* make_complement_alint(struct Alint* alint) {
-    struct Alint* start = alint;
-
-    // Change the number in-place to be its own complement
-    while (alint != NULL) {
-        alint->num = (ALINT_MAX - 1) - alint->num;
-        alint = alint->next;
-    }
-
-    // Add 1
-    struct Alint* one = make_null_alint();
-    one->num = 1;
-    
-    alint = start;
-    struct Alint* result = add_alint(alint, one);
-    destroy_alint(one);
-
-    // Change the number back
-    while (alint != NULL) {
-        alint->num = (ALINT_MAX - 1) - alint->num;
-        alint = alint->next;
-    }
-
-    return result;
-}
-
-struct Alint* sub_alint(struct Alint* a1, struct Alint* a2, int8_t* sign) {
+Alint sub_alint(Alint a1, Alint a2, int8_t* sign) {
     int8_t a1_gt_a2 = compare_alint(a1, a2);
     if (a1_gt_a2 == 0) {
-        return make_null_alint();
+        return make_single_digit_alint(0);
     } else {
         a1_gt_a2 = a1_gt_a2 > 0 ? 1 : 0;
-    
-        struct Alint* a1_new = a1_gt_a2 ? make_complement_alint(a1) : a1;
-        struct Alint* a2_new = a1_gt_a2 ? a2 : make_complement_alint(a2);
-        struct Alint* sum = add_alint(a1_new, a2_new);
-        struct Alint* result = make_complement_alint(sum);
+        Alint a1_new = a1_gt_a2 ? make_complement_alint(a1) : a1;
+        Alint a2_new = a1_gt_a2 ? a2 : make_complement_alint(a2);
+        Alint sum = add_alint(a1_new, a2_new);
+        Alint result = make_complement_alint(sum);
         destroy_alint(sum);
         a1_gt_a2 ? destroy_alint(a1_new) : destroy_alint(a2_new);
-        strip_alint(result);
+        strip_alint(&result);
         if (sign != NULL) {
             *sign = a1_gt_a2 ? 1 : -1;
         }
@@ -216,105 +309,20 @@ struct Alint* sub_alint(struct Alint* a1, struct Alint* a2, int8_t* sign) {
     }
 }
 
-// Strips an alint from useless zeroes
-void strip_alint(struct Alint* alint) {
-    struct Alint* current = alint;
-    struct Alint* prev = current;
-    struct Alint* last_non_zero = current;
-
-    // Find the start of the useless zeroes
-    while (current != NULL) {
-        if (current->num != 0) {
-            last_non_zero = NULL;
-        } else {
-            if (prev->num != 0) {
-                last_non_zero = prev;
-            }
-        }
-
-        prev = current;
-        current = current->next;
-    }
-
-    // Strip them
-    if (last_non_zero != NULL) {
-        destroy_alint(last_non_zero->next);
-        last_non_zero->next = NULL;
-    }
-}
-
-// Return 1 if first alint is greater, -1 if second is greater, 0 if equal
-int8_t compare_alint(struct Alint* a1, struct Alint* a2) {
-    int8_t a1_gt_a2 = 0;
-    while (a1 != NULL || a2 != NULL) {
-        // If either pointer is null, whichever is not null is the bigger one
-        int8_t a1null = a1 == NULL ? 0 : 1;
-        int8_t a2null = a2 == NULL ? 0 : -1;
-        if (a1null * a2null == 0) {
-            return a1null + a2null;
-        }
-
-        if (a1->num != a2->num) {
-            a1_gt_a2 = a1->num > a2->num ? 1 : -1;
-        }
-
-        // Else advance the pointers
-        a1 = a1->next;
-        a2 = a2->next;
-    }
-    return a1_gt_a2;
-}
-
-// Reduce by the GCD of two alints using the Euclidean method
-// https://en.wikipedia.org/wiki/Euclidean_algorithm
-struct Alint* gcd_alint(struct Alint* a1, struct Alint* a2) {
-    // First we check which number is greater
-    int8_t a1_gt_a2 = compare_alint(a1, a2);
-    struct Alint* greater = a1_gt_a2 ? a1 : a2;
-    struct Alint* lesser = a1_gt_a2 ? a2 : a1;
-
-    // Then we keep subtracting the lesser from the greater until the lesser
-    // becomes greater
-    while (!is_null_alint(lesser)) {
-        while (compare_alint(greater, lesser) >= 0) {
-            struct Alint* new_greater = sub_alint(greater, lesser, NULL);
-            if (greater != a1 && greater != a2) {
-                destroy_alint(greater);
-            }
-            greater = new_greater;
-        }
-        struct Alint* temp = greater;
-        greater = lesser;
-        lesser = temp;
-    }
-    if (lesser != a1 && lesser != a2) {
-        destroy_alint(lesser);
-    }
-    // If we allow the return value to share memory address with either of the
-    // inputs, there is a danger of double deleting
-    if (greater == a1 || greater == a2) {
-        struct Alint* result = make_null_alint();
-        result = add_alint(result, greater);
-        return result;
-    }
-    return greater;
-}
-
 // TODO maybe there is a more efficient method
 // https://en.wikipedia.org/wiki/Multiplication_algorithm
-struct Alint* mul_alint(struct Alint* multiplicand, struct Alint* multiplier) {
-    struct Alint* result = NULL;
+Alint mul_alint(Alint multiplicand, Alint multiplier) {
+    Alint result = make_single_digit_alint(0);
     // Copy the multiplier
-    struct Alint* multiplier_inter = add_alint(multiplier, NULL);
-    struct Alint* one = make_null_alint();
-    one->num = 1;
+    Alint multiplier_inter = copy_alint(multiplier);
+    Alint one = make_single_digit_alint(1);
 
     while (!is_null_alint(multiplier_inter)) {
-        struct Alint* result_inter = add_alint(result, multiplicand);
+        Alint result_inter = add_alint(result, multiplicand);
         destroy_alint(result);
         result = result_inter;
         
-        struct Alint* multiplier_inter_inter =
+        Alint multiplier_inter_inter =
             sub_alint(multiplier_inter, one, NULL);
         destroy_alint(multiplier_inter);
         multiplier_inter = multiplier_inter_inter;
@@ -329,29 +337,142 @@ struct Alint* mul_alint(struct Alint* multiplicand, struct Alint* multiplier) {
 // additions could be batched, e.g. add ALINT_MAX-1 each time that much
 // subtraction is done
 // TODO maybe it could return the remainder, too?
-struct Alint* div_alint(struct Alint* dividend, struct Alint* divisor) {
-    struct Alint* one = make_null_alint();
-    one->num = 1;
+Alint div_alint(Alint dividend, Alint divisor) {
+    Alint one = make_single_digit_alint(1);
 
     if (compare_alint(dividend, divisor) == 0) {
         // If the dividend equals to the divisor, return 1
         return one;
     }
 
-    struct Alint* result = make_null_alint();
-    struct Alint* inter = dividend;
+    Alint result = make_single_digit_alint(0);
+    Alint inter = copy_alint(dividend);
     while (compare_alint(inter, divisor) >= 0) {
-        struct Alint* new_inter = sub_alint(inter, divisor, NULL);
-        if (inter != dividend) {
-            destroy_alint(inter);
-        }
+        Alint new_inter = sub_alint(inter, divisor, NULL);
+        destroy_alint(inter);
+        // printf("# %s ->", debug_print_alint(new_inter));
         inter = new_inter;
 
-        struct Alint* new_result = add_alint(result, one);
+        Alint new_result = add_alint(result, one);
+        // printf("%s #\n", debug_print_alint(result));
         destroy_alint(result);
         result = new_result;
     }
+    destroy_alint(inter);
     destroy_alint(one);
 
     return result;
 }
+
+Alint make_complement_alint(Alint alint) {
+    // Count the number of digits in the original alint
+    size_t size = 0;
+    do {
+        size++;
+    } while (!unsafe_is_last_digit_alint(size-1, alint));
+
+    // Make an alint of the same length
+    Alint result = (Alint)malloc(sizeof(uint8_t) * size);
+
+    // Copy and complement the digits
+    for (size_t i = 0; i < size; i++) {
+        result[i] = alint[i] ^ ~ALINT_MAX;
+    }
+
+    // Add 1
+    Alint one = make_single_digit_alint(1);
+    Alint new_result = add_alint(result, one);
+    
+    destroy_alint(result);
+    result = new_result;
+    destroy_alint(one);
+
+    return result;
+}
+
+// Strips an alint from useless zeroes
+void strip_alint(Alint* alint) {
+    struct AlintMarcher m = create_alint_marcher(*alint);
+    size_t current = 0;
+    size_t first_useless_zero = 0;
+
+    // Find the start of the useless zeroes
+    while (!is_end_of_alint(m)) {
+        if (get_next_alint_digit(&m) != 0) {
+            first_useless_zero = get_marcher_position(m) + 1;
+        }
+    }
+    uint8_t size = get_marcher_position(m) + 1;
+    
+    // Strip them
+    if (first_useless_zero > 0 && first_useless_zero < size) {
+        // printf("Resizing to %d\n", last_non_zero + 1);
+        Alint new_alint = (Alint)realloc(*alint, first_useless_zero);
+        if (new_alint == NULL) {
+            printf("strip_alint: error while reallocating to %d\n", first_useless_zero);
+            return;
+        }
+        *alint = new_alint;
+        (*alint)[first_useless_zero - 1] &= ~ALINT_MAX;
+    }
+}
+
+// Return 1 if first alint is greater, -1 if second is greater, 0 if equal
+int8_t compare_alint(Alint a1, Alint a2) {
+    int8_t a1_gt_a2 = 0;
+    size_t pointer = 0;
+    int8_t a1null = 1;
+    int8_t a2null = -1;
+    uint8_t digit1;
+    uint8_t digit2;
+    do {
+        // If either pointer is null, whichever is not null is the bigger one
+        if (a1null * a2null == 0) {
+            if (a1null + a2null == 0) {
+                return a1_gt_a2;
+            } else {
+                return a1null + a2null;
+            }
+        }
+
+        digit1 = unsafe_get_digit_alint(pointer, a1);
+        digit2 = unsafe_get_digit_alint(pointer, a2);
+        if (digit1 != digit2) {
+            a1_gt_a2 = digit1 > digit2 ? 1 : -1;
+        }
+
+        a1null = unsafe_is_last_digit_alint(pointer, a1) ? 0 : 1;
+        a2null = unsafe_is_last_digit_alint(pointer, a2) ? 0 : -1;
+
+        // Else advance the pointers
+        pointer++;
+    } while (a1null || a2null);
+    return a1_gt_a2;
+}
+
+// Reduce by the GCD of two alints using the Euclidean method
+// https://en.wikipedia.org/wiki/Euclidean_algorithm
+Alint gcd_alint(Alint a1, Alint a2) {
+    // First we check which number is greater
+    int8_t a1_gt_a2 = compare_alint(a1, a2);
+    Alint greater = a1_gt_a2 ? copy_alint(a1) : copy_alint(a2);
+    Alint lesser = a1_gt_a2 ? copy_alint(a2) : copy_alint(a1);
+
+    // Then we keep subtracting the lesser from the greater until the lesser
+    // becomes greater
+    while (!is_null_alint(lesser)) {
+        while (compare_alint(greater, lesser) >= 0) {
+            Alint new_greater = sub_alint(greater, lesser, NULL);
+            destroy_alint(greater);
+            greater = new_greater;
+        }
+        Alint temp = greater;
+        greater = lesser;
+        lesser = temp;
+    }
+    destroy_alint(lesser);
+    // If we allow the return value to share memory address with either of the
+    // inputs, there is a danger of double deleting
+    return greater;
+}
+
