@@ -27,7 +27,7 @@ ErrorCode expand_alint(struct AlintBuilder* b) {
         new_ptr = (Alint)realloc(b->_ptr, sizeof(uint8_t) * new_size);
     }
     if (new_ptr == NULL) {
-        printf("expand_alint: error while allocating.\n");
+        error("expand_alint: error while allocating.\n");
         return 1;
     }
     b->_size = new_size;
@@ -39,7 +39,7 @@ ErrorCode expand_alint(struct AlintBuilder* b) {
 ErrorCode add_digit_to_alint(uint8_t digit, struct AlintBuilder* b) {
     // Check if the new digit is smaller than ALINT_MAX
     if (digit >= ALINT_MAX) {
-        printf("add_byte_to_alint: digit %d exceeds the maximum (%d)\n", digit,
+        error("add_byte_to_alint: digit %d exceeds the maximum (%d)\n", digit,
             ALINT_MAX - 1);
         return 1;
     }
@@ -52,7 +52,7 @@ ErrorCode add_digit_to_alint(uint8_t digit, struct AlintBuilder* b) {
     // Check if we have enough space to extend the number with a new digit
     if (b->_next == b->_size) {
         if(expand_alint(b)) {
-            printf("add_byte_to_alint: error while expanding alint.\n");
+            error("add_byte_to_alint: error while expanding alint.\n");
             return 1;
         }
     }
@@ -66,7 +66,7 @@ ErrorCode finalize_alint(struct AlintBuilder* b) {
     if (b->_ptr != NULL) {
         Alint new_ptr = realloc(b->_ptr, sizeof(uint8_t) * b->_next);
         if (new_ptr == NULL) {
-            printf("finalize_alint: error while reallocating.\n");
+            error("finalize_alint: error while reallocating.\n");
             return 1;
         }
         b->_ptr = new_ptr;
@@ -177,7 +177,7 @@ Alint string_to_alint(char* string) {
         }
         
         if (add_digit_to_alint(intermediate, &b)) {
-            printf("string_to_alint: couldn't add %d to alint\n", intermediate);
+            error("string_to_alint: couldn't add %d to alint\n", intermediate);
             destroy_alint(get_alint(b));
             return NULL;
         }
@@ -188,7 +188,7 @@ Alint string_to_alint(char* string) {
     }
 
     if (finalize_alint(&b)) {
-        printf("string_to_alint: couldn't finalize alint\n");
+        error("string_to_alint: couldn't finalize alint\n");
         destroy_alint(get_alint(b));
         return NULL;
     }
@@ -268,20 +268,20 @@ Alint add_alint(Alint a1, Alint a2) {
         next_byte = next_byte < ALINT_MAX ? next_byte : next_byte - ALINT_MAX;
         
         if (add_digit_to_alint(next_byte, &b)) {
-            printf("add_alint: couldn't add %d to alint\n", next_byte);
+            error("add_alint: couldn't add %d to alint\n", next_byte);
             destroy_alint(get_alint(b));
             return NULL;
         }
     }
     if (carry) {
         if (add_digit_to_alint(carry, &b)) {
-            printf("add_alint: couldn't add %d to alint\n", carry);
+            error("add_alint: couldn't add %d to alint\n", carry);
             destroy_alint(get_alint(b));
             return NULL;
         }
     }
     if (finalize_alint(&b)) {
-        printf("Error while finalizing alint\n");
+        error("Error while finalizing alint\n");
         destroy_alint(get_alint(b));
         return NULL;
     }
@@ -409,7 +409,7 @@ void strip_alint(Alint* alint) {
         // printf("Resizing to %d\n", last_non_zero + 1);
         Alint new_alint = (Alint)realloc(*alint, first_useless_zero);
         if (new_alint == NULL) {
-            printf("strip_alint: error while reallocating to %d\n", first_useless_zero);
+            error("strip_alint: error while reallocating to %d\n", first_useless_zero);
             return;
         }
         *alint = new_alint;

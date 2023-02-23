@@ -246,7 +246,7 @@ struct Expr* parse(struct Parser parser) {
     int go_on = 1;
     while (go_on) {
         if (get_next_token(&parser, &t)) {
-            printf("parse: error reading next token\n");
+            error("parse: error reading next token\n");
             break;
         }
 

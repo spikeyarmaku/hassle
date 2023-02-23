@@ -4,10 +4,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <stdio.h> // DEBUG
-#include <string.h> //debug
 
 #include "config.h"
+#include "global.h"
 
 // Important: if the << operator is used, it must be put in parenthesis
 #define ALINT_MAX 128
