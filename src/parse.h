@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include "global.h"
 #include "expr.h"
 #include "stack.h"
 

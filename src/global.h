@@ -8,6 +8,6 @@
 #include <stdio.h>
 #endif
 
-inline int error(const char* , ...);
+int error(const char* s, ...);
 
 #endif

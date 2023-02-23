@@ -1,3 +1,3 @@
 # RealScript
 
-AST-walking interpreter (as opposed to bytecode)
+AST-walking interpreter
