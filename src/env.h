@@ -1,7 +1,7 @@
 #ifndef _ENV_H_
 #define _ENV_H_
 
-#include "term.h"
+struct Expr; // Forward declaration
 
 struct Entry {
     struct Expr* expr;

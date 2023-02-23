@@ -1,8 +1,9 @@
 #ifndef _TERM_H_
 #define _TERM_H_
 
-#include "env.h"
 #include "expr.h"
+
+struct Env; // Forward declaration
 
 enum TermType {ValTerm, ExprTerm, AbsTerm};
 enum ValType {StringVal, RationalVal};
