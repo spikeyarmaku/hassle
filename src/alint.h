@@ -8,6 +8,8 @@
 #include "config.h"
 #include "global.h"
 
+#include "memory.h"
+
 // Important: if the << operator is used, it must be put in parenthesis
 #define ALINT_MAX 128
 

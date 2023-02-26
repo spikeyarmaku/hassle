@@ -22,9 +22,9 @@ ErrorCode expand_alint(struct AlintBuilder* b) {
     size_t new_size = b->_size + ALINT_BUFFER_SIZE;
     Alint new_ptr = NULL;
     if (b->_ptr == NULL) {
-        new_ptr = (Alint)malloc(sizeof(uint8_t) * new_size);
+        new_ptr = (Alint)alloc_mem(sizeof(uint8_t) * new_size);
     } else {
-        new_ptr = (Alint)realloc(b->_ptr, sizeof(uint8_t) * new_size);
+        new_ptr = (Alint)realloc_mem(b->_ptr, sizeof(uint8_t) * new_size);
     }
     if (new_ptr == NULL) {
         error("expand_alint: error while allocating.\n");
@@ -64,7 +64,7 @@ ErrorCode add_digit_to_alint(uint8_t digit, struct AlintBuilder* b) {
 // Free up unused memory and set last byte to 0
 ErrorCode finalize_alint(struct AlintBuilder* b) {
     if (b->_ptr != NULL) {
-        Alint new_ptr = realloc(b->_ptr, sizeof(uint8_t) * b->_next);
+        Alint new_ptr = realloc_mem(b->_ptr, sizeof(uint8_t) * b->_next);
         if (new_ptr == NULL) {
             error("finalize_alint: error while reallocating.\n");
             return 1;
@@ -220,13 +220,13 @@ char* alint_to_string(Alint alint) {
 
 Alint destroy_alint(Alint alint) {
     if (alint != NULL) {
-        free(alint);
+        free_mem(alint);
     }
     return NULL;
 }
 
 Alint make_single_digit_alint(uint8_t digit) {
-    Alint alint = (uint8_t*)malloc(sizeof(uint8_t));
+    Alint alint = (uint8_t*)alloc_mem(sizeof(uint8_t));
     alint[0] = digit;
     return alint;
 }
@@ -241,7 +241,7 @@ Alint copy_alint(Alint a) {
     do {
         count++;
     } while (!unsafe_is_last_digit_alint(count-1, a));
-    result = (Alint)malloc(sizeof(uint8_t) * count);
+    result = (Alint)alloc_mem(sizeof(uint8_t) * count);
     count = 0;
     do {
         result[count] = a[count];
@@ -372,7 +372,7 @@ Alint make_complement_alint(Alint alint) {
     } while (!unsafe_is_last_digit_alint(size-1, alint));
 
     // Make an alint of the same length
-    Alint result = (Alint)malloc(sizeof(uint8_t) * size);
+    Alint result = (Alint)alloc_mem(sizeof(uint8_t) * size);
 
     // Copy and complement the digits
     for (size_t i = 0; i < size; i++) {
@@ -407,7 +407,7 @@ void strip_alint(Alint* alint) {
     // Strip them
     if (first_useless_zero > 0 && first_useless_zero < size) {
         // printf("Resizing to %d\n", last_non_zero + 1);
-        Alint new_alint = (Alint)realloc(*alint, first_useless_zero);
+        Alint new_alint = (Alint)realloc_mem(*alint, first_useless_zero);
         if (new_alint == NULL) {
             error("strip_alint: error while reallocating to %d\n", first_useless_zero);
             return;

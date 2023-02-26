@@ -11,7 +11,7 @@ struct Parser create_parser(char* file_name) {
     long int size = ftell(fp) - start;
     rewind(fp); // fseek(fp, 0L, SEEK_SET);
 
-    char* file_content = (char*)malloc(sizeof(char) * (size + 1));
+    char* file_content = (char*)alloc_mem(sizeof(char) * (size + 1));
     
     size_t chars_read = fread(file_content, sizeof(char), size, fp);
     
@@ -29,7 +29,7 @@ struct Parser create_parser(char* file_name) {
 }
 
 void destroy_parser(struct Parser p) {
-    free(p.stream);
+    free_mem(p.stream);
 }
 
 // Reads the next token, and sets the stream pointer to the next non-whitespace
@@ -121,7 +121,7 @@ uint8_t read_string(struct Parser* p, struct Token* t) {
     long int char_count = total_char_count - escape_counter;
     escape_counter = 0;
     is_escaped = 0;
-    char* str = (char*)malloc(sizeof(char) * (char_count + 1));
+    char* str = (char*)alloc_mem(sizeof(char) * (char_count + 1));
     for (long int i = 0; i < total_char_count; i++) {
         char c = p->stream[starting_position + i];
         if (is_escaped) {
@@ -175,7 +175,7 @@ uint8_t read_identifier(struct Parser* p, struct Token* t) {
 
     // Copy the string into a buffer
     long int char_count = ending_position - starting_position;
-    char* str = (char*)malloc(sizeof(char) * (char_count + 1));
+    char* str = (char*)alloc_mem(sizeof(char) * (char_count + 1));
     for (long int i = 0; i < char_count; i++) {
         char c = p->stream[starting_position + i];
         str[i] = c;

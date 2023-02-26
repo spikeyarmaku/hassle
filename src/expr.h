@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "memory.h"
+
 // Expr: Symbol or List
 
 enum ExprType {ExprAtom, ExprList};

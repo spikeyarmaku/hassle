@@ -3,6 +3,8 @@
 
 #include <stdlib.h>
 
+#include "memory.h"
+
 struct Stack {
     struct Expr* expr;
     struct Stack* prev;

@@ -3,6 +3,8 @@
 
 #include "main.h"
 
+struct Logger _logger;
+
 struct Parser create_parser(char* filename);
 
 // AlintPtr x = NULL; // DEBUG
@@ -114,6 +116,7 @@ uint8_t run_tests() {
 // If called with a file, run it, else start a REPL
 int main(int argc, char *argv[]) {
     printf("----------\nRealScript\n----------\n\n");
+    init_logger();
     if (argc > 1) {
         // There is at least one parameter
         // interpret_file(argv[1]);

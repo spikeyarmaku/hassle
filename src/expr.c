@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 struct Expr* append(struct Expr* expr) {
-    struct Expr* new_expr = (struct Expr*)malloc(sizeof(struct Expr));
+    struct Expr* new_expr = (struct Expr*)alloc_mem(sizeof(struct Expr));
     if (expr != NULL) {
         expr->next = new_expr;
     }
@@ -23,13 +23,13 @@ struct Expr* get_head(struct Expr* expr) {
 void destroy_expr(struct Expr* expr) {
     while (expr != NULL) {
         if (expr->type == ExprAtom) {
-            free(expr->symbol);
+            free_mem(expr->symbol);
         } else {
             destroy_expr(expr->list);
         }
 
         struct Expr* next = expr->next;
-        free(expr);
+        free_mem(expr);
         expr = next;
     }
 }

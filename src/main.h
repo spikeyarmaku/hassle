@@ -5,8 +5,11 @@
 #include <stdlib.h>
 
 #include "config.h"
+#include "global.h"
 
 #include "parse.h"
 #include "rational.h"
+
+#include "memory.h"
 
 #endif
