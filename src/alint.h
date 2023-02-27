@@ -2,7 +2,6 @@
 #define _ALINT_H_
 
 #include <stdint.h>
-#include <stdlib.h>
 #include <ctype.h>
 
 #include "config.h"

@@ -1,7 +1,6 @@
 #ifndef _EXPR_H_
 #define _EXPR_H_
 
-#include <stdlib.h>
 #include <string.h>
 
 #include "memory.h"

@@ -1,7 +1,6 @@
 #ifndef _PARSE_H_
 #define _PARSE_H_
 
-#include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 

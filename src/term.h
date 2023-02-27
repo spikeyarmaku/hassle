@@ -2,6 +2,7 @@
 #define _TERM_H_
 
 #include "expr.h"
+#include "rational.h"
 
 struct Env; // Forward declaration
 
@@ -12,7 +13,7 @@ struct Value {
     enum ValType type;
     union {
         char* string; // must be null-terminated!
-        struct Rational* rational;
+        struct Rational rational;
     };
 };
 
