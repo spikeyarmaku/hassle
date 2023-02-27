@@ -1,77 +1,141 @@
 #include "memory.h"
 
 void init_logger() {
+    _logger.entries = NULL;
     _logger.entry_count = 0;
+    _logger.current = 0;
     _logger.peak = 0;
+    _logger.total = 0;
 }
 
 int get_index_for_ptr(void* ptr) {
-    for (int i = 0; i < _logger.entry_count; i++) {
-        if (_logger.entries[i].ptr == ptr) {
-            return i;
+    printf("get_index\n");
+    int index = 0;
+    struct LoggerEntry* entry = _logger.entries;
+    while (entry != NULL && entry->ptr != ptr) {
+        entry = entry->next;
+        if (entry == NULL) {
+            return -1;
         }
+        index++;
     }
 
-    return -1;
+    return index;
 }
 
 void* alloc_mem(size_t size) {
     void* ptr = malloc(size);
-    // TODO handle NULL
-    int index = get_index_for_ptr(ptr);
-    if (index != -1) {
-        _logger.entries[index].size = size;
-    } else {
-        struct LoggerEntry entry;
-        entry.ptr = ptr;
-        entry.size = size;
-        _logger.entries[_logger.entry_count] = entry;
-        _logger.entry_count++;
-    }
-    #ifdef DEBUG
-    printf("%llu | %llu | Allocating %d bytes at %llu\n", count_allocated_bytes(), _logger.peak, size, ptr);
-    #endif
+    add_entry(size, ptr);
     return ptr;
 }
 
 void* realloc_mem(void* block, size_t size) {
     void* ptr = realloc(block, size);
-    // TODO handle NULL
-    int index = get_index_for_ptr(block);
-    if (index != -1) {
-        _logger.entries[index].size = size;
-        _logger.entries[index].ptr = ptr;
-    } else {
-        printf("=== PANIC! === Calling realloc on %llu which is not present in the table\n", block);
-    }
-    #ifdef DEBUG
-    printf("%llu | %llu | Resizing %llu -> %llu to %d bytes\n", count_allocated_bytes(), _logger.peak, block, ptr, size);
-    #endif
+    del_entry(block);
+    add_entry(size, ptr);
     return ptr;
 }
 
 void free_mem(void* ptr) {
     free(ptr);
     size_t size = 0;
-    int index = get_index_for_ptr(ptr);
-    if (index != -1) {
-        size = _logger.entries[index].size;
-        _logger.entries[index].size = 0;
-    } else {
-        printf("=== PANIC! === Calling free on %llu which is not present in the table\n", ptr);
+    del_entry(ptr);
+}
+
+void add_entry(size_t size, void* ptr) {
+    if (ptr == NULL) {
+        #ifdef DEBUG
+        printf("New ptr is NULL");
+        #endif
+        return;
     }
+    // Create new entry
+    struct LoggerEntry* new_entry =
+        (struct LoggerEntry*)malloc(sizeof(struct LoggerEntry));
+    new_entry->ptr = ptr;
+    new_entry->size = size;
+    
+    // March through the list until we find the first elem which is bigger
+    struct LoggerEntry* entry = _logger.entries;
+    if (entry == NULL) {
+        _logger.entries = new_entry;
+        new_entry->next = NULL;
+    } else {
+        while (entry->next != NULL && entry->next->ptr < ptr) {
+            entry = entry->next;
+        }
+        if (entry->ptr == ptr) {
+            #ifdef DEBUG
+            printf("=== PANIC! Adding an already existing elem: %llu ===\n", ptr);
+            #endif
+        } else {
+            new_entry->next = entry->next;
+            entry->next = new_entry;
+        }
+    }
+    
+    // Update entry count and peak size
+    _logger.entry_count++;
+    _logger.current += size;
+    _logger.total += size;
+    if (_logger.peak < _logger.current) {
+        _logger.peak = _logger.current;
+    }
+    
     #ifdef DEBUG
-    printf("%llu | %llu | Freeing up %d bytes at %llu\n", count_allocated_bytes(), _logger.peak, size, ptr);
+    printf("curr: %llu | peak: %llu | total: %d | count: %d | Allocating %d bytes at %llu\n", _logger.current, _logger.peak, _logger.total, _logger.entry_count, size, ptr);
     #endif
 }
 
-size_t count_allocated_bytes() {
-    size_t sum = 0;
-    for (int i = 0; i < _logger.entry_count; i++) {
-        sum += _logger.entries[i].size;
+void del_entry(void* ptr) {
+    if (ptr == NULL) {
+        #ifdef DEBUG
+        printf("Ptr to delete is NULL");
+        #endif
+        return;
     }
-    if (sum > _logger.peak) {
-        _logger.peak = sum;
+    // March through the list until we find the elem
+    if (_logger.entries == NULL) {
+        #ifdef DEBUG
+        printf("=== PANIC! Deleting from empty list: %llu ===\n", ptr);
+        #endif
+        return;
     }
-    return sum;
+    
+    struct LoggerEntry* entry = _logger.entries;
+    if (entry->ptr == ptr) {
+        _logger.entry_count--;
+        _logger.current -= entry->size;
+        #ifdef DEBUG
+        printf("curr: %llu | peak: %llu | total: %d | count: %d | Deleting %d bytes at %llu\n", _logger.current, _logger.peak, _logger.total, _logger.entry_count, _logger.entries->size, ptr);
+        #endif
+        if (entry->next == NULL) {
+            _logger.entries = NULL;
+        } else {
+            _logger.entries = entry->next;
+        }
+        free(entry);
+        return;
+    }
+
+    while (entry->next != NULL && entry->next->ptr != ptr) {
+        entry = entry->next;
+    }
+
+    if (entry->next == NULL) {
+        #ifdef DEBUG
+        printf("=== PANIC! Deleting non-existing elem: %llu ===\n", ptr);
+        #endif
+    }
+    
+    // Free elem
+    struct LoggerEntry* to_delete = entry->next;
+    _logger.entry_count--;
+    _logger.current -= to_delete->size;
+    entry->next = entry->next->next;
+    #ifdef DEBUG
+    printf("curr: %llu | peak: %llu | total: %d | count: %d | Deleting %d bytes at %llu\n", _logger.current, _logger.peak, _logger.total, _logger.entry_count, to_delete->size, ptr);
+    #endif
+    free(to_delete);
 }
+
