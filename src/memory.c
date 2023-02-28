@@ -1,11 +1,13 @@
 #include "memory.h"
 
 void init_logger() {
+    #ifdef MEMORY_DIAGNOSTIC
     _logger.entries = NULL;
     _logger.entry_count = 0;
     _logger.current = 0;
     _logger.peak = 0;
     _logger.total = 0;
+    #endif
 }
 
 int get_index_for_ptr(void* ptr) {
@@ -25,21 +27,26 @@ int get_index_for_ptr(void* ptr) {
 
 void* alloc_mem(size_t size) {
     void* ptr = malloc(size);
+    #ifdef MEMORY_DIAGNOSTIC
     add_entry(size, ptr);
+    #endif
     return ptr;
 }
 
 void* realloc_mem(void* block, size_t size) {
     void* ptr = realloc(block, size);
+    #ifdef MEMORY_DIAGNOSTIC
     del_entry(block);
     add_entry(size, ptr);
+    #endif
     return ptr;
 }
 
 void free_mem(void* ptr) {
     free(ptr);
-    size_t size = 0;
+    #ifdef MEMORY_DIAGNOSTIC
     del_entry(ptr);
+    #endif
 }
 
 void add_entry(size_t size, void* ptr) {

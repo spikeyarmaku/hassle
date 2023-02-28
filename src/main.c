@@ -3,7 +3,9 @@
 
 #include "main.h"
 
+#ifdef MEMORY_DIAGNOSTIC
 struct Logger _logger;
+#endif
 
 struct Parser create_parser(char* filename);
 
