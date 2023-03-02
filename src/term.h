@@ -12,7 +12,7 @@ enum ValType {StringVal, RationalVal};
 struct Value {
     enum ValType type;
     union {
-        char* string; // must be null-terminated!
+        char* string;
         struct Rational rational;
     };
 };
@@ -20,9 +20,14 @@ struct Value {
 struct Term {
     enum TermType type;
     union {
-        struct Term* (*apply)(struct Env*, struct Expr*);
-        struct Expr* expr;
+        struct Value value;
+        struct Expr expr;
+        struct Term (*apply)(struct Env*, struct Expr);
     };
 };
+
+struct Term make_number (struct Rational);
+struct Term make_string (char*);
+struct Term make_expr   (struct Expr);
 
 #endif

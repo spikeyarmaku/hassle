@@ -1,5 +1,13 @@
-// TODO
-// - check memory allocations for leaks
+/*
+TODO
+- check memory allocations for leaks
+
+IDEAS
+Expr:
+- After parsing the AST, we could modify it so that every symbol can be indexed
+  by a number instead of a string. It could be turned on by a switch (--low-mem)
+- Instead of using a linked list, use an array (like with Alints)
+*/
 
 #include "main.h"
 
@@ -8,8 +16,6 @@ struct Logger _logger;
 #endif
 
 struct Parser create_parser(char* filename);
-
-// AlintPtr x = NULL; // DEBUG
 
 #ifdef REPL_ENABLED
 void repl() {

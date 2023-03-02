@@ -13,16 +13,16 @@ struct Rational {
     Alint denominator; // If it is NULL, treat it as 1
 };
 
-struct Rational string_to_rational(char*);
-void destroy_rational(struct Rational);
-uint8_t is_valid_rational(struct Rational*);
-void simplify(struct Rational*);
-void reciprocate(struct Rational*);
-void debug_print_rational(struct Rational);
+struct Rational string_to_rational      (char*);
+void            destroy_rational        (struct Rational);
+uint8_t         is_valid_rational       (struct Rational*);
+void            simplify                (struct Rational*);
+void            reciprocate             (struct Rational*);
+void            debug_print_rational    (struct Rational);
 
-struct Rational add_rational(struct Rational, struct Rational);
-struct Rational sub_rational(struct Rational, struct Rational);
-struct Rational mul_rational(struct Rational, struct Rational);
-struct Rational div_rational(struct Rational, struct Rational);
+struct Rational add_rational            (struct Rational, struct Rational);
+struct Rational sub_rational            (struct Rational, struct Rational);
+struct Rational mul_rational            (struct Rational, struct Rational);
+struct Rational div_rational            (struct Rational, struct Rational);
 
 #endif

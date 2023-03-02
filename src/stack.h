@@ -8,7 +8,7 @@ struct Stack {
     struct Stack* prev;
 };
 
-void push(struct Stack**, struct Expr*);
-struct Expr* pop(struct Stack**);
+void            push    (struct Stack**, struct Expr*);
+struct Expr*    pop     (struct Stack**);
 
 #endif
