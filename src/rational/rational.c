@@ -2,7 +2,7 @@
 
 // A 0/0 is an invalid rational, and signifies an error
 uint8_t is_valid_rational(struct Rational* r) {
-    return !(is_null_alint(r->denominator) && is_null_alint(r->numerator));
+    return !(is_null_alnat(r->denominator) && is_null_alnat(r->numerator));
 }
 
 // Read a rational number from a string
@@ -34,13 +34,13 @@ struct Rational string_to_rational(char* string) {
     // TODO check if the number is valid
     // if (!isdigit(*string)) {
     //     r.sign = -1;
-    //     r.numerator = make_null_alint();
+    //     r.numerator = make_null_alnat();
     //     r.denominator = r.numerator;
     //     return r;
     // }
 
     // Construct an integer number from the digits alone
-    r.numerator = string_to_alint(string);
+    r.numerator = string_to_alnat(string);
     // Construct an integer (a power of 10) from the number of digits after the
     // decimal separator
     // To do this, we overwrite the digits first
@@ -52,9 +52,9 @@ struct Rational string_to_rational(char* string) {
             *nuller = '0';
         }
         *nuller = 0;
-        r.denominator = string_to_alint(fraction_digits);
+        r.denominator = string_to_alnat(fraction_digits);
     } else {
-        r.denominator = make_single_digit_alint(1);
+        r.denominator = make_single_digit_alnat(1);
     }
 
     simplify(&r);
@@ -62,34 +62,34 @@ struct Rational string_to_rational(char* string) {
 }
 
 void destroy_rational(struct Rational r) {
-    destroy_alint(r.numerator);
-    destroy_alint(r.denominator);
+    destroy_alnat(r.numerator);
+    destroy_alnat(r.denominator);
 }
 
 void simplify(struct Rational* r) {
     // Find the greatest common divisor
     // printf("<<< Simplify "); debug_print_rational(*r);
-    Alint gcd = gcd_alint(r->numerator, r->denominator);
+    Alnat gcd = gcd_alnat(r->numerator, r->denominator);
     // printf("Rational simplified. >>>\n");
     
     // Construct a rational from these two integers
     if (gcd[0] == 1) {
         // Relative primes, cannot simplify
-        destroy_alint(gcd);
+        destroy_alnat(gcd);
         return;
     } else {
         // Simplify both by gcd
-        Alint simpl_numer = div_alint(r->numerator, gcd);
-        Alint simpl_denom = div_alint(r->denominator, gcd);
+        Alnat simpl_numer = div_alnat(r->numerator, gcd);
+        Alnat simpl_denom = div_alnat(r->denominator, gcd);
         destroy_rational(*r);
         r->numerator = simpl_numer;
         r->denominator = simpl_denom;
     }
-    destroy_alint(gcd);
+    destroy_alnat(gcd);
 }
 
 void reciprocate(struct Rational* r) {
-    Alint temp = r->numerator;
+    Alnat temp = r->numerator;
     r->numerator = r->denominator;
     r->denominator = temp;
 }
@@ -98,50 +98,50 @@ void debug_print_rational(struct Rational r) {
     if (r.sign < 0) {
         printf("-");
     }
-    printf("%s / %s", debug_print_alint(r.numerator),
-        debug_print_alint(r.denominator));
+    printf("%s / %s", debug_print_alnat(r.numerator),
+        debug_print_alnat(r.denominator));
 }
 
 // TODO don't just blindly multiply, perhaps calculating the LCM is better
 struct Rational add_rational(struct Rational r1, struct Rational r2) {
     struct Rational r;
-    Alint n1 = mul_alint(r1.numerator, r2.denominator);
-    Alint n2 = mul_alint(r2.numerator, r1.denominator);
+    Alnat n1 = mul_alnat(r1.numerator, r2.denominator);
+    Alnat n2 = mul_alnat(r2.numerator, r1.denominator);
     if (r1.sign == r2.sign) {
-        r.numerator = add_alint(n1, n2);
+        r.numerator = add_alnat(n1, n2);
         r.sign = r1.sign;
     } else {
-        r.numerator = sub_alint(n1, n2, &r.sign);
+        r.numerator = sub_alnat(n1, n2, &r.sign);
     }
-    r.denominator = mul_alint(r1.denominator, r2.denominator);
+    r.denominator = mul_alnat(r1.denominator, r2.denominator);
     simplify(&r);
-    destroy_alint(n1);
-    destroy_alint(n2);
+    destroy_alnat(n1);
+    destroy_alnat(n2);
     return r;
 }
 
 struct Rational sub_rational(struct Rational r1, struct Rational r2) {
     struct Rational r;
-    Alint n1 = mul_alint(r1.numerator, r2.denominator);
-    Alint n2 = mul_alint(r2.numerator, r1.denominator);
+    Alnat n1 = mul_alnat(r1.numerator, r2.denominator);
+    Alnat n2 = mul_alnat(r2.numerator, r1.denominator);
     if (r1.sign == r2.sign) {
-        r.numerator = sub_alint(n1, n2, &r.sign);
+        r.numerator = sub_alnat(n1, n2, &r.sign);
     } else {
-        r.numerator = add_alint(n1, n2);
+        r.numerator = add_alnat(n1, n2);
         r.sign = r1.sign;
     }
-    r.denominator = mul_alint(r1.denominator, r2.denominator);
+    r.denominator = mul_alnat(r1.denominator, r2.denominator);
     simplify(&r);
-    destroy_alint(n1);
-    destroy_alint(n2);
+    destroy_alnat(n1);
+    destroy_alnat(n2);
     return r;
 }
 
 struct Rational mul_rational(
         struct Rational multiplicand, struct Rational multiplier) {
     struct Rational r;
-    r.numerator = mul_alint(multiplicand.numerator, multiplier.numerator);
-    r.denominator = mul_alint(multiplicand.denominator, multiplier.denominator);
+    r.numerator = mul_alnat(multiplicand.numerator, multiplier.numerator);
+    r.denominator = mul_alnat(multiplicand.denominator, multiplier.denominator);
     simplify(&r);
     r.sign = multiplicand.sign * multiplier.sign;
     return r;

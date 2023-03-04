@@ -1,2 +1,7 @@
-@REM tcc -o bin\rsc.exe src\main.c src\parse.c src\stack.c src\expr.c src\env.c src\rational.c src\alint.c src\global.c src\memory.c src\term.c
-gcc -o bin\rsc.exe -g src\main.c src\parse.c src\stack.c src\expr.c src\env.c src\rational.c src\alint.c src\global.c src\memory.c src\term.c
+@echo off
+@REM set "files=src\main.c src\memory.c src\global.c src\execute\env.c src\execute\eval.c src\execute\term.c src\parse\expr.c src\parse\parse.c src\rational\alnat.c src\rational\rational.c"
+set "files=src\main.c src\memory.c src\global.c src\parse\expr.c src\parse\parse.c src\rational\alnat.c src\rational\rational.c"
+set "test_files=src\test.c"
+@REM tcc -o bin\rsc.exe -Isrc %files%
+gcc -o bin\rsc.exe -Isrc -g -Wall %files% %test_files%
+@REM gcc -o bin\rsc.exe -Isrc -g %files% %test_files%

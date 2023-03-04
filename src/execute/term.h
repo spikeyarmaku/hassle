@@ -1,8 +1,8 @@
 #ifndef _TERM_H_
 #define _TERM_H_
 
-#include "expr.h"
-#include "rational.h"
+#include "parse\expr.h"
+#include "rational\rational.h"
 
 struct Env; // Forward declaration
 

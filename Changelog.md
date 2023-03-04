@@ -1,0 +1,6 @@
+- Change Expr representation to byte array
+- Rename Alint to Alnat
+- Introduce convenience macros for bools and error codes
+- Fix memory leaks
+- Refactor code structure
+- Add tests

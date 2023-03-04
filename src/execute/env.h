@@ -4,8 +4,8 @@
 #include <stdint.h>
 #include <ctype.h>
 
-#include "term.h"
-#include "rational.h"
+#include "execute\term.h"
+#include "rational\rational.h"
 
 struct Entry {
     struct Expr expr; // The name of the stored value

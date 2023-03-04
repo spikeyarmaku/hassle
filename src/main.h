@@ -1,14 +1,12 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_
 
-#include <stdio.h>
-
 #include "config.h"
 #include "global.h"
 
-#include "parse.h"
-#include "rational.h"
+#include "parse\parse.h"
 
 #include "memory.h"
+#include "test.h"
 
 #endif

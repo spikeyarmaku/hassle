@@ -1,0 +1,1 @@
+drmemory.exe bin\rsc.exe test\test.rsc

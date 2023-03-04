@@ -1,17 +1,17 @@
 #include "eval.h"
 
-uint8_t eval_expr(struct Env* env, struct Expr expr, struct Term* result) {
+ErrorCode eval_expr(struct Env* env, struct Expr expr, struct Term* result) {
     // Read the value of this expression in the env
     struct Term t = env_lookup(env, expr);
 
     switch (t.type) {
         case AbsTerm: {
             *result = t.apply(env, expr);
-            return 0;
+            return SUCCESS;
         }
         case ValTerm: {
             *result = t;
-            return 0;
+            return SUCCESS;
         }
         case ExprTerm: {
             // If expr is a single symbol or an empty list, return it
@@ -57,16 +57,16 @@ uint8_t eval_expr(struct Env* env, struct Expr expr, struct Term* result) {
                     expr_ptr = expr_ptr->next;
                 }
                 *result = first_elem;
-                return 0;
+                return SUCCESS;
             }
         }
     }
 }
 
-uint8_t apply(struct Env* env, struct Term t, struct Expr e,
+ErrorCode apply(struct Env* env, struct Term t, struct Expr e,
         struct Term* result) {
     if (t.type == ValTerm) {
-        return 1;
+        return ERROR;
     }
 
     if (t.type == ExprTerm) {
@@ -84,6 +84,6 @@ uint8_t apply(struct Env* env, struct Term t, struct Expr e,
         }
     } else {
         *result = t.apply(env, e);
-        return 0;
+        return SUCCESS;
     }
 }

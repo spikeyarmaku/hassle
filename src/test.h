@@ -1,0 +1,21 @@
+#ifndef _TEST_H_
+#define _TEST_H_
+
+#include <stdio.h>
+
+#include "config.h"
+#include "global.h"
+
+#include "parse\parse.h"
+#include "rational\rational.h"
+
+#include "memory.h"
+#include "test.h"
+
+void assert(int*, char*, int);
+uint8_t string_compare(char*, char*);
+uint8_t run_alnat_tests();
+uint8_t run_expr_tests();
+void run_tests();
+
+#endif

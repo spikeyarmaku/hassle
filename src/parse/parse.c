@@ -11,13 +11,13 @@ struct Parser create_parser(char* file_name) {
     long int size = ftell(fp) - start;
     rewind(fp); // fseek(fp, 0L, SEEK_SET);
 
-    char* file_content = (char*)alloc_mem(sizeof(char) * (size + 1));
+    char* file_content = (char*)allocate_mem(NULL, sizeof(char) * (size + 1));
     
     size_t chars_read = fread(file_content, sizeof(char), size, fp);
     
     // Add terminating null.
     // Sometimes multiple bytes are read, but one byte is reported (like on
-    // Windows "\r\n" is read as "\n"). Thus, `chars_read is used instead of
+    // Windows "\r\n" is read as "\n"). Thus, `chars_read` is used instead of
     // `size`.
     file_content[chars_read] = 0;
 
@@ -29,14 +29,17 @@ struct Parser create_parser(char* file_name) {
 }
 
 void destroy_parser(struct Parser p) {
-    free_mem(p.stream);
+    if (p.stream != NULL) {
+        free_mem(p.stream);
+    }
 }
 
-// Reads the next token, and sets the stream pointer to the next non-whitespace
-// character.
-uint8_t get_next_token(struct Parser* p, struct Token* t) {
+// Read the next token, and set the stream pointer to the next non-whitespace
+// character
+ErrorCode get_next_token(struct Parser* p, struct Token* t) {
+    debug(1, "get_next_token()\n");
     t->str = NULL;
-    int error = 0;
+    int error = SUCCESS;
     
     // Decide what type of token to read based on the first character
     char c = get_current_char(p);
@@ -58,12 +61,13 @@ uint8_t get_next_token(struct Parser* p, struct Token* t) {
     // Set the stream pointer to the next non-whitespace character
     consume_whitespace(p);
 
+    debug(1, "/get_next_token\n");
     return error;
 }
 
 // Read a string (enclosed in quotes) or an identifier
-uint8_t read_symbol(struct Parser* p, struct Token* t) {
-    int error = 0;
+ErrorCode read_symbol(struct Parser* p, struct Token* t) {
+    int error = SUCCESS;
 
     char c = get_current_char(p);
     if (c == '"') {
@@ -78,7 +82,7 @@ uint8_t read_symbol(struct Parser* p, struct Token* t) {
 
 // Read a string enclosed in quotes and trailed by at least one whitespace
 // character or a closing parenthesis or EOF
-uint8_t read_string(struct Parser* p, struct Token* t) {
+ErrorCode read_string(struct Parser* p, struct Token* t) {
     long int starting_position = p->counter;
     long int ending_position = p->counter;
     int escape_counter = 0;
@@ -113,7 +117,7 @@ uint8_t read_string(struct Parser* p, struct Token* t) {
     c = get_current_char(p);
     if ((!is_whitespace(c) && c != ')' && c != 0) ||
             ending_position - starting_position == 0) {
-        return 1;
+        return ERROR;
     }
 
     // Copy the string into a buffer, without the escape characters
@@ -121,7 +125,7 @@ uint8_t read_string(struct Parser* p, struct Token* t) {
     long int char_count = total_char_count - escape_counter;
     escape_counter = 0;
     is_escaped = 0;
-    char* str = (char*)alloc_mem(sizeof(char) * (char_count + 1));
+    char* str = (char*)allocate_mem(NULL, sizeof(char) * (char_count + 1));
     for (long int i = 0; i < total_char_count; i++) {
         char c = p->stream[starting_position + i];
         if (is_escaped) {
@@ -141,12 +145,12 @@ uint8_t read_string(struct Parser* p, struct Token* t) {
     // Fill the token
     t->type = Symbol;
     t->str = str;
-    return 0;
+    return SUCCESS;
 }
 
 // Read an identifier that is either trailed by a whitespace character or a
 // closing parenthesis or EOF
-uint8_t read_identifier(struct Parser* p, struct Token* t) {
+ErrorCode read_identifier(struct Parser* p, struct Token* t) {
     long int starting_position = p->counter;
     long int ending_position = p->counter;
     char c = get_current_char(p);
@@ -170,22 +174,28 @@ uint8_t read_identifier(struct Parser* p, struct Token* t) {
     c = get_current_char(p);
     if ((!is_whitespace(c) && c != ')' && c != 0) ||
             ending_position - starting_position == 0) {
-        return 1;
+        return ERROR;
     }
 
     // Copy the string into a buffer
     long int char_count = ending_position - starting_position;
-    char* str = (char*)alloc_mem(sizeof(char) * (char_count + 1));
+    char* str = (char*)allocate_mem(NULL, sizeof(char) * (char_count + 1));
     for (long int i = 0; i < char_count; i++) {
         char c = p->stream[starting_position + i];
         str[i] = c;
     }
     str[char_count] = 0; // Terminating null
-
+    
     // Fill the token
     t->type = Symbol;
     t->str = str;
-    return 0;
+    return SUCCESS;
+}
+
+void destroy_token(struct Token t) {
+    if (t.str != NULL) {
+        free_mem(t.str);
+    }
 }
 
 char get_next_char(struct Parser* p) {
@@ -203,7 +213,7 @@ char get_current_char(struct Parser* p) {
     }
 }
 
-uint8_t is_whitespace(char c) {
+BOOL is_whitespace(char c) {
     return c == ' '  || c == '\n' || c == '\t'
         || c == '\v' || c == '\f' || c == '\r';
 }
@@ -224,23 +234,28 @@ void consume_whitespace(struct Parser* p) {
     }
 }
 
-struct Expr* parse_from_file(char* file_name) {
+ErrorCode parse_from_file(char* file_name, Expr* result_expr,
+        struct Dict* result_dict) {
     struct Parser parser = create_parser(file_name);
 
-    return parse(parser);
+    ErrorCode error_code = parse(parser, result_expr, result_dict);
+    destroy_parser(parser);
+    return error_code;
 }
 
-struct Expr* parse_from_str(char* input) {
+ErrorCode parse_from_str(char* input, Expr* result_expr,
+        struct Dict* result_dict) {
     struct Parser parser;
     parser.stream = input;
     parser.counter = 0;
     
-    return parse(parser);
+    return parse(parser, result_expr, result_dict);
 }
 
-struct Expr* parse(struct Parser parser) {
-    struct Expr* expr = NULL;
-    struct Stack* stack = NULL;
+ErrorCode parse(struct Parser parser, Expr* result_expr,
+        struct Dict* result_dict) {
+    debug(1, "parse()\n");
+    struct ExprBuilder b = make_expr_builder(result_dict);
     struct Token t;
 
     int go_on = 1;
@@ -250,50 +265,28 @@ struct Expr* parse(struct Parser parser) {
             break;
         }
 
-        switch(t.type) {
-            case OpenParen: {
-                expr = append(expr);
-                expr->type = ExprList;
-                push(&stack, expr);
-                expr = NULL;
-                break;
-            }
-            case CloseParen: {
-                struct Expr* old_expr = pop(&stack);
-                struct Expr* head = get_head(expr);
-                old_expr->list = head;
-                expr = old_expr;
-                break;
-            }
-            case Symbol: {
-                expr = append(expr);
-                expr->type = ExprAtom;
-                expr->symbol = t.str;
-                break;
-            }
-            case Eos: {
-                go_on = 0;
-                break;
-            }
+        uint8_t error_code = SUCCESS;
+        if (t.type == Symbol) {
+            error_code = append_token(&b, t.type, t.str);
+        } else {
+            error_code = append_token(&b, t.type, NULL);
+        }
+        if (error_code != SUCCESS) {
+            error("Error while appending token (%d)\n", t.type);
+            return error_code;
+        }
+        destroy_token(t);
+        t.str = NULL;
+
+        // If we are at the end of the stream, end the loop
+        // (At this point, the Eos token should already be added to the expr)
+        if (t.type == Eos) {
+            go_on = 0;
         }
     }
-    destroy_parser(parser);
-    return get_head(expr);
+    finalize_dict(&b);
+    *result_expr = b.expr;
+    *result_dict = b.dict;
+    return SUCCESS;
 }
 
-void print_expr(struct Expr* expr) {
-    if (expr->type == ExprList) {
-        printf("(");
-        expr = expr->list;
-        while (expr != NULL) {
-            print_expr(expr);
-            if (expr->next != NULL) {
-                putchar(' ');
-            }
-            expr = expr->next;
-        }
-        printf(")");
-    } else {
-        printf("%s", expr->symbol);
-    }
-}
