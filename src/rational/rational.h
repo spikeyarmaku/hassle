@@ -26,7 +26,7 @@ struct Rational {
 
 struct Rational string_to_rational      (char*);
 void            free_rational           (struct Rational*);
-BOOL            is_valid_rational       (struct Rational*);
+BOOL            is_valid_rational       (struct Rational);
 void            simplify                (struct Rational*);
 void            reciprocate             (struct Rational*);
 void            debug_print_rational    (struct Rational);

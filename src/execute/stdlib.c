@@ -8,7 +8,7 @@ struct Term make_lambda() {
     return t;
 }
 
-ErrorCode make_lambda_helper1(struct Env env, Expr name, void* closure,
+ErrorCode make_lambda_helper1(struct Env* env, Expr name, void* closure,
         struct Term* result) {
     struct Term t;
     t.type = AbsTerm;
@@ -19,7 +19,7 @@ ErrorCode make_lambda_helper1(struct Env env, Expr name, void* closure,
     *result = t;
 }
 
-ErrorCode make_lambda_helper2(struct Env env, Expr body, void* closure,
+ErrorCode make_lambda_helper2(struct Env* env, Expr body, void* closure,
         struct Term* result) {
     struct Term t;
     t.type = AbsTerm;
@@ -31,7 +31,7 @@ ErrorCode make_lambda_helper2(struct Env env, Expr body, void* closure,
     *result = t;
 }
 
-ErrorCode make_lambda_helper3(struct Env env, Expr value, void* closure,
+ErrorCode make_lambda_helper3(struct Env* env, Expr value, void* closure,
         struct Term* result) {
     struct LambdaClosure* lambda_closure = (struct LambdaClosure*)closure;
     ErrorCode error_code = eval_expr(env, value, result);
@@ -47,7 +47,7 @@ ErrorCode make_lambda_helper3(struct Env env, Expr value, void* closure,
     Expr body = lambda_closure->body;
     free_mem(closure);
 
-    return eval_expr(*new_env, body, result);
+    return eval_expr(new_env, body, result);
 }
 
 // Math functions
@@ -62,7 +62,7 @@ struct Term make_binop(enum BinOp binop) {
     return t;
 }
 
-ErrorCode make_binop_helper1(struct Env env, Expr op1, void* closure,
+ErrorCode make_binop_helper1(struct Env* env, Expr op1, void* closure,
         struct Term* result) {
     struct Term t;
     t.type = AbsTerm;
@@ -74,7 +74,7 @@ ErrorCode make_binop_helper1(struct Env env, Expr op1, void* closure,
     *result = t;
 }
 
-ErrorCode make_binop_helper2(struct Env env, Expr op2, void* closure,
+ErrorCode make_binop_helper2(struct Env* env, Expr op2, void* closure,
         struct Term* result) {
     struct MathBinopClosure* math_binop_closure =
         (struct MathBinopClosure*)closure;
@@ -129,12 +129,10 @@ ErrorCode make_binop_helper2(struct Env env, Expr op2, void* closure,
 
 // Create the ground environment, with the default lookup values and the
 // built-in functions
-struct EnvFrame make_default_env() {
-    struct EnvFrame env;
-    env.entry_count = 0;
-    env.mapping = NULL;
-    env.parent = NULL;
+struct Env make_default_env() {
+    struct Env env;
+    env.current_frame = NULL;
     // TODO
 
-    // add_entry(&env, ..., ...);
+    
 }

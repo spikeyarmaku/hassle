@@ -1,8 +1,8 @@
 #include "rational.h"
 
 // A 0/0 is an invalid rational, and signifies an error
-uint8_t is_valid_rational(struct Rational* r) {
-    return !(is_null_alnat(r->_denominator) && is_null_alnat(r->_numerator));
+uint8_t is_valid_rational(struct Rational r) {
+    return !(is_null_alnat(r._denominator) && is_null_alnat(r._numerator));
 }
 
 // Read a rational number from a string

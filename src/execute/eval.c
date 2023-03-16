@@ -1,8 +1,8 @@
 #include "eval.h"
 
-ErrorCode eval_expr(struct Env env, Expr expr, struct Term* result) {
+ErrorCode eval_expr(struct Env* env, Expr expr, struct Term* result) {
     // Read the value of this expression in the env
-    struct Term t = env_lookup(env, expr);
+    struct Term t = env_lookup(*env, expr);
 
     switch (t.type) {
         case AbsTerm: {
@@ -30,13 +30,13 @@ ErrorCode eval_expr(struct Env env, Expr expr, struct Term* result) {
 
 // Evaluate a combination (a list containing at least one element)
 // Here, `expr` does not contain the opening parenthesis
-ErrorCode eval_combination(struct Env env, Expr expr, struct Term* result) {
+ErrorCode eval_combination(struct Env* env, Expr expr, struct Term* result) {
     uint8_t error_code = SUCCESS;
     // At this point, there will be no exact match, the longest matching
     // subexpression will be at least one element shorter than the expression
     // given as parameter.
     size_t matching_bytes;
-    struct Term* match = find_longest_match(env, *expr, &matching_bytes);
+    struct Term* match = find_longest_match(*env, *expr, &matching_bytes);
     if (match == NULL) {
         // No match, evaluate expression from left to right. The fact that not
         // even the first element matches is not a problem, since it could be an
@@ -55,7 +55,7 @@ ErrorCode eval_combination(struct Env env, Expr expr, struct Term* result) {
     }
 }
 
-ErrorCode apply(struct Env env, struct Term t, Expr e, struct Term* result) {
+ErrorCode apply(struct Env* env, struct Term t, Expr e, struct Term* result) {
     if (t.type == ValTerm) {
         return ERROR;
     }
@@ -78,6 +78,6 @@ ErrorCode apply(struct Env env, struct Term t, Expr e, struct Term* result) {
         }
         return apply(env, t, e, result);
     } else {
-        return t.abs.apply(&env, e, result, t.abs.closure);
+        return t.abs.apply(env, e, result, t.abs.closure);
     }
 }

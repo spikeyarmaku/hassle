@@ -88,8 +88,13 @@ struct Term* find_longest_match(struct Env env, Expr expr, size_t* bytes)
     return result;
 }
 
-ErrorCode add_entry(struct Env env, Expr expr, struct Term t) {
-    struct EnvFrame* current_frame = env.current_frame;
+ErrorCode add_entry(struct Env* env, Expr expr, struct Term t) {
+    struct EnvFrame* current_frame = env->current_frame;
+    if (current_frame == NULL) {
+        current_frame =
+            (struct EnvFrame*)allocate_mem(NULL, sizeof(struct EnvFrame));
+        env->current_frame = current_frame;
+    }
     struct Entry* new_mapping =
         (struct Entry*)allocate_mem(current_frame->mapping,
         sizeof(struct Entry) * current_frame->entry_count + 1);
@@ -114,7 +119,7 @@ ErrorCode add_frame(struct Env* env, Expr expr, struct Term t) {
     }
     new_frame->parent = env->current_frame;
     env->current_frame = new_frame;
-    return add_entry(*env, expr, t);
+    return add_entry(env, expr, t);
 }
 
 void remove_last_frame(struct Env* env) {

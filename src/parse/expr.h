@@ -57,12 +57,12 @@ struct ExprBuilder {
 struct ExprBuilder  make_expr_builder   (struct Dict*);
 
 ErrorCode           finalize_builder    (struct ExprBuilder*);
-ErrorCode           find_symbol         (struct ExprBuilder*, char*, size_t*);
+ErrorCode           find_symbol         (struct ExprBuilder, char*, size_t*);
 ErrorCode           append_token        (struct ExprBuilder*, uint8_t, char*);
 ErrorCode           _grow_expr          (struct ExprBuilder*);
 ErrorCode           _finalize_expr      (struct ExprBuilder*);
 
-char*               lookup_symbol_by_id (Expr, size_t, struct Dict*);
+char*               lookup_symbol_by_id (Expr, size_t, struct Dict);
 size_t              _bytes_to_index     (Expr, size_t);
     
 void                free_expr           (Expr*);

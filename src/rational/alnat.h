@@ -47,9 +47,9 @@ BOOL                is_end_of_alnat         (struct AlnatMarcher);
 size_t              get_marcher_position    (struct AlnatMarcher);
 void                rewind_marcher          (struct AlnatMarcher*);
 
-ErrorCode           unsafe_get_digit_alnat  (size_t, Alnat);
-ErrorCode           unsafe_is_last_digit_alnat(size_t, Alnat);
-void                unsafe_mark_digit_alnat (size_t, uint8_t, Alnat);
+ErrorCode           unsafe_get_digit_alnat      (size_t, Alnat);
+ErrorCode           unsafe_is_last_digit_alnat  (size_t, Alnat);
+void                unsafe_mark_digit_alnat     (size_t, uint8_t, Alnat);
 
 Alnat               string_to_alnat         (char*);
 char*               debug_print_alnat       (Alnat);

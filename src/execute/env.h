@@ -36,7 +36,7 @@ struct Term     env_lookup          (struct Env, Expr);
 struct Term*    find_longest_match  (struct Env, Expr, size_t*);
 
 // Extend
-ErrorCode       add_entry           (struct Env, Expr, struct Term);
+ErrorCode       add_entry           (struct Env*, Expr, struct Term);
 ErrorCode       add_frame           (struct Env*, Expr, struct Term);
 void            remove_last_frame   (struct Env*);
 

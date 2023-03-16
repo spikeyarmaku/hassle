@@ -72,9 +72,9 @@ ErrorCode finalize_builder(struct ExprBuilder* b) {
 }
 
 // Return the ID of a symbol in the symbol dictionary
-ErrorCode find_symbol(struct ExprBuilder* b, char* symbol, size_t* index) {
-    for (size_t i = 0; i < b->dict.count; i++) {
-        if (strcmp(symbol, b->dict.names[i]) == 0) {
+ErrorCode find_symbol(struct ExprBuilder b, char* symbol, size_t* index) {
+    for (size_t i = 0; i < b.dict.count; i++) {
+        if (strcmp(symbol, b.dict.names[i]) == 0) {
             *index = i;
             return SUCCESS;
         }
@@ -103,7 +103,7 @@ ErrorCode append_token(struct ExprBuilder* b, uint8_t type, char* symbol) {
     b->expr[b->_expr_cursor] = type;
     if (type == Symbol) {
         size_t index = 0;
-        if (find_symbol(b, symbol, &index) != SUCCESS) {
+        if (find_symbol(*b, symbol, &index) != SUCCESS) {
             uint8_t error_code =
                 add_name(&(b->dict), &(b->_dict_size), symbol, &index);
             if (error_code != SUCCESS) {
@@ -136,8 +136,8 @@ size_t _bytes_to_index(Expr expr, size_t cursor) {
 }
 
 // Retrieve a symbol from an ID
-char* lookup_symbol_by_id(Expr expr, size_t cursor, struct Dict* d) {
-    return d->names[_bytes_to_index(expr, cursor)];
+char* lookup_symbol_by_id(Expr expr, size_t cursor, struct Dict d) {
+    return d.names[_bytes_to_index(expr, cursor)];
 }
 
 void free_expr(Expr* expr) {
@@ -317,7 +317,7 @@ void print_expr(Expr expr, struct Dict* d, char* msg) {
                     msg_cursor++;
                 }
                 if (d->count > 0) {
-                    char* symbol = lookup_symbol_by_id(expr, cursor, d);
+                    char* symbol = lookup_symbol_by_id(expr, cursor, *d);
                     msg_cursor += sprintf(msg + msg_cursor, "%s", symbol);
                 } else {
                     msg_cursor +=
