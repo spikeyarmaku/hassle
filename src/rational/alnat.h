@@ -1,9 +1,12 @@
+// TODO Mark what is public and what is private
+
 #ifndef _ALNAT_H_
 #define _ALNAT_H_
 
 #include <stdint.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "config.h"
 #include "global.h"
@@ -31,7 +34,6 @@ struct AlnatMarcher {
 };
 
 struct AlnatBuilder create_alnat_builder    ();
-Alnat               get_alnat               (struct AlnatBuilder);
 // Add a new block to the alnat's memory
 ErrorCode           expand_alnat            (struct AlnatBuilder*);
 // Add a new digit to alnat
@@ -52,7 +54,7 @@ void                unsafe_mark_digit_alnat (size_t, uint8_t, Alnat);
 Alnat               string_to_alnat         (char*);
 char*               debug_print_alnat       (Alnat);
 char*               alnat_to_string         (Alnat);
-Alnat               destroy_alnat           (Alnat);
+void                free_alnat              (Alnat*);
 Alnat               make_single_digit_alnat (uint8_t);
 BOOL                is_null_alnat           (Alnat);
 Alnat               copy_alnat              (Alnat);

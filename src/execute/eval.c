@@ -1,12 +1,13 @@
 #include "eval.h"
 
-ErrorCode eval_expr(struct Env* env, struct Expr expr, struct Term* result) {
+ErrorCode eval_expr(struct Env env, Expr expr, struct Term* result) {
     // Read the value of this expression in the env
     struct Term t = env_lookup(env, expr);
 
     switch (t.type) {
         case AbsTerm: {
-            *result = t.apply(env, expr);
+            // return t.abs.apply(env, expr, t.abs.closure, result);
+            *result = t;
             return SUCCESS;
         }
         case ValTerm: {
@@ -15,75 +16,68 @@ ErrorCode eval_expr(struct Env* env, struct Expr expr, struct Term* result) {
         }
         case ExprTerm: {
             // If expr is a single symbol or an empty list, return it
-            if (t.expr.type == ExprAtom || t.expr.list == NULL) {
+            if (!is_list(t.expr) || is_empty_list(t.expr)) {
                 *result = t;
                 return 0;
             }
-            // Expr is a combination
-            // The list has one element, evaluate it
-            if (t.expr.list->next == NULL) {
-                return eval_expr(env, *(t.expr.list), result);
-            } else {
-                // Find the longest match in env
-                size_t match_size;
-                struct Term* match =
-                    find_longest_match(env, t.expr, &match_size);
-                struct Term first_elem;
-                struct Expr* expr_ptr = t.expr.list;
-                uint8_t error_code = 0;
-                if (match == NULL) {
-                    // No match, evaluate expression from left to right
-                    // The fact that not even the first element matches is not
-                    // a problem, since it could be a list, which is not cached.
-                    // Therefore we still need to try to evaluate it.
-                    error_code = eval_expr(env, *(t.expr.list), &first_elem);
-                    if (error_code != 0) {
-                        return error_code;
-                    }
-                    expr_ptr = expr_ptr->next;
-                } else {
-                    // There is a match, take its value and continue evaluating
-                    // the rest of the expression from left to right
-                    first_elem = *match;
-                    for (size_t i = 0; i < match_size; i++) {
-                        expr_ptr = expr_ptr->next;
-                    }
-                }
-                while (expr_ptr != NULL) {
-                    error_code = apply(env, first_elem, *expr_ptr, &first_elem);
-                    if (error_code != 0) {
-                        return error_code;
-                    }
-                    expr_ptr = expr_ptr->next;
-                }
-                *result = first_elem;
-                return SUCCESS;
-            }
+
+            // Call eval_combination with a pointer pointing to the first
+            // element of the list
+            return eval_combination(env, *(t.expr + 1), result);
         }
     }
 }
 
-ErrorCode apply(struct Env* env, struct Term t, struct Expr e,
-        struct Term* result) {
+// Evaluate a combination (a list containing at least one element)
+// Here, `expr` does not contain the opening parenthesis
+ErrorCode eval_combination(struct Env env, Expr expr, struct Term* result) {
+    uint8_t error_code = SUCCESS;
+    // At this point, there will be no exact match, the longest matching
+    // subexpression will be at least one element shorter than the expression
+    // given as parameter.
+    size_t matching_bytes;
+    struct Term* match = find_longest_match(env, *expr, &matching_bytes);
+    if (match == NULL) {
+        // No match, evaluate expression from left to right. The fact that not
+        // even the first element matches is not a problem, since it could be an
+        // uncached list. Therefore we still need to try to evaluate it.
+        error_code = eval_expr(env, expr, result);
+        if (error_code != 0) {
+            return error_code;
+        }
+    } else {
+        // There is a match, take its value and continue evaluating the rest of
+        // the expression from left to right
+        error_code = apply(env, *match, *(expr + matching_bytes), result);
+        if (error_code != 0) {
+            return error_code;
+        }
+    }
+}
+
+ErrorCode apply(struct Env env, struct Term t, Expr e, struct Term* result) {
     if (t.type == ValTerm) {
         return ERROR;
     }
 
     if (t.type == ExprTerm) {
         struct Term evaled;
-        uint8_t error_code = eval_expr(env, t.expr, &evaled);
-        if (evaled.type == ExprTerm) {
-            // If the evaluated expression is the same as the source expression
-            if (is_equal_expr(t.expr, evaled.expr)) {
-                return 1;
-            } else {
-                return apply(env, evaled, e, result);
+        evaled.type = ExprTerm;
+        while (evaled.type == ExprTerm) {
+            uint8_t error_code = eval_expr(env, t.expr, &evaled);
+            if (error_code != SUCCESS) {
+                return error_code;
             }
-        } else {
-            return apply(env, t, e, result);
+            if (evaled.type == ExprTerm) {
+                // If the evaluated expression is the same as the source
+                // expression, signal an error
+                if (is_equal_expr(t.expr, evaled.expr)) {
+                    return ERROR;
+                }
+            }            
         }
+        return apply(env, t, e, result);
     } else {
-        *result = t.apply(env, e);
-        return SUCCESS;
+        return t.abs.apply(&env, e, result, t.abs.closure);
     }
 }

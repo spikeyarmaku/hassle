@@ -4,28 +4,40 @@
 #include <stdint.h>
 #include <ctype.h>
 
+#include "global.h"
+#include "memory.h"
+
 #include "execute\term.h"
 #include "rational\rational.h"
 
 struct Entry {
-    struct Expr expr; // The name of the stored value
-    struct Term term; // The stored value itself
-    struct Entry* next;
+    Expr expr;          // The name of the stored value
+    struct Term term;   // The stored value itself
 };
 
-// TODO There are design problems around lookup - it doesn't match toxicscript's
-// design
-struct Env {
+struct EnvFrame {
+    size_t entry_count;
     struct Entry* mapping;
-    struct Env* parent;
+    struct EnvFrame* parent;
 };
 
-struct Term     default_rules       (struct Expr); // for things like parsing a number
+struct Env {
+    struct EnvFrame* current_frame;
+    struct Dict* dict;
+};
 
-struct Term     env_lookup          (struct Env*, struct Expr);
+// Parse number and string
+struct Term     default_rules       (Expr, struct Dict*);
+
+// Return the term assigned to this expression in the given environment
+struct Term     env_lookup          (struct Env, Expr);
+
 // Take a list, and return the term corresponding to the longest sublist
-struct Term*    find_longest_match  (struct Env*, struct Expr, size_t*);
+struct Term*    find_longest_match  (struct Env, Expr, size_t*);
 
-// struct Env make_default_env();
+// Extend
+ErrorCode       add_entry           (struct Env, Expr, struct Term);
+ErrorCode       add_frame           (struct Env*, Expr, struct Term);
+void            remove_last_frame   (struct Env*);
 
 #endif

@@ -1,13 +1,29 @@
 #ifndef _EXPR_H_
 #define _EXPR_H_
 
-#include <string.h>
-#include <stdint.h>
-
 #include "config.h"
 #include "global.h"
 
 #include "memory.h"
+
+#include "parse\dict.h"
+
+/*
+Expr usage:
+
+Construction:
+  To construct an Expr, an ExprBuilder must be used. One can be created by
+  calling `make_expr_builder`, optionally giving it a dict (this allows a dict
+  to be reused between multiple parsers). If no dict is given, an empty one will
+  be created. Then, tokens can be added with `append_token`, and after the last
+  one is added, `finalize_builder` must be called, so that the inner dict and
+  expr won't take up more space than necessary.
+
+Destruction:
+  ExprBuilder does not need to be destructed after use, but the expr and dict
+  components need to be freed up if they are not in use anymore. Destroying an
+  expr is done via `free_expr`.
+*/
 
 // S-Expressions are stored in two different places: the `Expr` datatype
 // contains the actual structure of the s-expression, and the `Dict` datatype
@@ -27,43 +43,36 @@ typedef uint8_t* Expr;
 
 enum TokenType {Eos, OpenParen, CloseParen, Symbol};
 
-// A list of symbols, appearing in the list in the order of their ID, so the
-// first element's ID is 0, the next one's ID is 1, etc.
-struct Dict {
-    size_t count;
-    char** names;
-};
-
 struct ExprBuilder {
     Expr expr;
     struct Dict dict;
 
-    size_t expr_size;   // Size of allocated memory for expr
-    size_t expr_cursor; // Address of the next empty expr slot
-    size_t dict_size;   // Size of allocated memory for dict
+    size_t _expr_size;   // Size of allocated memory for expr
+    size_t _expr_cursor; // Address of the next empty expr slot
+    size_t _dict_size;   // Size of allocated memory for dict
 };
 
-struct Dict         make_dict           ();
 // The reason a dictionary is passed to make_expr_builder is because it allows
 // a dictionary to be re-used between multiple parses
 struct ExprBuilder  make_expr_builder   (struct Dict*);
 
-ErrorCode grow_expr             (struct ExprBuilder*);
-ErrorCode finalize_expr         (struct ExprBuilder*);
-ErrorCode grow_dict             (struct ExprBuilder*);
-ErrorCode finalize_dict         (struct ExprBuilder*);
-ErrorCode append_symbol         (struct ExprBuilder*, char*, size_t*);
-ErrorCode find_symbol           (struct ExprBuilder*, char*, size_t*);
-ErrorCode append_token          (struct ExprBuilder*, uint8_t, char*);
+ErrorCode           finalize_builder    (struct ExprBuilder*);
+ErrorCode           find_symbol         (struct ExprBuilder*, char*, size_t*);
+ErrorCode           append_token        (struct ExprBuilder*, uint8_t, char*);
+ErrorCode           _grow_expr          (struct ExprBuilder*);
+ErrorCode           _finalize_expr      (struct ExprBuilder*);
 
-size_t  bytes_to_index      (Expr, size_t);
-char*   lookup_symbol_id    (Expr, size_t, struct Dict);
-void    destroy_dict        (struct Dict);
-
-void    destroy_expr    (Expr);
-uint8_t is_equal_expr   (Expr, Expr);
-size_t  match_size      (Expr, Expr);
-
-void    print_expr      (Expr, struct Dict, char*);
+char*               lookup_symbol_by_id (Expr, size_t, struct Dict*);
+size_t              _bytes_to_index     (Expr, size_t);
+    
+void                free_expr           (Expr*);
+BOOL                is_equal_expr       (Expr, Expr);
+size_t              match_size          (Expr, Expr);
+size_t              match_size_bytes    (Expr, Expr);
+    
+void                print_expr          (Expr, struct Dict*, char*);
+    
+BOOL                is_list             (Expr);
+BOOL                is_empty_list       (Expr);
 
 #endif

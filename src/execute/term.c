@@ -20,7 +20,7 @@ struct Term make_string(char* str) {
     return t;
 }
 
-struct Term make_expr(struct Expr expr) {
+struct Term make_expr(Expr expr) {
     struct Term t;
     t.type = ExprTerm;
     t.expr = expr;

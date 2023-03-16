@@ -8,7 +8,8 @@
 #include "parse\expr.h"
 #include "execute\env.h"
 
-ErrorCode eval_expr (struct Env*, struct Expr, struct Term*);
-ErrorCode apply     (struct Env*, struct Term, struct Expr, struct Term*);
+ErrorCode eval_expr         (struct Env, Expr, struct Term*);
+ErrorCode eval_combination  (struct Env, Expr, struct Term*);
+ErrorCode apply             (struct Env, struct Term, Expr, struct Term*);
 
 #endif

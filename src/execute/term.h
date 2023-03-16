@@ -4,7 +4,7 @@
 #include "parse\expr.h"
 #include "rational\rational.h"
 
-struct Env; // Forward declaration
+struct EnvFrame; // Forward declaration
 
 enum TermType {ValTerm, ExprTerm, AbsTerm};
 enum ValType {StringVal, RationalVal};
@@ -17,17 +17,23 @@ struct Value {
     };
 };
 
+struct Abstraction {
+    ErrorCode (*apply)(struct Env*, Expr, void*, struct Term*);
+    void* closure;
+};
+
 struct Term {
     enum TermType type;
     union {
         struct Value value;
-        struct Expr expr;
-        struct Term (*apply)(struct Env*, struct Expr);
+        Expr expr;
+        // ErrorCode (*apply)(struct EnvFrame*, Expr, struct Term*);
+        struct Abstraction abs;
     };
 };
 
 struct Term make_number (struct Rational);
 struct Term make_string (char*);
-struct Term make_expr   (struct Expr);
+struct Term make_expr   (Expr);
 
 #endif

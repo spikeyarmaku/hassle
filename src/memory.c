@@ -12,58 +12,41 @@ void* allocate_mem(void* ptr, size_t size) {
     if (ptr == NULL) {
         void* ptr = malloc(size);
         #ifdef MEMORY_DIAGNOSTIC
-        add_entry(size, ptr);
+        _add_entry(size, ptr);
         #endif
         return ptr;
     } else {
         #ifdef MEMORY_DIAGNOSTIC
-        del_entry(ptr);
+        _del_entry(ptr);
         #endif
         void* new_ptr = realloc(ptr, size);
         #ifdef MEMORY_DIAGNOSTIC
-        add_entry(size, new_ptr);
+        _add_entry(size, new_ptr);
         #endif
         return new_ptr;
     }
 }
 
-// void* alloc_mem(size_t size) {
-//     void* ptr = malloc(size);
-//     #ifdef MEMORY_DIAGNOSTIC
-//     add_entry(size, ptr);
-//     #endif
-//     return ptr;
-// }
-
-// void* realloc_mem(void* block, size_t size) {
-//     void* ptr = realloc(block, size);
-//     #ifdef MEMORY_DIAGNOSTIC
-//     del_entry(block);
-//     add_entry(size, ptr);
-//     #endif
-//     return ptr;
-// }
-
 void free_mem(void* ptr) {
     #ifdef MEMORY_DIAGNOSTIC
-    del_entry(ptr);
+    _del_entry(ptr);
     #endif
     free(ptr);
 }
 
-void add_entry(size_t size, void* ptr) {
+void _add_entry(size_t size, void* ptr) {
     if (ptr == NULL) {
         debug(0, "New ptr is NULL");
         return;
     }
     // Create new entry
-    struct LoggerEntry* new_entry =
-        (struct LoggerEntry*)malloc(sizeof(struct LoggerEntry));
+    struct _LoggerEntry* new_entry =
+        (struct _LoggerEntry*)malloc(sizeof(struct _LoggerEntry));
     new_entry->ptr = ptr;
     new_entry->size = size;
     
     // March through the list until we find the first elem which is bigger
-    struct LoggerEntry* entry = _logger.entries;
+    struct _LoggerEntry* entry = _logger.entries;
     if (entry == NULL) {
         _logger.entries = new_entry;
         new_entry->next = NULL;
@@ -90,7 +73,7 @@ void add_entry(size_t size, void* ptr) {
     debug(0, "curr: %llu | peak: %llu | total: %d | count: %d | Allocating %d bytes at %llu\n", _logger.current, _logger.peak, _logger.total, _logger.entry_count, size, ptr);
 }
 
-void del_entry(void* ptr) {
+void _del_entry(void* ptr) {
     if (ptr == NULL) {
         debug(0, "Ptr to delete is NULL\n");
         return;
@@ -101,7 +84,7 @@ void del_entry(void* ptr) {
         return;
     }
     
-    struct LoggerEntry* entry = _logger.entries;
+    struct _LoggerEntry* entry = _logger.entries;
     if (entry->ptr == ptr) {
         _logger.entry_count--;
         _logger.current -= entry->size;
@@ -124,7 +107,7 @@ void del_entry(void* ptr) {
     }
     
     // Free elem
-    struct LoggerEntry* to_delete = entry->next;
+    struct _LoggerEntry* to_delete = entry->next;
     _logger.entry_count--;
     _logger.current -= to_delete->size;
     entry->next = entry->next->next;
@@ -132,9 +115,9 @@ void del_entry(void* ptr) {
     free(to_delete);
 }
 
-void show_logger_entries(struct Logger l) {
+void show_logger_entries(struct _Logger l) {
     debug(1, "Allocated memory:\n---------------\n");
-    struct LoggerEntry* e = l.entries;
+    struct _LoggerEntry* e = l.entries;
     size_t i = 0;
     while (e != NULL) {
         debug(1, "%llu. %llu bytes at %llu\n", i, e->size, (size_t)e->ptr);

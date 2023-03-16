@@ -7,14 +7,25 @@
 
 #include "rational\alnat.h"
 
+/*
+Rational usage:
+
+Construction:
+  A Rational can be made from a base-10 string representation using
+  `string_to_rational`.
+
+Destruction:
+  Call `free_rational`.
+*/
+
 struct Rational {
-    int8_t sign;
-    Alnat numerator;
-    Alnat denominator; // If it is NULL, treat it as 1
+    int8_t _sign;
+    Alnat _numerator;
+    Alnat _denominator; // If it is NULL, treat it as 1
 };
 
 struct Rational string_to_rational      (char*);
-void            destroy_rational        (struct Rational);
+void            free_rational           (struct Rational*);
 BOOL            is_valid_rational       (struct Rational*);
 void            simplify                (struct Rational*);
 void            reciprocate             (struct Rational*);

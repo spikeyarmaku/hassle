@@ -6,9 +6,9 @@ TODO
 
 #include "main.h"
 
-struct Logger _logger;
+struct _Logger _logger;
 
-struct Parser create_parser(char* filename);
+struct _Parser _create_parser(char* filename);
 
 #ifdef REPL_ENABLED
 ErrorCode repl() {
@@ -34,7 +34,7 @@ ErrorCode repl() {
             return error_code;
         }
         // print_expr(expr, dict);
-        destroy_expr(expr);
+        free_expr(&expr);
         expr = NULL;
         printf("\n\n");
     }
@@ -52,9 +52,9 @@ ErrorCode interpret_file(char* file_name) {
         return error_code;
     }
     // print_expr(expr, dict);
-    destroy_expr(expr);
+    free_expr(&expr);
     expr = NULL;
-    destroy_dict(dict);
+    free_dict(&dict);
     return SUCCESS;
 }
 
