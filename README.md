@@ -3,7 +3,7 @@
 AST-walking interpreter
 
 Dependency graph:
-
+```
 [execute/eval] ───► [execute/env] ──────────┐
     │    │                │                 │
     │    │                ▼                 ▼
@@ -13,3 +13,4 @@ Dependency graph:
     │                    │    │
     │                    ▼    ▼
     └───────────────► [parse/expr] ───► [parse/dict]
+```
