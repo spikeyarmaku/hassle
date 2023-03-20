@@ -11,7 +11,7 @@ struct _Parser _create_parser(char* file_name) {
     long int size = ftell(fp) - start;
     rewind(fp); // fseek(fp, 0L, SEEK_SET);
 
-    char* file_content = (char*)allocate_mem(NULL, sizeof(char) * (size + 1));
+    char* file_content = (char*)allocate_mem("_create_parser", NULL, sizeof(char) * (size + 1));
     
     size_t chars_read = fread(file_content, sizeof(char), size, fp);
     
@@ -30,7 +30,7 @@ struct _Parser _create_parser(char* file_name) {
 
 void _free_parser(struct _Parser* p) {
     if (p->stream != NULL) {
-        free_mem(p->stream);
+        free_mem("_free_parser", p->stream);
     }
     p->stream = NULL;
     p->counter = 0;
@@ -127,7 +127,7 @@ ErrorCode _read_string(struct _Parser* p, struct _Token* t) {
     long int char_count = total_char_count - escape_counter;
     escape_counter = 0;
     is_escaped = 0;
-    char* str = (char*)allocate_mem(NULL, sizeof(char) * (char_count + 1));
+    char* str = (char*)allocate_mem("parse/_read_string", NULL, sizeof(char) * (char_count + 1));
     for (long int i = 0; i < total_char_count; i++) {
         char c = p->stream[starting_position + i];
         if (is_escaped) {
@@ -181,7 +181,7 @@ ErrorCode _read_identifier(struct _Parser* p, struct _Token* t) {
 
     // Copy the string into a buffer
     long int char_count = ending_position - starting_position;
-    char* str = (char*)allocate_mem(NULL, sizeof(char) * (char_count + 1));
+    char* str = (char*)allocate_mem("parse/_read_identifier", NULL, sizeof(char) * (char_count + 1));
     for (long int i = 0; i < char_count; i++) {
         char c = p->stream[starting_position + i];
         str[i] = c;
@@ -196,7 +196,7 @@ ErrorCode _read_identifier(struct _Parser* p, struct _Token* t) {
 
 void _free_token(struct _Token* t) {
     if (t->str != NULL) {
-        free_mem(t->str);
+        free_mem("_free_token", t->str);
     }
     t->str = NULL;
 }
@@ -295,6 +295,7 @@ ErrorCode _parse(struct _Parser parser, Expr* result_expr,
     finalize_builder(b);
     *result_expr = b->expr;
     *result_dict = b->dict;
+    free_expr_builder(b);
     return SUCCESS;
 }
 

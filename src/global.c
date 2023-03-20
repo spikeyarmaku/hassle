@@ -11,7 +11,7 @@ void error(const char* s, ...) {
 
 void debug(int level, const char* s, ...) {
     #ifdef DEBUG_PRINTS
-    if (level == DEBUG_LEVEL) {
+    if (level <= DEBUG_LEVEL) {
         va_list args;
         va_start(args, s);
         vprintf(s, args);

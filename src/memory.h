@@ -28,11 +28,11 @@ extern struct _Logger _logger;
 
 void    init_logger         ();
 
-void*   allocate_mem        (void* block, size_t size);
-void    free_mem            (void* ptr);
+void*   allocate_mem        (char* comment, void* block, size_t size);
+void    free_mem            (char* comment, void* ptr);
 
-void    _add_entry          (size_t, void*);
-void    _del_entry          (void*);
+void    _add_entry          (char* comment, size_t, void*);
+void    _del_entry          (char* comment, void*);
 
 void    show_logger_entries (struct _Logger);
 

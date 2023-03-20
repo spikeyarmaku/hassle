@@ -3,6 +3,11 @@
 
 // --- SWITCHES ---
 
+// Comment this out to disable unicode support. Useful for low-memory
+// environments
+// TODO implement unicode support
+// # define UNICODE
+
 // Comment this out to disable the repl
 #define REPL_ENABLED
 

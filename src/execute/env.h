@@ -55,6 +55,7 @@ struct Term*    find_longest_match  (Env, Expr, size_t*);
 // Extend
 ErrorCode       add_entry           (Env, Expr, struct Term);
 ErrorCode       add_empty_frame     (Env);
+void            free_entry          (struct Entry);
 void            remove_last_frame   (Env);
 
 #endif

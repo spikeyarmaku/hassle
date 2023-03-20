@@ -24,7 +24,7 @@ ErrorCode add_name(struct Dict* dict, size_t* dict_size, char* name,
     *index = dict->count;
     // Copy the symbol, because it will be deleted
     char* my_symbol =
-        (char*)allocate_mem(NULL, sizeof(char) * (strlen(name) + 1));
+        (char*)allocate_mem("dict/add_name", NULL, sizeof(char) * (strlen(name) + 1));
     strcpy(my_symbol, name);
     dict->names[dict->count] = my_symbol;
     dict->count++;
@@ -38,7 +38,7 @@ ErrorCode finalize_dict(struct Dict* dict, size_t* dict_size) {
     }
     if (dict->count < *dict_size) {
         char** new_ptr =
-            (char**)allocate_mem(dict->names,
+            (char**)allocate_mem("dict/finalize_dict", dict->names,
             dict->count * sizeof(char*));
         if (new_ptr == NULL) {
             error("finalize_dict: couldn't free up unnecessary memory\n");
@@ -53,9 +53,9 @@ ErrorCode finalize_dict(struct Dict* dict, size_t* dict_size) {
 void free_dict(struct Dict* dict) {
     for (size_t i = 0; i < dict->count; i++) {
         debug(1, "Deleting %llu. entry (%llu)\n", i, (size_t)dict->names[i]);
-        free_mem(dict->names[i]);
+        free_mem("free_dict/name[i]", dict->names[i]);
     }
-    free_mem(dict->names);
+    free_mem("free_dict/names", dict->names);
     dict->names = NULL;
     dict->count = 0;
 }
@@ -73,7 +73,7 @@ ErrorCode _grow_dict(struct Dict* dict, size_t* dict_size) {
     debug(1, "_grow_dict(%llu -> %llu)\n",
         *dict_size, *dict_size + EXPR_BUFFER_SIZE);
     char** new_ptr =
-        (char**)allocate_mem(dict->names,
+        (char**)allocate_mem("dict/_grow_dict", dict->names,
         (*dict_size + EXPR_BUFFER_SIZE) * sizeof(char*));
     if (new_ptr == NULL) {
         error("_grow_dict: couldn't allocate more memory\n");

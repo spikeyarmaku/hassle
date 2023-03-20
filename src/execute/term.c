@@ -26,3 +26,23 @@ struct Term make_expr(Expr expr) {
     t.expr = expr;
     return t;
 }
+
+void free_term(struct Term t) {
+    switch (t.type) {
+        case AbsTerm : {
+            free_mem("free_term/closure", t.abs.closure);
+            break;
+        }
+        case ValTerm: {
+            if (t.value.type == RationalVal) {
+                free_rational(t.value.rational);
+            } else {
+                free_mem("free_term/string", t.value.string);
+            }
+            break;
+        }
+        case ExprTerm: {
+            break;
+        }
+    }
+}

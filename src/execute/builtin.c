@@ -4,7 +4,8 @@ struct Term make_lambda() {
     struct Term t;
     t.type = AbsTerm;
     t.abs.apply = _lambda_helper1;
-    t.abs.closure = allocate_mem(NULL, sizeof(struct LambdaClosure));
+    t.abs.closure =
+        allocate_mem("make_lambda", NULL, sizeof(struct LambdaClosure));
     return t;
 }
 
@@ -51,7 +52,7 @@ ErrorCode _lambda_helper3(Env env, Expr value, void* closure,
     }
 
     Expr body = lambda_closure->body;
-    free_mem(closure);
+    // free_mem("_lambda_helper3", closure);
 
     return eval_expr(new_env, body, result);
 }
@@ -61,7 +62,7 @@ struct Term make_binop(enum BinOp binop) {
     struct Term t;
     t.type = AbsTerm;
     t.abs.apply = _binop_helper1;
-    t.abs.closure = allocate_mem(NULL, sizeof(struct MathBinopClosure));
+    t.abs.closure = allocate_mem("make_binop", NULL, sizeof(struct MathBinopClosure));
     struct MathBinopClosure* binop_closure =
         (struct MathBinopClosure*)t.abs.closure;
     binop_closure->binop = binop;
@@ -87,8 +88,7 @@ ErrorCode _binop_helper2(Env env, Expr op2, void* closure,
         (struct MathBinopClosure*)closure;
     Expr op1 = math_binop_closure->operand1;
     enum BinOp binop = math_binop_closure->binop;
-    free_mem(closure);
-
+    // free_mem("_binop_helper2", closure);
 
     struct Term t1, t2;
     ErrorCode error_code = eval_expr(env, op1, &t1);
@@ -102,9 +102,11 @@ ErrorCode _binop_helper2(Env env, Expr op2, void* closure,
 
     // Check if the operands are numbers
     if (t1.type != ValTerm || t2.type != ValTerm) {
+        free_term(t1); free_term(t2);
         return ERROR;
     }
     if (t1.value.type != RationalVal || t2.value.type != RationalVal) {
+        free_term(t1); free_term(t2);
         return ERROR;
     }
 
@@ -132,6 +134,7 @@ ErrorCode _binop_helper2(Env env, Expr op2, void* closure,
             break;
         }
     }
+    free_term(t1); free_term(t2);
     
     return SUCCESS;
 }

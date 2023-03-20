@@ -1,7 +1,7 @@
 #include "rational.h"
 
 Rational _make_rational() {
-    Rational r = (Rational)allocate_mem(NULL, sizeof(struct _Rational));
+    Rational r = (Rational)allocate_mem("_make_rational", NULL, sizeof(struct _Rational));
     r->numerator = NULL;
     r->denominator = NULL;
     r->sign = 0;
@@ -17,7 +17,7 @@ uint8_t is_valid_rational(Rational r) {
 Rational string_to_rational(char* string) {
     // Copy the string
     char* buf =
-        strcpy(allocate_mem(NULL, sizeof(char) * (strlen(string) + 1)), string);
+        strcpy(allocate_mem("string_to_rational", NULL, sizeof(char) * (strlen(string) + 1)), string);
 
     char* start = buf;
     Rational r = _make_rational();
@@ -51,7 +51,7 @@ Rational string_to_rational(char* string) {
 
     // Construct an integer number from the digits alone
     r->numerator = string_to_alnat(buf);
-    free_mem(buf);
+    free_mem("string_to_rational", buf);
     // Construct an integer (a power of 10) from the number of digits after the
     // decimal separator
     // To do this, we overwrite the digits first
@@ -75,7 +75,7 @@ Rational string_to_rational(char* string) {
 void free_rational(Rational r) {
     free_alnat(r->numerator);
     free_alnat(r->denominator);
-    free_mem(r);
+    free_mem("free_rational", r);
 }
 
 void simplify(Rational r) {
@@ -113,8 +113,10 @@ void debug_print_rational(Rational r) {
     if (r->sign < 0) {
         printf("-");
     }
-    printf("%s / %s", debug_print_alnat(r->numerator),
-        debug_print_alnat(r->denominator));
+    char* alnat1 = debug_print_alnat(r->numerator);
+    char* alnat2 = debug_print_alnat(r->denominator);
+    printf("%s / %s", alnat1, alnat2);
+    free(alnat1); free(alnat2);
 }
 
 // TODO don't just blindly multiply, perhaps calculating the LCM is better

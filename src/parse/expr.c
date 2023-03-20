@@ -5,7 +5,7 @@
 ExprBuilder make_expr_builder(struct Dict* d) {
     debug(1, "  make expr builder\n");
     ExprBuilder builder =
-        (ExprBuilder)allocate_mem(NULL, sizeof(struct _ExprBuilder));
+        (ExprBuilder)allocate_mem("make_expr_builder", NULL, sizeof(struct _ExprBuilder));
     debug(1, "  ...done\n");
     if (builder != NULL) {
         debug(1, "  init expr builder\n");
@@ -29,7 +29,7 @@ ErrorCode _grow_expr(ExprBuilder b) {
     debug(1, "grow_expr(%llu -> %llu)", b->_expr_size,
         b->_expr_size + EXPR_BUFFER_SIZE);
     Expr new_ptr =
-        (Expr)allocate_mem(b->expr,
+        (Expr)allocate_mem("_grow_expr", b->expr,
         (b->_expr_size + EXPR_BUFFER_SIZE) * sizeof(uint8_t));
     if (new_ptr == NULL) {
         error("grow_expr: couldn't allocate more memory\n");
@@ -57,7 +57,7 @@ ErrorCode _finalize_expr(ExprBuilder b) {
     }
     if (b->_expr_size < new_size) {
         uint8_t* new_ptr =
-            (uint8_t*)allocate_mem(b->expr, new_size * sizeof(uint8_t));
+            (uint8_t*)allocate_mem("_finalize_expr", b->expr, new_size * sizeof(uint8_t));
         if (new_ptr == NULL) {
             error("finalize_expr: couldn't free up unnecessary memory\n");
             return ERROR;
@@ -146,8 +146,12 @@ char* lookup_symbol_by_id(Expr expr, struct Dict d) {
     return d.names[_bytes_to_index(expr + 1)];
 }
 
+void free_expr_builder(ExprBuilder b) {
+    free_mem("free_expr_builder", b);
+}
+
 void free_expr(Expr* expr) {
-    free_mem(*expr);
+    free_mem("free_expr", *expr);
     *expr = NULL;
 }
 

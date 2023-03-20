@@ -191,6 +191,12 @@ uint8_t run_exec_tests() {
             break;
         }
     }
+
+    free_term(result);
+    free_env(env);
+    free_expr(&expr);
+
+    show_logger_entries(_logger);
     return 0;
 }
 

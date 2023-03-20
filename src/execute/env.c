@@ -1,7 +1,7 @@
 #include "env.h"
 
 Env make_empty_env() {
-    Env env = (Env)allocate_mem(NULL, sizeof(struct _Env));
+    Env env = (Env)allocate_mem("make_empty_env", NULL, sizeof(struct _Env));
     env->current_frame = NULL;
     env->dict = make_empty_dict();
     return env;
@@ -13,7 +13,7 @@ void free_env(Env env) {
         remove_last_frame(env);
     }
 
-    free_mem(env);
+    free_mem("free_env", env);
 }
 
 struct Term default_rules(Expr expr, struct Dict d) {
@@ -112,7 +112,7 @@ ErrorCode add_entry(Env env, Expr expr, struct Term t) {
     }
     EnvFrame current_frame = env->current_frame;
     struct Entry* new_mapping =
-        (struct Entry*)allocate_mem(current_frame->mapping,
+        (struct Entry*)allocate_mem("env/add_entry", current_frame->mapping,
         sizeof(struct Entry) * (current_frame->entry_count + 1));
     if (new_mapping == NULL) {
         return ERROR;
@@ -129,7 +129,7 @@ ErrorCode add_empty_frame(Env env) {
         return ERROR;
     }
 
-    EnvFrame new_frame = (EnvFrame)allocate_mem(NULL, sizeof(struct _EnvFrame));
+    EnvFrame new_frame = (EnvFrame)allocate_mem("env/add_empty_frame", NULL, sizeof(struct _EnvFrame));
     if (new_frame == NULL) {
         return ERROR;
     }
@@ -141,13 +141,24 @@ ErrorCode add_empty_frame(Env env) {
     return SUCCESS;
 }
 
+void free_entry(struct Entry e) {
+    free_expr(&(e.expr));
+    free_term(e.term);
+}
+
 void remove_last_frame(Env env) {
     if (env != NULL) {
         EnvFrame current_frame = env->current_frame;
         if (current_frame != NULL) {
-            free_mem(current_frame->mapping);
+            // Free the individual mappings
+            for (size_t i = 0; i < current_frame->entry_count; i++) {
+                free_entry(current_frame->mapping[i]);
+            }
+            // Free the mapping list
+            free_mem("remove_last_frame/mapping", current_frame->mapping);
             env->current_frame = current_frame->parent;
-            free_mem(current_frame);
+            // Free the frame
+            free_mem("remove_last_frame/frame", current_frame);
         }
     }
 }

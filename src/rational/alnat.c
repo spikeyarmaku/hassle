@@ -12,7 +12,7 @@ struct AlnatBuilder make_alnat_builder() {
 ErrorCode expand_alnat(struct AlnatBuilder* b) {
     size_t new_size = b->size + ALNAT_BUFFER_SIZE;
     Alnat new_ptr = NULL;
-    new_ptr = (Alnat)allocate_mem(b->ptr, sizeof(uint8_t) * new_size);
+    new_ptr = (Alnat)allocate_mem("expand_alnat", b->ptr, sizeof(uint8_t) * new_size);
     if (new_ptr == NULL) {
         error("expand_alnat: error while allocating.\n");
         return ERROR;
@@ -51,7 +51,7 @@ ErrorCode add_digit_to_alnat(uint8_t digit, struct AlnatBuilder* b) {
 // Free up unused memory and set last byte to 0
 ErrorCode finalize_alnat(struct AlnatBuilder* b) {
     if (b->ptr != NULL) {
-        Alnat new_ptr = allocate_mem(b->ptr, sizeof(uint8_t) * b->next);
+        Alnat new_ptr = allocate_mem("finalize_alnat", b->ptr, sizeof(uint8_t) * b->next);
         if (new_ptr == NULL) {
             error("finalize_alnat: error while reallocating.\n");
             return ERROR;
@@ -207,11 +207,11 @@ char* alnat_to_string(Alnat alnat) {
 }
 
 void free_alnat(Alnat alnat) {
-    free_mem(alnat);
+    free_mem("free_alnat", alnat);
 }
 
 Alnat make_single_digit_alnat(uint8_t digit) {
-    Alnat alnat = (uint8_t*)allocate_mem(NULL, sizeof(uint8_t));
+    Alnat alnat = (uint8_t*)allocate_mem("make_single_digit_alnat", NULL, sizeof(uint8_t));
     alnat[0] = digit;
     return alnat;
 }
@@ -226,7 +226,7 @@ Alnat copy_alnat(Alnat a) {
     do {
         count++;
     } while (!unsafe_is_last_digit_alnat(count-1, a));
-    result = (Alnat)allocate_mem(NULL, sizeof(uint8_t) * count);
+    result = (Alnat)allocate_mem("copy_alnat", NULL, sizeof(uint8_t) * count);
     count = 0;
     do {
         result[count] = a[count];
@@ -357,7 +357,7 @@ Alnat make_complement_alnat(Alnat alnat) {
     } while (!unsafe_is_last_digit_alnat(size-1, alnat));
 
     // Make an alnat of the same length
-    Alnat result = (Alnat)allocate_mem(NULL, sizeof(uint8_t) * size);
+    Alnat result = (Alnat)allocate_mem("make_complement_alnat", NULL, sizeof(uint8_t) * size);
 
     // Copy and complement the digits
     for (size_t i = 0; i < size; i++) {
@@ -391,7 +391,7 @@ void strip_alnat(Alnat* alnat) {
     // Strip them
     if (first_useless_zero > 0 && first_useless_zero < size) {
         // printf("Resizing to %d\n", last_non_zero + 1);
-        Alnat new_alnat = (Alnat)allocate_mem(*alnat, first_useless_zero);
+        Alnat new_alnat = (Alnat)allocate_mem("strip_alnat", *alnat, first_useless_zero);
         if (new_alnat == NULL) {
             error("strip_alnat: error while reallocating to %d\n", first_useless_zero);
             return;

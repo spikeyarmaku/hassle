@@ -38,4 +38,6 @@ struct Term make_number (Rational);
 struct Term make_string (char*);
 struct Term make_expr   (Expr);
 
+void        free_term   (struct Term);
+
 #endif

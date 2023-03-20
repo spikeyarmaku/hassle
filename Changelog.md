@@ -1,3 +1,7 @@
+Since d51cf57865e88bc090202f8a7a21f05264d25b2d
+- Fix memory leaks
+- Add more debug information to memory operations
+
 Since ab0af1a5c4fa5bfd5abec5beb0de87df73c24055
 - Improve env frame handling
 - Fix execution bugs

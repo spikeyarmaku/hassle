@@ -67,6 +67,7 @@ ErrorCode           _finalize_expr      (ExprBuilder);
 char*               lookup_symbol_by_id (Expr, struct Dict);
 size_t              _bytes_to_index     (Expr);
     
+void                free_expr_builder   (ExprBuilder);
 void                free_expr           (Expr*);
 BOOL                is_equal_expr       (Expr, Expr);
 size_t              match_size          (Expr, Expr);

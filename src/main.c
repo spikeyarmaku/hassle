@@ -40,6 +40,7 @@ made to them).
 
 /*
 TODO
+- add Unicode support
 - check memory allocations for leaks
 - add comment support to the parser (;)
 - when a failure happens, do a cleanup
