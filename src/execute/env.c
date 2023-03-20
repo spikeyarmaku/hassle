@@ -1,12 +1,28 @@
 #include "env.h"
 
-struct Term default_rules(Expr expr, struct Dict* d) {
+Env make_empty_env() {
+    Env env = (Env)allocate_mem(NULL, sizeof(struct _Env));
+    env->current_frame = NULL;
+    env->dict = make_empty_dict();
+    return env;
+}
+
+void free_env(Env env) {
+    free_dict(&(env->dict));
+    while (env->current_frame != NULL) {
+        remove_last_frame(env);
+    }
+
+    free_mem(env);
+}
+
+struct Term default_rules(Expr expr, struct Dict d) {
     // Check if the symbol name is a number
-    char* symbol = lookup_symbol_by_id(expr, 0, d);
+    char* symbol = lookup_symbol_by_id(expr, d);
     char* ptr = symbol;
     uint8_t is_number = 1;
     while (*ptr != 0 && is_number == 1) {
-        if (isdigit(*ptr) == 0 || *ptr == '.' || *ptr == '-' || *ptr == '+' ||
+        if (isdigit(*ptr) == 1 || *ptr == '.' || *ptr == '-' || *ptr == '+' ||
                 *ptr == '_' || *ptr == ',') {
             ptr++;
         } else {
@@ -34,10 +50,10 @@ struct Term default_rules(Expr expr, struct Dict* d) {
 }
 
 // Retrieve the value of an expr from an env
-struct Term env_lookup(struct Env env, Expr expr) {
+struct Term env_lookup(Env env, Expr expr) {
     // First we check if there is an entry for the expr in the mappings in the
     // current env
-    struct EnvFrame* current_frame = env.current_frame;
+    EnvFrame current_frame = env->current_frame;
     while (current_frame != NULL) {
         for (size_t i = 0; i < current_frame->entry_count; i++) {
             if (is_equal_expr(current_frame->mapping[i].expr, expr)) {
@@ -57,19 +73,18 @@ struct Term env_lookup(struct Env env, Expr expr) {
         return t;
     } else {
         // If it is an atom, apply the rules
-        return default_rules(expr, env.dict);
+        return default_rules(expr, env->dict);
     }
 }
 
 // Returns the term corresponding to the longest match in the environment.
 // The optional `bytes` pointer will be used to signal the amount of bytes that
 // are matching - i.e. the next byte in the expression will not match.
-struct Term* find_longest_match(struct Env env, Expr expr, size_t* bytes)
-{
+struct Term* find_longest_match(Env env, Expr expr, size_t* bytes) {
     size_t longest_match_size = 0;
     size_t current_match_size = 0;
     struct Term* result = NULL;
-    struct EnvFrame* current_frame = env.current_frame;
+    EnvFrame current_frame = env->current_frame;
     while (current_frame != NULL) {
         for (size_t i = 0; i < current_frame->entry_count; i++) {
             current_match_size =
@@ -88,43 +103,47 @@ struct Term* find_longest_match(struct Env env, Expr expr, size_t* bytes)
     return result;
 }
 
-ErrorCode add_entry(struct Env* env, Expr expr, struct Term t) {
-    struct EnvFrame* current_frame = env->current_frame;
-    if (current_frame == NULL) {
-        current_frame =
-            (struct EnvFrame*)allocate_mem(NULL, sizeof(struct EnvFrame));
-        env->current_frame = current_frame;
+ErrorCode add_entry(Env env, Expr expr, struct Term t) {
+    if (env->current_frame == NULL) {
+        ErrorCode error_code = add_empty_frame(env);
+        if (error_code != SUCCESS) {
+            return error_code;
+        }
     }
+    EnvFrame current_frame = env->current_frame;
     struct Entry* new_mapping =
         (struct Entry*)allocate_mem(current_frame->mapping,
-        sizeof(struct Entry) * current_frame->entry_count + 1);
+        sizeof(struct Entry) * (current_frame->entry_count + 1));
     if (new_mapping == NULL) {
         return ERROR;
     }
+    current_frame->mapping = new_mapping;
     current_frame->mapping[current_frame->entry_count].expr = expr;
     current_frame->mapping[current_frame->entry_count].term = t;
     current_frame->entry_count++;
     return SUCCESS;
 }
 
-ErrorCode add_frame(struct Env* env, Expr expr, struct Term t) {
+ErrorCode add_empty_frame(Env env) {
     if (env == NULL) {
         return ERROR;
     }
 
-        struct EnvFrame* new_frame =
-            (struct EnvFrame*)allocate_mem(NULL, sizeof(struct EnvFrame));
+    EnvFrame new_frame = (EnvFrame)allocate_mem(NULL, sizeof(struct _EnvFrame));
     if (new_frame == NULL) {
         return ERROR;
     }
+    new_frame->entry_count = 0;
+    new_frame->mapping = NULL;
     new_frame->parent = env->current_frame;
     env->current_frame = new_frame;
-    return add_entry(env, expr, t);
+    
+    return SUCCESS;
 }
 
-void remove_last_frame(struct Env* env) {
+void remove_last_frame(Env env) {
     if (env != NULL) {
-        struct EnvFrame* current_frame = env->current_frame;
+        EnvFrame current_frame = env->current_frame;
         if (current_frame != NULL) {
             free_mem(current_frame->mapping);
             env->current_frame = current_frame->parent;

@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <ctype.h>
 #include <stdio.h> // DEBUG
+#include <string.h>
 
 #include "rational\alnat.h"
 
@@ -18,22 +19,25 @@ Destruction:
   Call `free_rational`.
 */
 
-struct Rational {
-    int8_t _sign;
-    Alnat _numerator;
-    Alnat _denominator; // If it is NULL, treat it as 1
+struct _Rational {
+    int8_t sign;
+    Alnat numerator;
+    Alnat denominator; // If it is NULL, treat it as 1
 };
 
-struct Rational string_to_rational      (char*);
-void            free_rational           (struct Rational*);
-BOOL            is_valid_rational       (struct Rational);
-void            simplify                (struct Rational*);
-void            reciprocate             (struct Rational*);
-void            debug_print_rational    (struct Rational);
+typedef struct _Rational* Rational;
 
-struct Rational add_rational            (struct Rational, struct Rational);
-struct Rational sub_rational            (struct Rational, struct Rational);
-struct Rational mul_rational            (struct Rational, struct Rational);
-struct Rational div_rational            (struct Rational, struct Rational);
+Rational    _make_rational          ();
+Rational    string_to_rational      (char*);
+void        free_rational           (Rational);
+BOOL        is_valid_rational       (Rational);
+void        simplify                (Rational);
+void        reciprocate             (Rational);
+void        debug_print_rational    (Rational);
+
+Rational    add_rational            (Rational, Rational);
+Rational    sub_rational            (Rational, Rational);
+Rational    mul_rational            (Rational, Rational);
+Rational    div_rational            (Rational, Rational);
 
 #endif

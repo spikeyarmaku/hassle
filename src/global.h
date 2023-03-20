@@ -17,6 +17,8 @@
 #define SUCCESS 0
 #define ERROR 1
 
+#define DEPTH uint32_t
+
 typedef uint8_t ErrorCode;
 
 void error(const char* s, ...);

@@ -1,7 +1,51 @@
 /*
+https://stackoverflow.com/questions/31673065/creating-classes-in-c-on-the-stack-vs-the-heap
+General rules regarding structs.
+
+Opaque structs = structs that disallow the user to peek into its internals.
+Transparent structs = structs that allow the user to peek into its internals.
+
+--- Creation ---
+
+All Opaque structs are defined like this:
+
+    struct _ComplexStruct {....};
+    typedef struct _ComplexStruct* ComplexStruct;
+
+All Opaque structs are created like this:
+
+    ComplexStruct data = make_complex_struct();
+
+`make_complex_struct` is responsible for allocating space for the struct itself.
+
+Transparent structs can just be created on the stack:
+
+    struct TransparentStruct data = make_transparent_struct();
+
+--- Deletion ---
+
+All opaque structs are destroyed like this:
+
+    free(data);
+
+`free` is responsible for freeing up the data `data` is pointing to, but not
+responsible for setting the pointer to NULL.
+
+--- Usage ---
+
+All opauqe structs are passed by pointer, all transparent structs are passed by
+value, unless they require to be passed by pointer (e.g. when change needs to be
+made to them).
+*/
+
+/*
 TODO
 - check memory allocations for leaks
 - add comment support to the parser (;)
+- when a failure happens, do a cleanup
+  (check every code block with `if (error_code != SUCCESS)`)
+- Add buffered allocation to Env
+- Check if the input expression is well-formed (all parens match)
 */
 
 #include "main.h"

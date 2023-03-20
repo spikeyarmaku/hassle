@@ -1,24 +1,24 @@
 #include "alnat.h"
 
-struct AlnatBuilder create_alnat_builder() {
+struct AlnatBuilder make_alnat_builder() {
     struct AlnatBuilder b;
-    b._ptr = NULL;
-    b._next = 0;
-    b._size = 0;
+    b.ptr = NULL;
+    b.next = 0;
+    b.size = 0;
     return b;
 }
 
 // Add a new block to the alnat's memory
 ErrorCode expand_alnat(struct AlnatBuilder* b) {
-    size_t new_size = b->_size + ALNAT_BUFFER_SIZE;
+    size_t new_size = b->size + ALNAT_BUFFER_SIZE;
     Alnat new_ptr = NULL;
-    new_ptr = (Alnat)allocate_mem(b->_ptr, sizeof(uint8_t) * new_size);
+    new_ptr = (Alnat)allocate_mem(b->ptr, sizeof(uint8_t) * new_size);
     if (new_ptr == NULL) {
         error("expand_alnat: error while allocating.\n");
         return ERROR;
     }
-    b->_size = new_size;
-    b->_ptr = new_ptr;
+    b->size = new_size;
+    b->ptr = new_ptr;
     return SUCCESS;
 }
 
@@ -32,68 +32,68 @@ ErrorCode add_digit_to_alnat(uint8_t digit, struct AlnatBuilder* b) {
     }
 
     // Check if the alnat has digits
-    if (b->_size != 0) {
+    if (b->size != 0) {
         // If there is, set the last digit's mask to 1
-        unsafe_mark_digit_alnat(b->_next - 1, 1, b->_ptr);
+        unsafe_mark_digit_alnat(b->next - 1, 1, b->ptr);
     }
     // Check if we have enough space to extend the number with a new digit
-    if (b->_next == b->_size) {
+    if (b->next == b->size) {
         if(expand_alnat(b)) {
             error("add_byte_to_alnat: error while expanding alnat.\n");
             return ERROR;
         }
     }
-    b->_ptr[b->_next] = digit;
-    b->_next++;
+    b->ptr[b->next] = digit;
+    b->next++;
     return SUCCESS;
 }
 
 // Free up unused memory and set last byte to 0
 ErrorCode finalize_alnat(struct AlnatBuilder* b) {
-    if (b->_ptr != NULL) {
-        Alnat new_ptr = allocate_mem(b->_ptr, sizeof(uint8_t) * b->_next);
+    if (b->ptr != NULL) {
+        Alnat new_ptr = allocate_mem(b->ptr, sizeof(uint8_t) * b->next);
         if (new_ptr == NULL) {
             error("finalize_alnat: error while reallocating.\n");
             return ERROR;
         }
-        b->_ptr = new_ptr;
-        b->_size = b->_next;
+        b->ptr = new_ptr;
+        b->size = b->next;
     }
     return SUCCESS;
 }
 
-struct AlnatMarcher create_alnat_marcher(Alnat a) {
+struct AlnatMarcher make_alnat_marcher(Alnat a) {
     struct AlnatMarcher m;
-    m._ptr = a;
-    m._counter = 0;
-    m._finished = a == NULL ? 1 : 0;
+    m.ptr = a;
+    m.counter = 0;
+    m.finished = a == NULL ? 1 : 0;
     return m;
 }
 
 uint8_t get_next_alnat_digit(struct AlnatMarcher* m) {
-    if (m->_finished) {
+    if (m->finished) {
         return 0;
     } else {
-        uint8_t b = m->_ptr[m->_counter];
+        uint8_t b = m->ptr[m->counter];
         if ((b & ALNAT_MAX) == ALNAT_MAX) {
-            m->_counter++;
+            m->counter++;
         } else {
-            m->_finished = 1;
+            m->finished = 1;
         }
         return b & ~ALNAT_MAX;
     }
 }
 
 BOOL is_end_of_alnat(struct AlnatMarcher m) {
-    return m._finished;
+    return m.finished;
 }
 
 size_t get_marcher_position(struct AlnatMarcher m) {
-    return m._counter;
+    return m.counter;
 }
 
 void rewind_marcher(struct AlnatMarcher* m) {
-    *m = create_alnat_marcher(m->_ptr);
+    *m = make_alnat_marcher(m->ptr);
 }
 
 uint8_t unsafe_get_digit_alnat(size_t n, Alnat a) {
@@ -126,7 +126,7 @@ void unsafe_mark_digit_alnat(size_t n, uint8_t is_non_last, Alnat a) {
 //   377
 //   121
 Alnat string_to_alnat(char* string) {
-    struct AlnatBuilder b = create_alnat_builder();
+    struct AlnatBuilder b = make_alnat_builder();
     uint16_t intermediate = 0;
     char *current_char_ptr = string;
     char *next_pass_cursor = string;
@@ -165,7 +165,7 @@ Alnat string_to_alnat(char* string) {
         
         if (add_digit_to_alnat(intermediate, &b)) {
             error("string_to_alnat: couldn't add %d to alnat\n", intermediate);
-            free_alnat(&(b._ptr));
+            free_alnat(b.ptr);
             return NULL;
         }
         *next_pass_cursor = 0;
@@ -176,11 +176,11 @@ Alnat string_to_alnat(char* string) {
 
     if (finalize_alnat(&b)) {
         error("string_to_alnat: couldn't finalize alnat\n");
-        free_alnat(&(b._ptr));
+        free_alnat(b.ptr);
         return NULL;
     }
 
-    return b._ptr;
+    return b.ptr;
 }
 
 // Only works with alnats that fit into an uint64_t
@@ -206,11 +206,8 @@ char* alnat_to_string(Alnat alnat) {
     return NULL;
 }
 
-void free_alnat(Alnat* alnat) {
-    if (*alnat != NULL) {
-        free_mem(*alnat);
-    }
-    *alnat = NULL;
+void free_alnat(Alnat alnat) {
+    free_mem(alnat);
 }
 
 Alnat make_single_digit_alnat(uint8_t digit) {
@@ -239,9 +236,9 @@ Alnat copy_alnat(Alnat a) {
 }
 
 Alnat add_alnat(Alnat a1, Alnat a2) {
-    struct AlnatBuilder b = create_alnat_builder();
-    struct AlnatMarcher m1 = create_alnat_marcher(a1);
-    struct AlnatMarcher m2 = create_alnat_marcher(a2);
+    struct AlnatBuilder b = make_alnat_builder();
+    struct AlnatMarcher m1 = make_alnat_marcher(a1);
+    struct AlnatMarcher m2 = make_alnat_marcher(a2);
     uint8_t carry = 0;
 
     uint8_t a1digit = 0;
@@ -257,24 +254,24 @@ Alnat add_alnat(Alnat a1, Alnat a2) {
         
         if (add_digit_to_alnat(next_byte, &b)) {
             error("add_alnat: couldn't add %d to alnat\n", next_byte);
-            free_alnat(&(b._ptr));
+            free_alnat(b.ptr);
             return NULL;
         }
     }
     if (carry) {
         if (add_digit_to_alnat(carry, &b)) {
             error("add_alnat: couldn't add %d to alnat\n", carry);
-            free_alnat(&(b._ptr));
+            free_alnat(b.ptr);
             return NULL;
         }
     }
     if (finalize_alnat(&b)) {
         error("Error while finalizing alnat\n");
-        free_alnat(&(b._ptr));
+        free_alnat(b.ptr);
         return NULL;
     }
 
-    return b._ptr;
+    return b.ptr;
 }
 
 Alnat sub_alnat(Alnat a1, Alnat a2, int8_t* sign) {
@@ -287,8 +284,8 @@ Alnat sub_alnat(Alnat a1, Alnat a2, int8_t* sign) {
         Alnat a2_new = a1_gt_a2 ? a2 : make_complement_alnat(a2);
         Alnat sum = add_alnat(a1_new, a2_new);
         Alnat result = make_complement_alnat(sum);
-        free_alnat(&sum);
-        a1_gt_a2 ? free_alnat(&a1_new) : free_alnat(&a2_new);
+        free_alnat(sum);
+        a1_gt_a2 ? free_alnat(a1_new) : free_alnat(a2_new);
         strip_alnat(&result);
         if (sign != NULL) {
             *sign = a1_gt_a2 ? 1 : -1;
@@ -307,16 +304,16 @@ Alnat mul_alnat(Alnat multiplicand, Alnat multiplier) {
 
     while (!is_null_alnat(multiplier_inter)) {
         Alnat result_inter = add_alnat(result, multiplicand);
-        free_alnat(&result);
+        free_alnat(result);
         result = result_inter;
         
         Alnat multiplier_inter_inter =
             sub_alnat(multiplier_inter, one, NULL);
-        free_alnat(&multiplier_inter);
+        free_alnat(multiplier_inter);
         multiplier_inter = multiplier_inter_inter;
     }
-    free_alnat(&one);
-    free_alnat(&multiplier_inter);
+    free_alnat(one);
+    free_alnat(multiplier_inter);
 
     return result;
 }
@@ -337,17 +334,17 @@ Alnat div_alnat(Alnat dividend, Alnat divisor) {
     Alnat inter = copy_alnat(dividend);
     while (compare_alnat(inter, divisor) >= 0) {
         Alnat new_inter = sub_alnat(inter, divisor, NULL);
-        free_alnat(&inter);
+        free_alnat(inter);
         // printf("# %s ->", debug_print_alnat(new_inter));
         inter = new_inter;
 
         Alnat new_result = add_alnat(result, one);
         // printf("%s #\n", debug_print_alnat(result));
-        free_alnat(&result);
+        free_alnat(result);
         result = new_result;
     }
-    free_alnat(&inter);
-    free_alnat(&one);
+    free_alnat(inter);
+    free_alnat(one);
 
     return result;
 }
@@ -371,16 +368,16 @@ Alnat make_complement_alnat(Alnat alnat) {
     Alnat one = make_single_digit_alnat(1);
     Alnat new_result = add_alnat(result, one);
     
-    free_alnat(&result);
+    free_alnat(result);
     result = new_result;
-    free_alnat(&one);
+    free_alnat(one);
 
     return result;
 }
 
 // Strips an alnat from useless zeroes
 void strip_alnat(Alnat* alnat) {
-    struct AlnatMarcher m = create_alnat_marcher(*alnat);
+    struct AlnatMarcher m = make_alnat_marcher(*alnat);
     size_t first_useless_zero = 0;
 
     // Find the start of the useless zeroes
@@ -450,14 +447,14 @@ Alnat gcd_alnat(Alnat a1, Alnat a2) {
     while (!is_null_alnat(lesser)) {
         while (compare_alnat(greater, lesser) >= 0) {
             Alnat new_greater = sub_alnat(greater, lesser, NULL);
-            free_alnat(&greater);
+            free_alnat(greater);
             greater = new_greater;
         }
         Alnat temp = greater;
         greater = lesser;
         lesser = temp;
     }
-    free_alnat(&lesser);
+    free_alnat(lesser);
     // If we allow the return value to share memory address with either of the
     // inputs, there is a danger of double deleting
     return greater;

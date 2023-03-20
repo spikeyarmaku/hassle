@@ -257,22 +257,27 @@ ErrorCode parse_from_str(char* input, Expr* result_expr,
 
 ErrorCode _parse(struct _Parser parser, Expr* result_expr,
         struct Dict* result_dict) {
-    debug(1, "_parse()\n");
-    struct ExprBuilder b = make_expr_builder(result_dict);
+    debug(1, "_parse(%s)\n", parser.stream);
+    ExprBuilder b = make_expr_builder(result_dict);
     struct _Token t;
 
     int go_on = 1;
     while (go_on) {
+        debug(1, "  Read token\n");
         if (_get_next_token(&parser, &t)) {
             error("_parse: error reading next token\n");
             break;
         }
 
+        debug(1, "  token: %s (%d)\n", t.str, t.type);
+
         uint8_t error_code = SUCCESS;
         if (t.type == Symbol) {
-            error_code = append_token(&b, t.type, t.str);
+            debug(1, "  Symbol, append\n");
+            error_code = append_token(b, t.type, t.str);
         } else {
-            error_code = append_token(&b, t.type, NULL);
+            debug(1, "  Non-symbol, append\n");
+            error_code = append_token(b, t.type, NULL);
         }
         if (error_code != SUCCESS) {
             error("Error while appending token (%d)\n", t.type);
@@ -287,9 +292,9 @@ ErrorCode _parse(struct _Parser parser, Expr* result_expr,
             go_on = 0;
         }
     }
-    finalize_builder(&b);
-    *result_expr = b.expr;
-    *result_dict = b.dict;
+    finalize_builder(b);
+    *result_expr = b->expr;
+    *result_dict = b->dict;
     return SUCCESS;
 }
 

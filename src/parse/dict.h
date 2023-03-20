@@ -33,6 +33,7 @@ struct Dict make_empty_dict ();
 ErrorCode   add_name        (struct Dict*, size_t*, char*, size_t*);
 ErrorCode   finalize_dict   (struct Dict*, size_t*);
 void        free_dict       (struct Dict*);
+void        print_dict      (struct Dict, char*);
 
 // Adds more memory to the dict.
 ErrorCode   _grow_dict      (struct Dict*, size_t*);

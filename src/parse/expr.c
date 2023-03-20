@@ -2,25 +2,32 @@
 
 #include <stdio.h>
 
-struct ExprBuilder make_expr_builder(struct Dict* d) {
-    struct ExprBuilder builder;
-    builder.expr = NULL;
-    if (d == NULL) {
-        builder.dict.count = 0;
-        builder.dict.names = NULL;
-    } else {
-        builder.dict = *d;
-    }
+ExprBuilder make_expr_builder(struct Dict* d) {
+    debug(1, "  make expr builder\n");
+    ExprBuilder builder =
+        (ExprBuilder)allocate_mem(NULL, sizeof(struct _ExprBuilder));
+    debug(1, "  ...done\n");
+    if (builder != NULL) {
+        debug(1, "  init expr builder\n");
+        builder->expr = NULL;
+        if (d == NULL) {
+            builder->dict.count = 0;
+            builder->dict.names = NULL;
+        } else {
+            builder->dict = *d;
+        }
 
-    builder._expr_size = 0;
-    builder._expr_cursor = 0;
-    builder._dict_size = d == NULL ? 0 : d->count;
+        builder->_expr_size = 0;
+        builder->_expr_cursor = 0;
+        builder->_dict_size = d->count;
+    }
     return builder;
 }
 
 // Allocate more space for the expression
-ErrorCode _grow_expr(struct ExprBuilder* b) {
-    debug(1, "grow_expr(%llu -> %llu)", b->_expr_size, b->_expr_size + EXPR_BUFFER_SIZE);
+ErrorCode _grow_expr(ExprBuilder b) {
+    debug(1, "grow_expr(%llu -> %llu)", b->_expr_size,
+        b->_expr_size + EXPR_BUFFER_SIZE);
     Expr new_ptr =
         (Expr)allocate_mem(b->expr,
         (b->_expr_size + EXPR_BUFFER_SIZE) * sizeof(uint8_t));
@@ -35,7 +42,7 @@ ErrorCode _grow_expr(struct ExprBuilder* b) {
 
 // Calculate the final size of the expression, and free up unnecessary allocated
 // space
-ErrorCode _finalize_expr(struct ExprBuilder* b) {
+ErrorCode _finalize_expr(ExprBuilder b) {
     if (b->_expr_size == 0) {
         return SUCCESS;
     }
@@ -62,7 +69,7 @@ ErrorCode _finalize_expr(struct ExprBuilder* b) {
 
 // Calculate the final size of the expr and the dict, and free up unnecessary
 // allocated space
-ErrorCode finalize_builder(struct ExprBuilder* b) {
+ErrorCode finalize_builder(ExprBuilder b) {
     ErrorCode error_code = _finalize_expr(b);
     if (error_code == SUCCESS) {
         return finalize_dict(&(b->dict), &(b->_dict_size));
@@ -72,9 +79,9 @@ ErrorCode finalize_builder(struct ExprBuilder* b) {
 }
 
 // Return the ID of a symbol in the symbol dictionary
-ErrorCode find_symbol(struct ExprBuilder b, char* symbol, size_t* index) {
-    for (size_t i = 0; i < b.dict.count; i++) {
-        if (strcmp(symbol, b.dict.names[i]) == 0) {
+ErrorCode find_symbol(ExprBuilder b, char* symbol, size_t* index) {
+    for (size_t i = 0; i < b->dict.count; i++) {
+        if (strcmp(symbol, b->dict.names[i]) == 0) {
             *index = i;
             return SUCCESS;
         }
@@ -84,7 +91,7 @@ ErrorCode find_symbol(struct ExprBuilder b, char* symbol, size_t* index) {
 }
 
 // Add a new token to the expr
-ErrorCode append_token(struct ExprBuilder* b, uint8_t type, char* symbol) {
+ErrorCode append_token(ExprBuilder b, uint8_t type, char* symbol) {
     debug(1, "append_token(*, %d, %s)\n", type, symbol);
     // Check if expr needs more space
     if (b == NULL) {
@@ -103,7 +110,7 @@ ErrorCode append_token(struct ExprBuilder* b, uint8_t type, char* symbol) {
     b->expr[b->_expr_cursor] = type;
     if (type == Symbol) {
         size_t index = 0;
-        if (find_symbol(*b, symbol, &index) != SUCCESS) {
+        if (find_symbol(b, symbol, &index) != SUCCESS) {
             uint8_t error_code =
                 add_name(&(b->dict), &(b->_dict_size), symbol, &index);
             if (error_code != SUCCESS) {
@@ -124,20 +131,19 @@ ErrorCode append_token(struct ExprBuilder* b, uint8_t type, char* symbol) {
 }
 
 // Restore an index from bytes
-size_t _bytes_to_index(Expr expr, size_t cursor) {
+size_t _bytes_to_index(Expr expr) {
     size_t index = 0;
     size_t multiplier = 1;
     for (uint8_t i = 0; i < SYMBOL_ID_BYTES; i++) {
-        index += expr[cursor] * multiplier;
+        index += expr[i] * multiplier;
         multiplier <<= 8;
-        cursor++;
     }
     return index;
 }
 
 // Retrieve a symbol from an ID
-char* lookup_symbol_by_id(Expr expr, size_t cursor, struct Dict d) {
-    return d.names[_bytes_to_index(expr, cursor)];
+char* lookup_symbol_by_id(Expr expr, struct Dict d) {
+    return d.names[_bytes_to_index(expr + 1)];
 }
 
 void free_expr(Expr* expr) {
@@ -171,7 +177,7 @@ BOOL is_equal_expr(Expr e1, Expr e2) {
             size_t counter = 1;
             enum TokenType token_type;
             uint8_t new_token_in = 0;
-            uint8_t depth = 1;
+            DEPTH depth = 1;
             while (depth != 0) {
                 b1 = e1[counter];
                 b2 = e2[counter];
@@ -219,7 +225,7 @@ size_t match_size(Expr e1, Expr e2) {
     size_t  cursor          = 0;
     size_t  expr_count      = 0;
     uint8_t new_token_in    = 0; // How many bytes until a new token starts?
-    uint8_t depth           = 0;
+    DEPTH   depth           = 0;
     uint8_t token_type      = e1[cursor];
     
     // Check if we are comparing lists
@@ -254,7 +260,7 @@ size_t match_size(Expr e1, Expr e2) {
 size_t match_size_bytes(Expr e1, Expr e2) {
     size_t  cursor          = 0;
     uint8_t new_token_in    = 0; // How many bytes until a new token starts?
-    uint8_t depth           = 0;
+    DEPTH   depth           = 0;
     uint8_t token_type      = e1[cursor];
     
     // Check if we are comparing lists
@@ -282,51 +288,57 @@ size_t match_size_bytes(Expr e1, Expr e2) {
 }
 
 // Prints a human readable form of the expression into a given buffer
-void print_expr(Expr expr, struct Dict* d, char* msg) {
-    size_t msg_cursor = 0;
-    size_t cursor = 0;
-    uint8_t type = expr[cursor];
-    uint8_t need_space = 0;
-    while (type != Eos) {
-        type = expr[cursor];
-        cursor++;
+void print_expr(Expr expr, struct Dict d, char* msg) {
+    size_t  msg_cursor = 0;
+    uint8_t type = expr[0];
+    if (type == Symbol) {
+        char* symbol = lookup_symbol_by_id(expr, d);
+        msg_cursor += sprintf(msg + msg_cursor, "%s", symbol);
+        // msg_cursor += sprintf(msg + msg_cursor, "%s [%llu]", symbol,
+        //     _bytes_to_index(expr + 1));
+    } else {
+        size_t  cursor = 0;
+        uint8_t need_space = 0;
+        DEPTH   depth = 0;
+        while (depth >= 0 && type != Eos) {
+            type = expr[cursor];
+            cursor++;
 
-        switch(type) {
-            case OpenParen: {
-                if (need_space == 1) {
-                    msg[msg_cursor] = ' ';
+            switch(type) {
+                case OpenParen: {
+                    depth++;
+                    if (need_space == 1) {
+                        msg[msg_cursor] = ' ';
+                        msg_cursor++;
+                        need_space = 0;
+                    }
+                    msg[msg_cursor] = '(';
                     msg_cursor++;
-                    need_space = 0;
+                    break;
                 }
-                msg[msg_cursor] = '(';
-                msg_cursor++;
-                break;
-            }
-            case CloseParen: {
-                msg[msg_cursor] = ')';
-                msg_cursor++;
-                need_space = 1;
-                break;
-            }
-            case Eos: {
-                break;
-            }
-            case Symbol: {
-                if (need_space == 1) {
-                    msg[msg_cursor] = ' ';
+                case CloseParen: {
+                    depth--;
+                    msg[msg_cursor] = ')';
                     msg_cursor++;
+                    need_space = 1;
+                    break;
                 }
-                if (d->count > 0) {
-                    char* symbol = lookup_symbol_by_id(expr, cursor, *d);
-                    msg_cursor += sprintf(msg + msg_cursor, "%s", symbol);
-                } else {
-                    msg_cursor +=
-                        sprintf(msg + msg_cursor, "%llu",
-                        _bytes_to_index(expr, cursor));
+                case Eos: {
+                    break;
                 }
-                cursor += SYMBOL_ID_BYTES;
-                need_space = 1;
-                break;
+                case Symbol: {
+                    if (need_space == 1) {
+                        msg[msg_cursor] = ' ';
+                        msg_cursor++;
+                    }
+                    char* symbol = lookup_symbol_by_id(expr + cursor - 1, d);
+                    // msg_cursor += sprintf(msg + msg_cursor, "%s", symbol);
+                    msg_cursor += sprintf(msg + msg_cursor, "%s [%llu]", symbol,
+                        _bytes_to_index(expr + cursor));
+                    cursor += SYMBOL_ID_BYTES;
+                    need_space = 1;
+                    break;
+                }
             }
         }
     }
@@ -339,4 +351,42 @@ uint8_t is_list(Expr expr) {
 
 uint8_t is_empty_list(Expr expr) {
     return expr[0] == OpenParen && expr[1] == CloseParen && expr[2] == Eos;
+}
+
+Expr advance_token(Expr expr) {
+    return expr + 1;
+}
+
+Expr advance_expr(Expr expr) {
+    switch (*expr) {
+        case Symbol: {
+            return expr + SYMBOL_ID_BYTES + 1;
+        }
+        case Eos: {
+            return expr;
+        }
+        case OpenParen: {
+            DEPTH depth = 1;
+            Expr result = expr + 1;
+            while (depth != 0 && *result != Eos) {
+                switch (*result) {
+                    case OpenParen: {
+                        depth++;
+                        break;
+                    }
+                    case Symbol: {
+                        result += SYMBOL_ID_BYTES;
+                        break;
+                    }
+                    case CloseParen: {
+                        depth--;
+                        break;
+                    }
+                }
+                result++;
+            }
+            return result;
+        }
+        default: return expr;
+    }
 }

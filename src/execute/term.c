@@ -1,6 +1,6 @@
 #include "term.h"
 
-struct Term make_number(struct Rational r) {
+struct Term make_number(Rational r) {
     struct Value v;
     v.type = RationalVal;
     v.rational = r;

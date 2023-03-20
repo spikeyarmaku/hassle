@@ -10,34 +10,51 @@
 #include "execute\term.h"
 #include "rational\rational.h"
 
+/*
+Env usage:
+
+Construction:
+  To construct an env,
+
+Destruction:
+  
+*/
+
 struct Entry {
     Expr expr;          // The name of the stored value
     struct Term term;   // The stored value itself
 };
 
-struct EnvFrame {
+struct _EnvFrame {
     size_t entry_count;
     struct Entry* mapping;
-    struct EnvFrame* parent;
+    struct _EnvFrame* parent;
 };
 
-struct Env {
-    struct EnvFrame* current_frame;
-    struct Dict* dict;
+typedef struct _EnvFrame* EnvFrame;
+
+struct _Env {
+    EnvFrame current_frame;
+    struct Dict dict;
 };
+
+typedef struct _Env* Env;
+
+Env             make_empty_env      ();
+void            free_env            (Env);
 
 // Parse number and string
-struct Term     default_rules       (Expr, struct Dict*);
+struct Term     default_rules       (Expr, struct Dict);
 
 // Return the term assigned to this expression in the given environment
-struct Term     env_lookup          (struct Env, Expr);
+struct Term     env_lookup          (Env, Expr);
 
 // Take a list, and return the term corresponding to the longest sublist
-struct Term*    find_longest_match  (struct Env, Expr, size_t*);
+struct Term*    find_longest_match  (Env, Expr, size_t*);
 
 // Extend
-ErrorCode       add_entry           (struct Env*, Expr, struct Term);
-ErrorCode       add_frame           (struct Env*, Expr, struct Term);
-void            remove_last_frame   (struct Env*);
+ErrorCode       add_entry           (Env, Expr, struct Term);
+ErrorCode       add_empty_frame     (Env);
+void            remove_last_frame   (Env);
 
 #endif

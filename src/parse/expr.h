@@ -43,7 +43,7 @@ typedef uint8_t* Expr;
 
 enum TokenType {Eos, OpenParen, CloseParen, Symbol};
 
-struct ExprBuilder {
+struct _ExprBuilder {
     Expr expr;
     struct Dict dict;
 
@@ -52,27 +52,32 @@ struct ExprBuilder {
     size_t _dict_size;   // Size of allocated memory for dict
 };
 
+typedef struct _ExprBuilder* ExprBuilder;
+
 // The reason a dictionary is passed to make_expr_builder is because it allows
 // a dictionary to be re-used between multiple parses
-struct ExprBuilder  make_expr_builder   (struct Dict*);
+ExprBuilder         make_expr_builder   (struct Dict*);
 
-ErrorCode           finalize_builder    (struct ExprBuilder*);
-ErrorCode           find_symbol         (struct ExprBuilder, char*, size_t*);
-ErrorCode           append_token        (struct ExprBuilder*, uint8_t, char*);
-ErrorCode           _grow_expr          (struct ExprBuilder*);
-ErrorCode           _finalize_expr      (struct ExprBuilder*);
+ErrorCode           finalize_builder    (ExprBuilder);
+ErrorCode           find_symbol         (ExprBuilder, char*, size_t*);
+ErrorCode           append_token        (ExprBuilder, uint8_t, char*);
+ErrorCode           _grow_expr          (ExprBuilder);
+ErrorCode           _finalize_expr      (ExprBuilder);
 
-char*               lookup_symbol_by_id (Expr, size_t, struct Dict);
-size_t              _bytes_to_index     (Expr, size_t);
+char*               lookup_symbol_by_id (Expr, struct Dict);
+size_t              _bytes_to_index     (Expr);
     
 void                free_expr           (Expr*);
 BOOL                is_equal_expr       (Expr, Expr);
 size_t              match_size          (Expr, Expr);
 size_t              match_size_bytes    (Expr, Expr);
     
-void                print_expr          (Expr, struct Dict*, char*);
+void                print_expr          (Expr, struct Dict, char*);
     
 BOOL                is_list             (Expr);
 BOOL                is_empty_list       (Expr);
+
+Expr                advance_token       (Expr);
+Expr                advance_expr        (Expr);
 
 #endif

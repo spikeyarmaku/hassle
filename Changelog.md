@@ -1,3 +1,15 @@
+Since ab0af1a5c4fa5bfd5abec5beb0de87df73c24055
+- Improve env frame handling
+- Fix execution bugs
+- Rename module `stdlib` to `builtin`
+- Add built-ins
+
+Since 0d9a9462f1ea886ba8696af0a237b53f79b7e14e
+- Update readme
+
+Since 66fa1ab0089257e9d1e3cb3ae3544d92f9048f5a
+- Add license file
+
 Since caf0393b0bff08593cfc21be71635ac6897c9dbe
 - Make API more consistent
 

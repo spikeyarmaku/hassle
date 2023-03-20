@@ -1,5 +1,7 @@
 #include "dict.h"
 
+#include <stdio.h>
+
 struct Dict make_empty_dict() {
     struct Dict d;
     d.count = 0;
@@ -56,6 +58,13 @@ void free_dict(struct Dict* dict) {
     free_mem(dict->names);
     dict->names = NULL;
     dict->count = 0;
+}
+
+void print_dict(struct Dict dict, char* buf) {
+    int count = sprintf(buf, "Dict: %llu entries:\n", dict.count);
+    for (size_t i = 0; i < dict.count; i++) {
+        count += sprintf(buf + count, "%llu. %s\n", i, dict.names[i]);
+    }
 }
 
 // PRIVATE METHODS
