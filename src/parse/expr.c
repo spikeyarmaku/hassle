@@ -8,7 +8,7 @@ Expr_t _expr_make_empty(ErrorCode_t* error_code) {
     *error_code = (expr == NULL) ? Error : Success;
     if (*error_code == Success) {
         expr->_next = NULL;
-        expr->_prev = NULL;
+        // expr->_prev = NULL;
     }
     debug(1, "/_expr_make_empty\n");
     return expr;
@@ -43,6 +43,7 @@ void expr_add_to_list(ErrorCode_t* error_code, Expr_t list_expr, Expr_t child) {
             last_elem = last_elem->_next;
         }
         last_elem->_next = child;
+        // child->_prev = last_elem
     }
     debug(1, "/expr_add_to_list\n");
 }
@@ -72,10 +73,10 @@ Expr_t expr_get_next(Expr_t expr) {
     return expr->_next;
 }
 
-Expr_t expr_get_prev(Expr_t expr) {
-    if (expr == NULL) return NULL;
-    return expr->_prev;
-}
+// Expr_t expr_get_prev(Expr_t expr) {
+//     if (expr == NULL) return NULL;
+//     return expr->_prev;
+// }
 
 BOOL expr_is_list(Expr_t expr) {
     if (expr == NULL) return FALSE;
@@ -175,4 +176,22 @@ char* expr_to_string(Expr_t expr) {
         debug(1, "expr_to_string\n");
         return result;
     }
+}
+
+void expr_free(Expr_t* expr_ptr) {
+    Expr_t expr = *expr_ptr;
+    if (expr == NULL) return;
+    if (expr->_type == ExprAtom) {
+        // expr->_next and expr->_prev should be NULL at this point
+        free_mem("expr_free/symbol", expr->_symbol);
+        *expr_ptr = NULL;
+    } else {
+        Expr_t list = expr->_list;
+        while (list != NULL) {
+            Expr_t dummy = list;
+            list = list->_next;
+            expr_free(&dummy);
+        }
+    }
+    free_mem("expr_free/atom", expr);
 }

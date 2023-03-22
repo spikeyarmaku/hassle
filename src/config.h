@@ -25,6 +25,12 @@
 // Comment this out to disable memoization. Useful in low-memory environments
 // #define MEMOIZE_SUB_EXPRS
 
+// Comment this out to disable overwriting memory with random data before
+// freeing it up. It's useful for making sure sensitive data resides in the
+// memory only for as long as necessary, at the cost of some performance hit.
+// TODO do it in memory.h
+// #define SECURE_DESTRUCTION
+
 // --- KNOBS ---
 
 // The amount of debug prints, if DEBUG_PRINTS is defined

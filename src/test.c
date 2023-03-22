@@ -86,67 +86,57 @@ uint8_t run_number_tests() {
     return sum;
 }
 
-// uint8_t run_expr_tests() {
-//     printf("Running expr tests...\n");
-//     int sum = 0;
-//     uint8_t Error_code = Success;
-//     char msg[1000];
+uint8_t run_expr_tests() {
+    printf("Running expr tests...\n");
+    int sum = 0;
+    uint8_t Error_code = Success;
 
-//     // Empty list
-//     uint8_t expr_buf[] = {OpenParen, CloseParen, Eos};
-//     Expr_t empty_list = (Expr_t)expr_buf;
-//     assert(&sum, "Check if an expr is a list", is_list(empty_list) == 1);
-//     assert(&sum, "Check if an expr is an empty list", is_empty_list(empty_list) == 1);
-
-//     // Parse and compare exprs
-//     // TODO test comments
-//     char buf[] =
-//         "(defun factorial (n) (if (<= n 1) 1 (* n (factorial (- n 1)))))";
-//     Expr_t expr;
-//     SymbolDict_t dict = NULL;
-//     Error_code = parse_from_str(buf, &expr, &dict);
-//     if (Error_code != Success) {
-//         Error("couldn't parse string\n");
-//         return Error_code;
-//     }
-//     EnvFrame_t frame = make_empty_frame(NULL);
-//     frame->env_dict->symbol_dict = dict;
-//     print_expr(expr, frame, msg);
-//     assert(&sum, "Parse an expression", strcmp(buf, msg) == 0);
-//     free_symbol_dict(&dict);
-//     assert(&sum, "Compare two expressions", is_equal_expr(expr, expr) == 1);
-//     free_expr(&expr);
-//     expr = NULL;
-
-//     // Find longest match
-//     char buf2[] = "(a b (x (1 2 3) y) c)";
-//     char buf3[] = "(a b (x (1 2 3) z) c)";
-//     Expr_t expr2; SymbolDict_t dict2 = NULL;
-//     Error_code = parse_from_str(buf2, &expr2, &dict2);
-//     if (Error_code != Success) {
-//         Error("couldn't parse string\n");
-//         return Error_code;
-//     }
-//     Expr_t expr3;
-//     Error_code = parse_from_str(buf3, &expr3, &dict2);
-//     if (Error_code != Success) {
-//         Error("couldn't parse string\n");
-//         return Error_code;
-//     }
-//     frame->env_dict->symbol_dict = dict2;
-//     print_expr(expr2, frame, msg); printf("expr2: %s\n", msg);
-//     print_expr(expr3, frame, msg); printf("expr3: %s\n", msg);
-//     assert(&sum, "Compare two different subexpressions",
-//         is_equal_expr(expr2 + 1, expr3 + 1) == 1);
-//     assert(&sum, "Find longest match", match_size(expr2, expr3) == 2);
-//     printf("%d tests failed.\n\n", sum);
-//     free_expr(&expr2); free_expr(&expr3);
-//     free_symbol_dict(&dict2);
-//     expr2 = NULL; expr3 = NULL;
-
-//     // show_logger_entries(_logger);
-//     return sum;
-// }
+    // Empty list
+    uint8_t expr_buf[] = {OpenParen, CloseParen, Eos};
+    Expr_t empty_list = (Expr_t)expr_buf;
+    assert(&sum, "Check if an expr is a list",
+        expr_is_list(empty_list) == 1);
+    
+    // Parse and compare exprs
+    char buf[] =
+        "(defun factorial (n) (if (<= n 1) 1 (* n (factorial (- n 1)))))";
+    ErrorCode_t error_code;
+    Expr_t expr = parse_from_str(&error_code, buf);
+    if (error_code != Success) {
+        error("couldn't parse string\n");
+        return Error_code;
+    }
+    char* msg = expr_to_string(expr);
+    assert(&sum, "Parse an expression", strcmp(buf, msg) == 0);
+    free_mem("run_expr_tests", msg);
+    assert(&sum, "Compare two expressions", expr_is_equal(expr, expr) == TRUE);
+    expr_free(&expr);
+    
+    // Find longest match
+    char buf2[] = "(a b (x (1 2 3) y) c)";
+    char buf3[] = "(a b (x (1 2 3) z) c)";
+    Expr_t expr2 = parse_from_str(&error_code, buf2);
+    if (error_code != Success) {
+        error("couldn't parse string\n");
+        return Error_code;
+    }
+    Expr_t expr3 = parse_from_str(&error_code, buf3);
+    if (error_code != Success) {
+        error("couldn't parse string\n");
+        return Error_code;
+    }
+    char* msg2 = expr_to_string(expr2); printf("expr2: %s\n", msg2);
+    char* msg3 = expr_to_string(expr3); printf("expr3: %s\n", msg3);
+    free_mem("run_expr_tests", msg2); free_mem("run_expr_tests", msg3);
+    assert(&sum, "Compare two different subexpressions",
+        expr_is_equal(expr2 + 1, expr3 + 1) == TRUE);
+    // assert(&sum, "Find longest match", match_size(expr2, expr3) == 2);
+    printf("%d tests failed.\n\n", sum);
+    expr_free(&expr2); expr_free(&expr3);
+    
+    // show_logger_entries(_logger);
+    return sum;
+}
 
 // uint8_t run_exec_tests() {
 //     printf("Running exec tests...\n");
@@ -206,7 +196,7 @@ uint8_t run_number_tests() {
 void run_tests() {
     int sum = 0;
     // sum += run_number_tests();
-    // sum += run_expr_tests();
+    sum += run_expr_tests();
     // sum += run_exec_tests();
 
     printf("Total: %d tests failed.\n", sum);

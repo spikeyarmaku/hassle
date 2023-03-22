@@ -42,13 +42,13 @@ made to them).
 TODO
 - add Unicode support
 - check memory allocations for leaks
-- add comment support to the parser (;)
 - when a failure happens, do a cleanup
-  (check every code block with `if (Error_code != Success)`)
-- Add buffered allocation to Env
+  (check every code block with `if (error_code != Success)`)
 - Check if the input expression is well-formed (all parens match)
 - add `_t` suffix to typedef'd types
 - rename size_t to INDEX where it makes sense
+- when freeing an object, overwrite the memory with random data
+  (SECURE_DESTRUCTION)
 */
 
 #include "main.h"
@@ -116,7 +116,9 @@ ErrorCode_t interpret_file(char* file_name) {
     free_mem("main", str);
     // interpret(env, expr);
     // free_env(&env);
-    // free_expr(&expr);
+    expr_free(&expr);
+
+    show_logger_entries(_logger);
     return Success;
 }
 
