@@ -15,7 +15,7 @@
 // #define MEMORY_DIAGNOSTIC
 
 // Comment this out to disable debug prints
-// #define DEBUG_PRINTS
+#define DEBUG_PRINTS
 
 // Comment this out to speed up the interpreter a bit at the expense of
 // consuming somewhat more memory
@@ -39,7 +39,13 @@
 // How many bytes are allocated if an expr needs to be expanded
 #define EXPR_BUFFER_SIZE 8
 
+// If a dict ha to be grown, enough space is allocated for this many elements
+#define DICT_BUFFER_SIZE 8
+
 // The number of bytes in a symbol ID
 #define SYMBOL_ID_BYTES 2
+
+// The number of bytes in a term ID
+#define TERM_ID_BYTES 2
 
 #endif

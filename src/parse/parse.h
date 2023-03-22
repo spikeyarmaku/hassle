@@ -14,34 +14,37 @@ Either call `parse_from_file` or `parse_from_str`, which will output the
 resulting expr and dict into the given addresses.
 */
 
-struct _Token {
+enum TokenType {Eos, OpenParen, CloseParen, Symbol};
+
+struct Token {
     enum TokenType type;
     char* str;
 };
 
-struct _Parser {
+struct Parser {
     char* stream;
     long int counter;
 };
+typedef struct Parser* Parser_t;
 
-ErrorCode       parse_from_file     (char*, Expr*, struct Dict*);
-ErrorCode       parse_from_str      (char*, Expr*, struct Dict*);
+Expr_t          parse_from_file     (ErrorCode_t*, char*);
+Expr_t          parse_from_str      (ErrorCode_t*, char*);
 
-struct _Parser  _create_parser      (char*);
-void            _free_parser        (struct _Parser*);
+Parser_t        _create_parser      (char*);
+void            _free_parser        (Parser_t*);
 
-ErrorCode       _get_next_token     (struct _Parser*, struct _Token*);
-ErrorCode       _read_symbol        (struct _Parser*, struct _Token*);
-ErrorCode       _read_string        (struct _Parser*, struct _Token*);
-ErrorCode       _read_identifier    (struct _Parser*, struct _Token*);
-void            _free_token         (struct _Token*);
+struct Token    _get_next_token     (ErrorCode_t*, Parser_t);
+ErrorCode_t     _read_symbol        (struct Token*, Parser_t);
+ErrorCode_t     _read_string        (struct Token*, Parser_t);
+ErrorCode_t     _read_identifier    (struct Token*, Parser_t);
+void            _free_token         (struct Token*);
 
-char            _get_next_char      (struct _Parser*);
-char            _get_current_char   (struct _Parser*);
+char            _get_next_char      (Parser_t);
+char            _get_current_char   (Parser_t);
 
 BOOL            _is_whitespace      (char);
-void            _consume_whitespace (struct _Parser*);
+void            _consume_whitespace (Parser_t);
 
-ErrorCode       _parse              (struct _Parser, Expr*, struct Dict*);
+Expr_t          _parse              (ErrorCode_t*, Parser_t);
 
 #endif

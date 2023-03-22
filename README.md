@@ -7,7 +7,7 @@ Dependency graph:
 [execute/eval] ───► [execute/env] ──────────┐
     │    │                │                 │
     │    │                ▼                 ▼
-    │    └────────► [execute/term] ───► [rational/ational] ───► [rational/alnat]
+    │    └───────► [execute/term] ───► [rational/rational] ───► [rational/alnat]
     │                         │
     │          [parse/parse]  │
     │                    │    │

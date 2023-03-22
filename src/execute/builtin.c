@@ -9,8 +9,9 @@ struct Term make_lambda() {
     return t;
 }
 
-ErrorCode _lambda_helper1(Env env, Expr name, void* closure,
+enum ErrorCode _lambda_helper1(EnvFrame_t env, Expr_t name, void* closure,
         struct Term* result) {
+    debug(2, "_lambda_helper1\n");
     struct Term t;
     t.type = AbsTerm;
     t.abs.apply = _lambda_helper2;
@@ -18,11 +19,12 @@ ErrorCode _lambda_helper1(Env env, Expr name, void* closure,
     lambda_closure->name = name;
     t.abs.closure = closure;
     *result = t;
-    return SUCCESS;
+    return Success;
 }
 
-ErrorCode _lambda_helper2(Env env, Expr body, void* closure,
+enum ErrorCode _lambda_helper2(EnvFrame_t env, Expr_t body, void* closure,
         struct Term* result) {
+    debug(2, "_lambda_helper2\n");
     struct Term t;
     t.type = AbsTerm;
     t.abs.apply = _lambda_helper3;
@@ -31,30 +33,32 @@ ErrorCode _lambda_helper2(Env env, Expr body, void* closure,
     lambda_closure->static_env = env;
     t.abs.closure = closure;
     *result = t;
-    return SUCCESS;
+    return Success;
 }
 
-ErrorCode _lambda_helper3(Env env, Expr value, void* closure,
+enum ErrorCode _lambda_helper3(EnvFrame_t env, Expr_t value, void* closure,
         struct Term* result) {
+    debug(2, "_lambda_helper3\n");
     struct LambdaClosure* lambda_closure = (struct LambdaClosure*)closure;
-    ErrorCode error_code = eval_expr(env, value, result);
-    if (error_code != SUCCESS) {
-        return error_code;
+    enum ErrorCode Error_code = eval_expr(env, value, result);
+    if (Error_code != Success) {
+        return Error_code;
     }
-    Env new_env = lambda_closure->static_env;
-    error_code = add_empty_frame(new_env);
-    if (error_code != SUCCESS) {
-        return error_code;
+    
+    EnvFrame_t new_frame = make_empty_frame(lambda_closure->static_env);
+    Error_code = add_entry(new_frame, lambda_closure->name, *result);
+    if (Error_code != Success) {
+        return Error_code;
     }
-    error_code = add_entry(new_env, lambda_closure->name, *result);
-    if (error_code != SUCCESS) {
-        return error_code;
+    
+    Error_code = eval_expr(new_frame, lambda_closure->body, result);
+    if (Error_code != Success) {
+        return Error_code;
     }
 
-    Expr body = lambda_closure->body;
-    // free_mem("_lambda_helper3", closure);
-
-    return eval_expr(new_env, body, result);
+    free_mem("_lambda_helper3", closure);
+    free_frame(&new_frame); // TODO free env (currently the program crashes at this line)
+    return Success;
 }
 
 // Math functions
@@ -62,15 +66,17 @@ struct Term make_binop(enum BinOp binop) {
     struct Term t;
     t.type = AbsTerm;
     t.abs.apply = _binop_helper1;
-    t.abs.closure = allocate_mem("make_binop", NULL, sizeof(struct MathBinopClosure));
+    t.abs.closure =
+        allocate_mem("make_binop", NULL, sizeof(struct MathBinopClosure));
     struct MathBinopClosure* binop_closure =
         (struct MathBinopClosure*)t.abs.closure;
     binop_closure->binop = binop;
     return t;
 }
 
-ErrorCode _binop_helper1(Env env, Expr op1, void* closure,
+enum ErrorCode _binop_helper1(EnvFrame_t env, Expr_t op1, void* closure,
         struct Term* result) {
+    debug(2, "_binop_helper1\n");
     struct Term t;
     t.type = AbsTerm;
     t.abs.apply = _binop_helper2;
@@ -79,35 +85,37 @@ ErrorCode _binop_helper1(Env env, Expr op1, void* closure,
         (struct MathBinopClosure*)closure;
     math_binop_closure->operand1 = op1;
     *result = t;
-    return SUCCESS;
+    return Success;
 }
 
-ErrorCode _binop_helper2(Env env, Expr op2, void* closure,
+enum ErrorCode _binop_helper2(EnvFrame_t env, Expr_t op2, void* closure,
         struct Term* result) {
+    debug(2, "_binop_helper2\n");
     struct MathBinopClosure* math_binop_closure =
         (struct MathBinopClosure*)closure;
-    Expr op1 = math_binop_closure->operand1;
+    Expr_t op1 = math_binop_closure->operand1;
     enum BinOp binop = math_binop_closure->binop;
-    // free_mem("_binop_helper2", closure);
 
     struct Term t1, t2;
-    ErrorCode error_code = eval_expr(env, op1, &t1);
-    if (error_code != SUCCESS) {
-        return error_code;
+    enum ErrorCode Error_code = eval_expr(env, op1, &t1);
+    if (Error_code != Success) {
+        return Error_code;
     }
-    error_code = eval_expr(env, op2, &t2);
-    if (error_code != SUCCESS) {
-        return error_code;
+    Error_code = eval_expr(env, op2, &t2);
+    if (Error_code != Success) {
+        return Error_code;
     }
 
     // Check if the operands are numbers
     if (t1.type != ValTerm || t2.type != ValTerm) {
+        debug(2, "_binop_helper2: at least one operand is not a value\n");
         free_term(t1); free_term(t2);
-        return ERROR;
+        return Error;
     }
     if (t1.value.type != RationalVal || t2.value.type != RationalVal) {
+        debug(2, "_binop_helper2: at least one operand is not a number\n");
         free_term(t1); free_term(t2);
-        return ERROR;
+        return Error;
     }
 
     result->type = ValTerm;
@@ -134,31 +142,35 @@ ErrorCode _binop_helper2(Env env, Expr op2, void* closure,
             break;
         }
     }
-    free_term(t1); free_term(t2);
+    debug(2, "_binop_helper2: result calculated\n");
+    // free_mem(closure);
+    // free_term(t1); free_term(t2);
+    debug(2, "_binop_helper2: cleanup done\n");
     
-    return SUCCESS;
+    return Success;
 }
 
-ErrorCode _add_builtin (Env env, char* name, struct Term term) {
-    Expr expr;
-    ErrorCode error_code = parse_from_str(name, &expr, &(env->dict));
-    if (error_code != SUCCESS) {
-        return error_code;
+enum ErrorCode _add_builtin (EnvFrame_t env, char* name, struct Term term) {
+    Expr_t expr;
+    enum ErrorCode Error_code =
+        parse_from_str(name, &expr, &(env->env_dict->symbol_dict));
+    if (Error_code != Success) {
+        return Error_code;
     }
     add_entry(env, expr, term);
-    return SUCCESS;
+    return Success;
 }
 
 // Create the ground environment, with the default lookup values and the
 // built-in functions
-Env make_default_env() {
-    Env env = make_empty_env();
-    
-    _add_builtin(env, "lambda", make_lambda());
-    _add_builtin(env, "+", make_binop(ADD));
-    _add_builtin(env, "-", make_binop(SUB));
-    _add_builtin(env, "*", make_binop(MUL));
-    _add_builtin(env, "/", make_binop(DIV));
-    
+EnvFrame_t make_default_frame() {
+    EnvFrame_t env = make_empty_frame(NULL);
+    if (env != NULL) {
+        _add_builtin(env, "lambda", make_lambda());
+        _add_builtin(env, "+",      make_binop(ADD));
+        _add_builtin(env, "-",      make_binop(SUB));
+        _add_builtin(env, "*",      make_binop(MUL));
+        _add_builtin(env, "/",      make_binop(DIV));
+    }
     return env;
 }

@@ -1,3 +1,6 @@
+Since 88000e3c4c21f441969bc447bf277d4857f8a3e2
+- Rewrite environment handling
+
 Since d51cf57865e88bc090202f8a7a21f05264d25b2d
 - Fix memory leaks
 - Add more debug information to memory operations

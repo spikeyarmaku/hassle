@@ -11,29 +11,29 @@ enum BinOp {ADD, SUB, MUL, DIV};
 
 // lambda
 struct LambdaClosure {
-    Env static_env;
-    Expr name;
-    Expr body;
+    EnvFrame_t static_env;
+    Expr_t name;
+    Expr_t body;
 };
 
 struct MathBinopClosure {
     enum BinOp binop;
-    Expr operand1;
+    Expr_t operand1;
 };
 
 // lambda
-struct Term     make_lambda     ();
-ErrorCode       _lambda_helper1 (Env, Expr, void*, struct Term*);
-ErrorCode       _lambda_helper2 (Env, Expr, void*, struct Term*);
-ErrorCode       _lambda_helper3 (Env, Expr, void*, struct Term*);
+struct Term make_lambda         ();
+enum ErrorCode _lambda_helper1     (EnvFrame_t, Expr_t, void*, struct Term*);
+enum ErrorCode _lambda_helper2     (EnvFrame_t, Expr_t, void*, struct Term*);
+enum ErrorCode _lambda_helper3     (EnvFrame_t, Expr_t, void*, struct Term*);
 
 // math operations
-struct Term     make_binop      (enum BinOp);
-ErrorCode       _binop_helper1  (Env, Expr, void*, struct Term*);
-ErrorCode       _binop_helper2  (Env, Expr, void*, struct Term*);
+struct Term make_binop          (enum BinOp);
+enum ErrorCode _binop_helper1      (EnvFrame_t, Expr_t, void*, struct Term*);
+enum ErrorCode _binop_helper2      (EnvFrame_t, Expr_t, void*, struct Term*);
 
 // Create the ground environment
-ErrorCode       _add_builtin        (Env, char*, struct Term);
-Env             make_default_env    ();
+enum ErrorCode _add_builtin        (EnvFrame_t, char*, struct Term);
+EnvFrame_t  make_default_frame  ();
 
 #endif

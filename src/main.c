@@ -44,63 +44,90 @@ TODO
 - check memory allocations for leaks
 - add comment support to the parser (;)
 - when a failure happens, do a cleanup
-  (check every code block with `if (error_code != SUCCESS)`)
+  (check every code block with `if (Error_code != Success)`)
 - Add buffered allocation to Env
 - Check if the input expression is well-formed (all parens match)
+- add `_t` suffix to typedef'd types
+- rename size_t to INDEX where it makes sense
 */
 
 #include "main.h"
 
 struct _Logger _logger;
 
-struct _Parser _create_parser(char* filename);
+// enum ErrorCode interpret(EnvFrame_t env, Expr_t expr) {
+//     struct Term result;
+//     enum ErrorCode Error_code = eval_expr(env, expr, &result);
+//     if (Error_code != Success) {
+//         return Error_code;
+//     }
+    
+//     char buf[1024];
+//     print_term(buf, result, env);
+//     printf("%s", buf);
+
+//     free_term(result);
+
+//     return Success;
+// }
 
 #ifdef REPL_ENABLED
-ErrorCode repl() {
-    char buffer[STRING_BUFFER_SIZE];
+enum ErrorCode repl() {
+    // char buffer[STRING_BUFFER_SIZE];
 
-    int go_on = 1;
-    while (go_on) {
-        printf("RSC> ");
+    // int go_on = 1;
+    // EnvFrame_t env = make_default_frame();
+    // while (go_on) {
+    //     printf("RSC> ");
 
-        if (!fgets(buffer, STRING_BUFFER_SIZE, stdin)) {
-            printf("Error while reading from stdin.\n");
-        }
+    //     if (!fgets(buffer, STRING_BUFFER_SIZE, stdin)) {
+    //         printf("Error while reading from stdin.\n");
+    //     }
 
-        if (buffer[0] == '\n') {
-            go_on = 0;
-            break;
-        }
+    //     if (buffer[0] == '\n') {
+    //         go_on = 0;
+    //         break;
+    //     }
 
-        Expr expr;
-        struct Dict dict;
-        uint8_t error_code = parse_from_str(buffer, &expr, &dict);
-        if (error_code != SUCCESS) {
-            return error_code;
-        }
-        // print_expr(expr, dict);
-        free_expr(&expr);
-        expr = NULL;
-        printf("\n\n");
-    }
+    //     ErrorCode_t error_code;
+    //     Expr_t expr = parse_from_str(&error_code, buffer);
+    //     if (error_code != Success) {
+    //         return error_code;
+    //     }
+        
+    //     interpret(env, expr);
+    //     free_expr(&expr);
+    // }
 
-    return SUCCESS;
+    // free_frame(&env);
+    return Success;
 }
 #endif
 
-ErrorCode interpret_file(char* file_name) {
+ErrorCode_t interpret_file(char* file_name) {
     printf("%s\n", file_name);
-    struct Dict dict;
-    Expr expr;
-    uint8_t error_code = parse_from_file(file_name, &expr, &dict);
-    if (error_code != SUCCESS) {
-        return error_code;
-    }
-    // print_expr(expr, dict);
-    free_expr(&expr);
-    expr = NULL;
-    free_dict(&dict);
-    return SUCCESS;
+    // EnvFrame_t env = make_default_frame();
+    ErrorCode_t error_code;
+    Expr_t expr = parse_from_file(&error_code, file_name);
+    if (error_code != Success) return error_code;
+
+    char* str = expr_to_string(expr);
+    printf("Expression: %s\n", str);
+    free_mem("main", str);
+    // interpret(env, expr);
+    // free_env(&env);
+    // free_expr(&expr);
+    return Success;
+}
+
+
+struct Test{
+    char* msg;
+};
+struct Test char_test(char* msg) {
+    struct Test t;
+    t.msg = msg;
+    return t;
 }
 
 // If called with a file, run it, else start a REPL
@@ -110,9 +137,10 @@ int main(int argc, char *argv[]) {
     
     if (argc > 1) {
         // There is at least one parameter
-        // interpret_file(argv[1]);
+        ErrorCode_t error_code = interpret_file(argv[1]);
+        if (error_code != Success) return 1;
 
-        run_tests();
+        // run_tests();
     } else {
         #ifdef REPL_ENABLED
         // There are no arguments, start a REPL

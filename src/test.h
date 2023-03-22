@@ -8,8 +8,8 @@
 
 #include "parse\parse.h"
 #include "rational\rational.h"
-#include "execute\eval.h"
-#include "execute\builtin.h"
+// #include "execute\eval.h"
+// #include "execute\builtin.h"
 
 #include "memory.h"
 #include "test.h"

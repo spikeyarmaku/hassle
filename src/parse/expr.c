@@ -1,396 +1,178 @@
 #include "expr.h"
 
-#include <stdio.h>
+Expr_t _expr_make_empty(ErrorCode_t* error_code) {
+    debug(1, "_expr_make_empty\n");
+    Expr_t expr = (Expr_t)allocate_mem("_expr_make_empty", NULL,
+        sizeof(struct Expr));
 
-ExprBuilder make_expr_builder(struct Dict* d) {
-    debug(1, "  make expr builder\n");
-    ExprBuilder builder =
-        (ExprBuilder)allocate_mem("make_expr_builder", NULL, sizeof(struct _ExprBuilder));
-    debug(1, "  ...done\n");
-    if (builder != NULL) {
-        debug(1, "  init expr builder\n");
-        builder->expr = NULL;
-        if (d == NULL) {
-            builder->dict.count = 0;
-            builder->dict.names = NULL;
-        } else {
-            builder->dict = *d;
-        }
-
-        builder->_expr_size = 0;
-        builder->_expr_cursor = 0;
-        builder->_dict_size = d->count;
+    *error_code = (expr == NULL) ? Error : Success;
+    if (*error_code == Success) {
+        expr->_next = NULL;
+        expr->_prev = NULL;
     }
-    return builder;
+    debug(1, "/_expr_make_empty\n");
+    return expr;
 }
 
-// Allocate more space for the expression
-ErrorCode _grow_expr(ExprBuilder b) {
-    debug(1, "grow_expr(%llu -> %llu)", b->_expr_size,
-        b->_expr_size + EXPR_BUFFER_SIZE);
-    Expr new_ptr =
-        (Expr)allocate_mem("_grow_expr", b->expr,
-        (b->_expr_size + EXPR_BUFFER_SIZE) * sizeof(uint8_t));
-    if (new_ptr == NULL) {
-        error("grow_expr: couldn't allocate more memory\n");
-        return ERROR;
-    }
-    b->expr = new_ptr;
-    b->_expr_size += EXPR_BUFFER_SIZE;
-    return SUCCESS;
+void _expr_set_as_atom(Expr_t expr, char* symbol) {
+    expr->_type = ExprAtom;
+    char* my_symbol = (char*)allocate_mem("_expr_set_as_atom", NULL,
+        sizeof(char) * (strlen(symbol) + 1));
+    strcpy(my_symbol, symbol);
+    expr->_symbol = my_symbol;
 }
 
-// Calculate the final size of the expression, and free up unnecessary allocated
-// space
-ErrorCode _finalize_expr(ExprBuilder b) {
-    if (b->_expr_size == 0) {
-        return SUCCESS;
-    }
-    size_t new_size = 0;
-    uint8_t current = b->expr[new_size];
-    while (current != Eos) {
-        current = b->expr[new_size];
-        new_size++;
-        if (current == Symbol) {
-            new_size += SYMBOL_ID_BYTES;
-        }
-    }
-    if (b->_expr_size < new_size) {
-        uint8_t* new_ptr =
-            (uint8_t*)allocate_mem("_finalize_expr", b->expr, new_size * sizeof(uint8_t));
-        if (new_ptr == NULL) {
-            error("finalize_expr: couldn't free up unnecessary memory\n");
-            return ERROR;
-        }
-        b->expr = new_ptr;
-    }
-    return SUCCESS;
+void _expr_set_as_list(Expr_t expr) {
+    expr->_type = ExprList;
+    expr->_list = NULL;
 }
 
-// Calculate the final size of the expr and the dict, and free up unnecessary
-// allocated space
-ErrorCode finalize_builder(ExprBuilder b) {
-    ErrorCode error_code = _finalize_expr(b);
-    if (error_code == SUCCESS) {
-        return finalize_dict(&(b->dict), &(b->_dict_size));
+void expr_add_to_list(ErrorCode_t* error_code, Expr_t list_expr, Expr_t child) {
+    debug(1, "expr_add_to_list\n");
+    if (list_expr->_type != ExprList) {
+        *error_code = Error;
+        debug(1, "/expr_add_to_list\n");
+        return;
+    }
+
+    if (list_expr->_list == NULL) {
+        list_expr->_list = child;
     } else {
-        return error_code;
-    }
-}
-
-// Return the ID of a symbol in the symbol dictionary
-ErrorCode find_symbol(ExprBuilder b, char* symbol, size_t* index) {
-    for (size_t i = 0; i < b->dict.count; i++) {
-        if (strcmp(symbol, b->dict.names[i]) == 0) {
-            *index = i;
-            return SUCCESS;
+        Expr_t last_elem = list_expr->_list;
+        while (last_elem->_next != NULL) {
+            last_elem = last_elem->_next;
         }
+        last_elem->_next = child;
     }
-    // error("find_symbol: couldn't find symbol %s\n", symbol);
-    return ERROR;
+    debug(1, "/expr_add_to_list\n");
 }
 
-// Add a new token to the expr
-ErrorCode append_token(ExprBuilder b, uint8_t type, char* symbol) {
-    debug(1, "append_token(*, %d, %s)\n", type, symbol);
-    // Check if expr needs more space
-    if (b == NULL) {
-        error("append_token: expr builder is NULL\n");
-        debug(1, "/append_token\n");
-        return ERROR;
+Expr_t expr_make_atom(ErrorCode_t* error_code, char* symbol) {
+    debug(1, "expr_make_atom\n");
+    Expr_t expr = _expr_make_empty(error_code);
+    if (*error_code == Success) {
+        _expr_set_as_atom(expr, symbol);
     }
-    if (b->_expr_cursor + SYMBOL_ID_BYTES + 1 > b->_expr_size) {
-        uint8_t error_code = _grow_expr(b);
-        if (error_code != SUCCESS) {
-            printf("Error while growing expr\n");
-            debug(1, "/append_token\n");
-            return error_code;
-        }
-    }
-    b->expr[b->_expr_cursor] = type;
-    if (type == Symbol) {
-        size_t index = 0;
-        if (find_symbol(b, symbol, &index) != SUCCESS) {
-            uint8_t error_code =
-                add_name(&(b->dict), &(b->_dict_size), symbol, &index);
-            if (error_code != SUCCESS) {
-                error("append_token: couldn't append symbol %s\n", symbol);
-                debug(1, "/append_token\n");
-                return error_code;
-            }
-        }
-        // Store the symbol ID in little endian format
-        for (uint8_t i = 0; i < SYMBOL_ID_BYTES; i++) {
-            b->_expr_cursor++;
-            b->expr[b->_expr_cursor] = (index & (255 << (8 * i))) >> (8 * i);
-        }
-    }
-    b->_expr_cursor++;
-    debug(1, "/append_token\n");
-    return SUCCESS;
+    debug(1, "/expr_make_atom\n");
+    return expr;
 }
 
-// Restore an index from bytes
-size_t _bytes_to_index(Expr expr) {
-    size_t index = 0;
-    size_t multiplier = 1;
-    for (uint8_t i = 0; i < SYMBOL_ID_BYTES; i++) {
-        index += expr[i] * multiplier;
-        multiplier <<= 8;
+Expr_t expr_make_empty_list(ErrorCode_t* error_code) {
+    debug(1, "expr_make_empty_list\n");
+    Expr_t expr = _expr_make_empty(error_code);
+    if (*error_code == Success) {
+        _expr_set_as_list(expr);
     }
-    return index;
+    debug(1, "/expr_make_empty_list\n");
+    return expr;
 }
 
-// Retrieve a symbol from an ID
-char* lookup_symbol_by_id(Expr expr, struct Dict d) {
-    return d.names[_bytes_to_index(expr + 1)];
+Expr_t expr_get_next(Expr_t expr) {
+    if (expr == NULL) return NULL;
+    return expr->_next;
 }
 
-void free_expr_builder(ExprBuilder b) {
-    free_mem("free_expr_builder", b);
+Expr_t expr_get_prev(Expr_t expr) {
+    if (expr == NULL) return NULL;
+    return expr->_prev;
 }
 
-void free_expr(Expr* expr) {
-    free_mem("free_expr", *expr);
-    *expr = NULL;
+BOOL expr_is_list(Expr_t expr) {
+    if (expr == NULL) return FALSE;
+    return expr->_type == ExprList;
 }
 
-// Check if two expressions are equal by comparing their bytes.
-// Return 1 if equal, 0 if not.
-BOOL is_equal_expr(Expr e1, Expr e2) {
-    uint8_t b1 = e1[0];
-    uint8_t b2 = e2[0];
+Expr_t expr_get_list(Expr_t expr) {
+    if (expr == NULL) return NULL;
+    return expr->_list;
+}
 
-    // Check if they are valid epxressions
-    if (b1 == Eos || b1 == CloseParen || b2 == Eos || b2 == CloseParen) {
-        return b1 == b2;
-    }
+char* expr_get_symbol(Expr_t expr) {
+    if (expr == NULL) return NULL;
+    return expr->_symbol;
+}
 
-    // Check if they are symbols
-    if (b1 == b2) {
-        if (b1 == Symbol) {
-            // Compare just one symbol
-            for (size_t i = 1; i < SYMBOL_ID_BYTES + 1; i++) {
-                if (e1[i] != e2[i]) {
-                    return FALSE;
-                }
-            }
-            return TRUE;
-        } else {
-            // Compare until the end of list (b1 and b2 are OpenParen)
-            size_t counter = 1;
-            enum TokenType token_type;
-            uint8_t new_token_in = 0;
-            DEPTH depth = 1;
-            while (depth != 0) {
-                b1 = e1[counter];
-                b2 = e2[counter];
-                
-                if (b1 != b2) {
-                    return FALSE;
-                }
+// Check if two expressions are equal. Return TRUE if equal, FALSE if not.
+BOOL expr_is_equal(Expr_t e1, Expr_t e2) {
+    // If they have different types, return false
+    if (e1->_type != e2->_type) return FALSE;
 
-                if (new_token_in == 0) {
-                    token_type = b1;
-                    switch (token_type) {
-                        case Symbol: {
-                            new_token_in = SYMBOL_ID_BYTES;
-                            break;
-                        }
-                        case OpenParen: {
-                            depth++;
-                            break;
-                        }
-                        case CloseParen: {
-                            depth--;
-                            break;
-                        }
-                        case Eos: {
-                            depth = 0;
-                            break;
-                        }
-                    }
-                } else {
-                    new_token_in--;
-                }
-                
-                counter++;
-            }
-            return TRUE;
-        }
+    if (e1->_type == ExprAtom) {
+        // If they are both atoms, compare the symbols
+        return strcmp(e1->_symbol, e2->_symbol) == 0;
     } else {
-        return FALSE;
-    }
-}
-
-// Compare two lists, and return the number of equal elements up until the first
-// difference. E.g. comparing (a b (x y) e) and (a b (x z) e) should yield 2.
-size_t match_size(Expr e1, Expr e2) {
-    size_t  cursor          = 0;
-    size_t  expr_count      = 0;
-    uint8_t new_token_in    = 0; // How many bytes until a new token starts?
-    DEPTH   depth           = 0;
-    uint8_t token_type      = e1[cursor];
-    
-    // Check if we are comparing lists
-    if (e1[cursor] != OpenParen || e2[cursor] != OpenParen) {
-        return 0;
-    }
-
-    while (e1[cursor] == e2[cursor] && token_type != Eos) {
-        if (new_token_in == 0) {
-            token_type = e1[cursor];
-            if (e1[cursor] == Symbol) {
-                new_token_in = SYMBOL_ID_BYTES;
-                if (depth == 1) { 
-                    expr_count++;
-                }
-            } else if (e1[cursor] == OpenParen) {
-                depth++;
-            } else if (e1[cursor] == CloseParen) {
-                depth--;
+        // If they are both lists, march through the elements
+        e1 = e1->_list; e2 = e2->_list;
+        while (e1 != NULL && e2 != NULL) {
+            if (!expr_is_equal(e1, e2)) {
+                return FALSE;
             }
-        } else {
-            new_token_in--;
+            e1 = e1->_next; e2 = e2->_next;
         }
-
-        cursor++;
+        return TRUE;
     }
-    return expr_count;
 }
 
-// Compare two lists, and return the number of equal bytes up until the first
-// difference. E.g. comparing (a b (x y) e) and (a b (x z) e) should yield 17.
-size_t match_size_bytes(Expr e1, Expr e2) {
-    size_t  cursor          = 0;
-    uint8_t new_token_in    = 0; // How many bytes until a new token starts?
-    DEPTH   depth           = 0;
-    uint8_t token_type      = e1[cursor];
-    
-    // Check if we are comparing lists
-    if (e1[cursor] != OpenParen || e2[cursor] != OpenParen) {
-        return 0;
-    }
-
-    while (e1[cursor] == e2[cursor] && token_type != Eos) {
-        if (new_token_in == 0) {
-            token_type = e1[cursor];
-            if (e1[cursor] == Symbol) {
-                new_token_in = SYMBOL_ID_BYTES;
-            } else if (e1[cursor] == OpenParen) {
-                depth++;
-            } else if (e1[cursor] == CloseParen) {
-                depth--;
-            }
-        } else {
-            new_token_in--;
-        }
-
-        cursor++;
-    }
-    return cursor;
-}
-
-// Prints a human readable form of the expression into a given buffer
-void print_expr(Expr expr, struct Dict d, char* msg) {
-    size_t  msg_cursor = 0;
-    uint8_t type = expr[0];
-    if (type == Symbol) {
-        char* symbol = lookup_symbol_by_id(expr, d);
-        msg_cursor += sprintf(msg + msg_cursor, "%s", symbol);
-        // msg_cursor += sprintf(msg + msg_cursor, "%s [%llu]", symbol,
-        //     _bytes_to_index(expr + 1));
+char* expr_to_string(Expr_t expr) {
+    debug(1, "expr_to_string\n");
+    if (expr == NULL) return NULL;
+    if (expr->_type == ExprAtom) {
+        char* result = (char*)allocate_mem("expr_to_string/atom", NULL,
+            sizeof(char) * (strlen(expr->_symbol) + 1));
+        strcpy(result, expr->_symbol);
+        debug(1, "/expr_to_string\n");
+        return result;
     } else {
-        size_t  cursor = 0;
-        uint8_t need_space = 0;
-        DEPTH   depth = 0;
-        while (depth >= 0 && type != Eos) {
-            type = expr[cursor];
-            cursor++;
+        // Count the number of children
+        size_t child_count = 0;
+        Expr_t child = expr->_list;
+        while (child != NULL) {
+            child_count++;
+            child = child->_next;
+        }
 
-            switch(type) {
-                case OpenParen: {
-                    depth++;
-                    if (need_space == 1) {
-                        msg[msg_cursor] = ' ';
-                        msg_cursor++;
-                        need_space = 0;
-                    }
-                    msg[msg_cursor] = '(';
-                    msg_cursor++;
-                    break;
-                }
-                case CloseParen: {
-                    depth--;
-                    msg[msg_cursor] = ')';
-                    msg_cursor++;
-                    need_space = 1;
-                    break;
-                }
-                case Eos: {
-                    break;
-                }
-                case Symbol: {
-                    if (need_space == 1) {
-                        msg[msg_cursor] = ' ';
-                        msg_cursor++;
-                    }
-                    char* symbol = lookup_symbol_by_id(expr + cursor - 1, d);
-                    // msg_cursor += sprintf(msg + msg_cursor, "%s", symbol);
-                    msg_cursor += sprintf(msg + msg_cursor, "%s [%llu]", symbol,
-                        _bytes_to_index(expr + cursor));
-                    cursor += SYMBOL_ID_BYTES;
-                    need_space = 1;
-                    break;
-                }
+        // Store the children's strings
+        char** child_strings =
+            (char**)allocate_mem("expr_to_string/list/children", NULL,
+            sizeof(char*) * child_count);
+        child_count = 0;
+        child = expr->_list;
+        while (child != NULL) {
+            child_strings[child_count] = expr_to_string(child);
+            child_count++;
+            child = child->_next;
+        }
+
+        // Calculate the total length
+        size_t length = 0;
+        for (size_t i = 0; i < length; i++) {
+            length += strlen(child_strings[i]);
+        }
+        // Leave enough space for the parens (2), the spaces between the
+        // children (child_count - 1) and for the terminating null (1)
+        length += 2 + (child_count - 1) + 1;
+
+        // Concatenate the children's strings into one string
+        char* result = (char*)allocate_mem("expr_to_string/list/result", NULL,
+            sizeof(char) * length);
+        result[0] = 0;
+        strcat(result, "(");
+        for (size_t i = 0; i < child_count; i++) {
+            strcat(result, child_strings[i]);
+            if (i < child_count - 1) {
+                strcat(result, " ");
             }
         }
-    }
-    msg[msg_cursor] = 0;
-}
+        strcat(result, ")");
 
-uint8_t is_list(Expr expr) {
-    return expr[0] == OpenParen;
-}
-
-uint8_t is_empty_list(Expr expr) {
-    return expr[0] == OpenParen && expr[1] == CloseParen && expr[2] == Eos;
-}
-
-Expr advance_token(Expr expr) {
-    return expr + 1;
-}
-
-Expr advance_expr(Expr expr) {
-    switch (*expr) {
-        case Symbol: {
-            return expr + SYMBOL_ID_BYTES + 1;
+        // Free up the children's strings
+        for (size_t i = 0; i < child_count; i++) {
+            free_mem("expr_to_string/list/children", child_strings[i]);
         }
-        case Eos: {
-            return expr;
-        }
-        case OpenParen: {
-            DEPTH depth = 1;
-            Expr result = expr + 1;
-            while (depth != 0 && *result != Eos) {
-                switch (*result) {
-                    case OpenParen: {
-                        depth++;
-                        break;
-                    }
-                    case Symbol: {
-                        result += SYMBOL_ID_BYTES;
-                        break;
-                    }
-                    case CloseParen: {
-                        depth--;
-                        break;
-                    }
-                }
-                result++;
-            }
-            return result;
-        }
-        default: return expr;
+        free_mem("expr_to_string/list/children_ptr", child_strings);
+
+        // Return the result
+        debug(1, "expr_to_string\n");
+        return result;
     }
 }

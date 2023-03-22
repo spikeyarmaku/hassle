@@ -9,10 +9,10 @@
 #include "rational\alnat.h"
 
 /*
-Rational usage:
+Rational_t usage:
 
 Construction:
-  A Rational can be made from a base-10 string representation using
+  A Rational_t can be made from a base-10 string representation using
   `string_to_rational`.
 
 Destruction:
@@ -21,23 +21,25 @@ Destruction:
 
 struct _Rational {
     int8_t sign;
-    Alnat numerator;
-    Alnat denominator; // If it is NULL, treat it as 1
+    Alnat_t numerator;
+    Alnat_t denominator; // If it is NULL, treat it as 1
 };
 
-typedef struct _Rational* Rational;
+typedef struct _Rational* Rational_t;
 
-Rational    _make_rational          ();
-Rational    string_to_rational      (char*);
-void        free_rational           (Rational);
-BOOL        is_valid_rational       (Rational);
-void        simplify                (Rational);
-void        reciprocate             (Rational);
-void        debug_print_rational    (Rational);
+Rational_t      _make_rational          ();
+Rational_t      string_to_rational      (char*);
+void            free_rational           (Rational_t);
+BOOL            is_valid_rational       (Rational_t);
+BOOL            is_equal_rational       (Rational_t, Rational_t);
+void            simplify                (Rational_t);
+void            reciprocate             (Rational_t);
+int             print_rational          (char*, Rational_t);
+void            debug_print_rational    (Rational_t);
 
-Rational    add_rational            (Rational, Rational);
-Rational    sub_rational            (Rational, Rational);
-Rational    mul_rational            (Rational, Rational);
-Rational    div_rational            (Rational, Rational);
+Rational_t      add_rational            (Rational_t, Rational_t);
+Rational_t      sub_rational            (Rational_t, Rational_t);
+Rational_t      mul_rational            (Rational_t, Rational_t);
+Rational_t      div_rational            (Rational_t, Rational_t);
 
 #endif

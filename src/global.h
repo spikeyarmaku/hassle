@@ -10,18 +10,21 @@
 #include <stdio.h>
 #endif
 
+#define INDEX size_t
+
 #define BOOL uint8_t
 #define FALSE 0
 #define TRUE 1
 
-#define SUCCESS 0
-#define ERROR 1
-
 #define DEPTH uint32_t
 
-typedef uint8_t ErrorCode;
+enum ErrorCode {Success, Error};
+typedef enum ErrorCode ErrorCode_t;
 
 void error(const char* s, ...);
 void debug(int, const char* s, ...);
+
+INDEX bytes_to_index(uint8_t*, uint8_t);
+void index_to_bytes(INDEX, uint8_t*, uint8_t);
 
 #endif
