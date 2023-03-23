@@ -7,6 +7,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "config.h"
 #include "global.h"
@@ -51,8 +52,9 @@ uint8_t             unsafe_get_digit_alnat      (size_t, Alnat_t);
 uint8_t             unsafe_is_last_digit_alnat  (size_t, Alnat_t);
 void                unsafe_mark_digit_alnat     (size_t, uint8_t, Alnat_t);
 
+void                _double                 (char*);
+void                _add                    (char*, char*);
 Alnat_t             string_to_alnat         (char*);
-char*               debug_print_alnat       (Alnat_t);
 char*               alnat_to_string         (Alnat_t);
 void                free_alnat              (Alnat_t);
 Alnat_t             make_single_digit_alnat (uint8_t);

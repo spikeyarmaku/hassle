@@ -278,7 +278,7 @@ Expr_t parse_from_str(ErrorCode_t* error_code, char* input) {
 }
 
 Expr_t _parse(ErrorCode_t* error_code, Parser_t parser) {
-    debug(1, "_parse\n");
+    debug(1, "_parse (counter: %llu)\n", parser->counter);
     *error_code = Success;
 
     struct Token token = _get_next_token(error_code, parser);

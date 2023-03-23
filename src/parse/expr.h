@@ -12,17 +12,11 @@
 Expr_t usage:
 
 Construction:
-  To construct an Expr_t, an ExprBuilder_t must be used. One can be created by
-  calling `make_expr_builder`, optionally giving it a dict (this allows a dict
-  to be reused between multiple parsers). If no dict is given, an empty one will
-  be created. Then, tokens can be added with `append_token`, and after the last
-  one is added, `finalize_builder` must be called, so that the inner dict and
-  expr won't take up more space than necessary.
+  Use `expr_make_atom` or `expr_make_empty_list`. Adding children to a list is
+  done with `expr_add_to_list`.
 
 Destruction:
-  ExprBuilder_t does not need to be destructed after use, but the expr and dict
-  components need to be freed up if they are not in use anymore. Destroying an
-  expr is done via `free_expr`.
+  Destroying an expr is done with `expr_free`.
 */
 
 enum ExprType {ExprAtom, ExprList};

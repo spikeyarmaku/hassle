@@ -10,8 +10,7 @@
 /*
 Parser usage:
 
-Either call `parse_from_file` or `parse_from_str`, which will output the
-resulting expr and dict into the given addresses.
+Either call `parse_from_file` or `parse_from_str`, which returns an Expr_t.
 */
 
 enum TokenType {Eos, OpenParen, CloseParen, Symbol};

@@ -120,25 +120,16 @@ void reciprocate(Rational_t r) {
     r->denominator = temp;
 }
 
-int print_rational(char* buf, Rational_t r) {
-    if (r->sign < 0) {
-        printf("-");
-    }
-    char* alnat1 = debug_print_alnat(r->numerator);
-    char* alnat2 = debug_print_alnat(r->denominator);
-    int count = sprintf(buf, "%s / %s", alnat1, alnat2);
-    free(alnat1); free(alnat2);
-    return count;
-}
-
-void debug_print_rational(Rational_t r) {
-    if (r->sign < 0) {
-        printf("-");
-    }
-    char* alnat1 = debug_print_alnat(r->numerator);
-    char* alnat2 = debug_print_alnat(r->denominator);
-    printf("%s / %s", alnat1, alnat2);
-    free(alnat1); free(alnat2);
+char* rational_to_string(Rational_t r) {
+    // if (r->sign < 0) {
+    //     printf("-");
+    // }
+    // char* alnat1 = debug_print_alnat(r->numerator);
+    // char* alnat2 = debug_print_alnat(r->denominator);
+    // int count = sprintf(buf, "%s / %s", alnat1, alnat2);
+    // free(alnat1); free(alnat2);
+    // return count;
+    return NULL;
 }
 
 // TODO don't just blindly multiply, perhaps calculating the LCM is better

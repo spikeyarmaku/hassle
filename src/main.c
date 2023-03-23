@@ -118,7 +118,7 @@ ErrorCode_t interpret_file(char* file_name) {
     // free_env(&env);
     expr_free(&expr);
 
-    show_logger_entries(_logger);
+    // show_logger_entries(_logger);
     return Success;
 }
 
@@ -139,9 +139,22 @@ int main(int argc, char *argv[]) {
     
     if (argc > 1) {
         // There is at least one parameter
-        ErrorCode_t error_code = interpret_file(argv[1]);
-        if (error_code != Success) return 1;
+        // ErrorCode_t error_code = interpret_file(argv[1]);
+        // if (error_code != Success) return 1;
 
+        char buf[8];
+        sprintf(buf, "1234567");
+        Alnat_t alnat = string_to_alnat(buf);
+        struct AlnatMarcher m = make_alnat_marcher(alnat);
+        while (!is_end_of_alnat(m)) {
+            printf("%d ", get_next_alnat_digit(&m));
+        }
+        printf("\n");
+        char* str = alnat_to_string(alnat);
+        printf("\n%s\n", str);
+        free_alnat(alnat);
+        free_mem("main", str);
+        
         // run_tests();
     } else {
         #ifdef REPL_ENABLED

@@ -1,22 +1,6 @@
 #include "env.h"
 
-EnvDict_t make_empty_env_dict() {
-    EnvDict_t dict = (EnvDict_t)allocate_mem("make_empty_env_dict", NULL,
-        sizeof(struct _EnvDict));
-    dict->symbol_dict = make_empty_symbol_dict();
-    dict->term_dict = make_empty_term_dict();
-    return dict;
-}
-
-void free_env_dict(EnvDict_t* dict_ptr) {
-    EnvDict_t dict = *dict_ptr;
-    free_symbol_dict(&(dict->symbol_dict));
-    free_term_dict(&(dict->term_dict));
-    free_mem("free_env_dict", dict);
-    *dict_ptr = NULL;
-}
-
-struct Term default_rules(Expr_t expr, SymbolDict_t d) {
+struct Term env_default_rules(Expr_t expr) {
     // Check if the symbol name is a number
     INDEX index = bytes_to_index(expr, SYMBOL_ID_BYTES);
     char* symbol = lookup_symbol_by_id(index, d);
@@ -51,7 +35,7 @@ struct Term default_rules(Expr_t expr, SymbolDict_t d) {
 }
 
 // Retrieve the value of an expr from an env
-struct Term env_lookup_term_by_expr(EnvFrame_t frame, Expr_t expr) {
+struct Term env_lookup_term(EnvFrame_t frame, Expr_t expr) {
     // First we check if there is an entry for the expr in the mappings in the
     // current env
     EnvFrame_t current_frame = frame;
@@ -91,7 +75,7 @@ struct Term env_lookup_term_by_expr(EnvFrame_t frame, Expr_t expr) {
 // Returns the term corresponding to the longest match in the environment.
 // The optional `bytes` pointer will be used to signal the amount of bytes that
 // are matching - i.e. the next byte in the expression will not match.
-struct Term* find_longest_match(EnvFrame_t frame, Expr_t expr, size_t* bytes) {
+struct Term* env_find_longest_match(EnvFrame_t frame, Expr_t expr, size_t* bytes) {
     size_t longest_match_size = 0;
     size_t current_match_size = 0;
     struct Term* result = NULL;
@@ -118,7 +102,7 @@ struct Term* find_longest_match(EnvFrame_t frame, Expr_t expr, size_t* bytes) {
     return result;
 }
 
-enum ErrorCode add_entry(EnvFrame_t frame, Expr_t expr, struct Term t) {
+ErrorCode_t env_add_entry(EnvFrame_t frame, Expr_t expr, struct Term t) {
     if (frame == NULL) {
         frame = make_empty_frame(NULL);
         if (frame == NULL) {
@@ -152,7 +136,7 @@ enum ErrorCode add_entry(EnvFrame_t frame, Expr_t expr, struct Term t) {
     return Success;
 }
 
-void print_env_frame(EnvFrame_t frame) {
+void env_print_frame(EnvFrame_t frame) {
     debug(2, "\n\n===\nEnvironment:\n");
     size_t count = 0;
     while (frame != NULL) {
@@ -176,7 +160,7 @@ void print_env_frame(EnvFrame_t frame) {
     debug(2, "End of environment\n===\n\n");
 }
 
-EnvFrame_t make_empty_frame(EnvFrame_t parent) {
+EnvFrame_t env_make_empty_frame(EnvFrame_t parent) {
     EnvFrame_t new_frame = (EnvFrame_t)allocate_mem("make_empty_frame", NULL,
         sizeof(struct _EnvFrame));
     if (new_frame != NULL) {
@@ -188,7 +172,7 @@ EnvFrame_t make_empty_frame(EnvFrame_t parent) {
     return new_frame;
 }
 
-void free_frame(EnvFrame_t* frame_ptr) {
+void env_free_frame(EnvFrame_t* frame_ptr) {
     EnvFrame_t frame = *frame_ptr;
     if (frame != NULL) {
         // Free the individual mappings
@@ -206,120 +190,6 @@ void free_frame(EnvFrame_t* frame_ptr) {
     *frame_ptr = NULL;
 }
 
-void free_entry(struct Entry e) {
+void env_free_entry(struct Entry e) {
     free_mem("env/free_entry", e.expr);
-}
-
-// Prints a human readable form of the expression into a given buffer
-int print_expr(Expr_t expr, EnvFrame_t frame, char* msg) {
-    size_t offset = 0;
-    EnvFrame_t current_frame = frame;
-    while (current_frame != NULL) {
-        offset += current_frame->env_dict->symbol_dict->count;
-        current_frame = current_frame->parent;
-    }
-
-    INDEX  msg_cursor = 0;
-    uint8_t type = expr[0];
-    if (type == Symbol) {
-        INDEX index = bytes_to_index(expr + 1, SYMBOL_ID_BYTES);
-        current_frame = frame;
-        while (index < offset) {
-            current_frame = current_frame->parent;
-            offset -= current_frame->env_dict->symbol_dict->count;
-        }
-        char* symbol =
-            lookup_symbol_by_id(index - offset,
-            current_frame->env_dict->symbol_dict);
-        msg_cursor += sprintf(msg + msg_cursor, "%s", symbol);
-        // msg_cursor += sprintf(msg + msg_cursor, "%s [%llu]", symbol,
-        //     _bytes_to_index(expr + 1));
-    } else {
-        msg[0] = '(';
-        msg_cursor = 1;
-        size_t  cursor = 1;
-        uint8_t need_space = 0;
-        DEPTH   depth = 1;
-        while (depth > 0 && type != Eos) {
-            type = expr[cursor];
-            cursor++;
-
-            switch(type) {
-                case OpenParen: {
-                    depth++;
-                    if (need_space == 1) {
-                        msg[msg_cursor] = ' ';
-                        msg_cursor++;
-                        need_space = 0;
-                    }
-                    msg[msg_cursor] = '(';
-                    msg_cursor++;
-                    break;
-                }
-                case CloseParen: {
-                    depth--;
-                    msg[msg_cursor] = ')';
-                    msg_cursor++;
-                    need_space = 1;
-                    break;
-                }
-                case Eos: {
-                    break;
-                }
-                case Symbol: {
-                    if (need_space == 1) {
-                        msg[msg_cursor] = ' ';
-                        msg_cursor++;
-                    }
-                    INDEX index = bytes_to_index(expr + cursor - 1,
-                        SYMBOL_ID_BYTES);
-                    current_frame = frame;
-                    while (index < offset) {
-                        current_frame = current_frame->parent;
-                        offset -= current_frame->env_dict->symbol_dict->count;
-                    }
-                    char* symbol = lookup_symbol_by_id(index - offset,
-                        current_frame->env_dict->symbol_dict);
-                    msg_cursor += sprintf(msg + msg_cursor, "%s", symbol);
-                    // msg_cursor += sprintf(msg + msg_cursor, "%s [%llu]", symbol,
-                    //     _bytes_to_index(expr + cursor));
-                    cursor += SYMBOL_ID_BYTES;
-                    need_space = 1;
-                    break;
-                }
-            }
-        }
-    }
-    msg[msg_cursor] = 0;
-    return msg_cursor;
-}
-
-void print_term(char* buf, struct Term t, EnvFrame_t frame) {
-    int count = 0;
-    switch (t.type) {
-        case AbsTerm: {
-            count += sprintf(buf + count, "<Function>\n");
-            break;
-        }
-        case ValTerm: {
-            switch (t.value.type) {
-                case RationalVal: {
-                    count += print_rational(buf + count, t.value.rational);
-                    count += sprintf(buf + count, "\n");
-                    break;
-                }
-                case StringVal: {
-                    count += sprintf(buf + count, "%s\n", t.value.string);
-                    break;
-                }
-            }
-            break;
-        }
-        case ExprTerm: {
-            char buf[1024];
-            count += print_expr(t.expr, frame, buf + count);
-            printf("%s\n", buf);
-            break;
-        }
-    }
 }

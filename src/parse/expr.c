@@ -116,7 +116,10 @@ BOOL expr_is_equal(Expr_t e1, Expr_t e2) {
 
 char* expr_to_string(Expr_t expr) {
     debug(1, "expr_to_string\n");
-    if (expr == NULL) return NULL;
+    if (expr == NULL) {
+        debug(1, "/expr_to_string\n");
+        return NULL;
+    }
     if (expr->_type == ExprAtom) {
         char* result = (char*)allocate_mem("expr_to_string/atom", NULL,
             sizeof(char) * (strlen(expr->_symbol) + 1));
@@ -146,7 +149,7 @@ char* expr_to_string(Expr_t expr) {
 
         // Calculate the total length
         size_t length = 0;
-        for (size_t i = 0; i < length; i++) {
+        for (size_t i = 0; i < child_count; i++) {
             length += strlen(child_strings[i]);
         }
         // Leave enough space for the parens (2), the spaces between the
@@ -166,14 +169,14 @@ char* expr_to_string(Expr_t expr) {
         }
         strcat(result, ")");
 
-        // Free up the children's strings
+        // Free up the children's strings#
         for (size_t i = 0; i < child_count; i++) {
             free_mem("expr_to_string/list/children", child_strings[i]);
         }
         free_mem("expr_to_string/list/children_ptr", child_strings);
 
         // Return the result
-        debug(1, "expr_to_string\n");
+        debug(1, "/expr_to_string\n");
         return result;
     }
 }

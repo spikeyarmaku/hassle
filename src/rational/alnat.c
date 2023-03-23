@@ -50,15 +50,18 @@ enum ErrorCode add_digit_to_alnat(uint8_t digit, struct AlnatBuilder* b) {
 
 // Free up unused memory and set last byte to 0
 enum ErrorCode finalize_alnat(struct AlnatBuilder* b) {
+    debug(1, "finalize_alnat\n");
     if (b->ptr != NULL) {
         Alnat_t new_ptr = allocate_mem("finalize_alnat", b->ptr, sizeof(uint8_t) * b->next);
         if (new_ptr == NULL) {
             error("finalize_alnat: Error while reallocating.\n");
+            debug(1, "/finalize_alnat\n");
             return Error;
         }
         b->ptr = new_ptr;
         b->size = b->next;
     }
+    debug(1, "/finalize_alnat\n");
     return Success;
 }
 
@@ -126,6 +129,7 @@ void unsafe_mark_digit_alnat(size_t n, uint8_t is_non_last, Alnat_t a) {
 //   377
 //   121
 Alnat_t string_to_alnat(char* string) {
+    debug(1, "string_to_alnat\n");
     struct AlnatBuilder b = make_alnat_builder();
     uint16_t intermediate = 0;
     char *current_char_ptr = string;
@@ -166,6 +170,7 @@ Alnat_t string_to_alnat(char* string) {
         if (add_digit_to_alnat(intermediate, &b)) {
             error("string_to_alnat: couldn't add %d to alnat\n", intermediate);
             free_alnat(b.ptr);
+            debug(1, "/string_to_alnat\n");
             return NULL;
         }
         *next_pass_cursor = 0;
@@ -177,33 +182,160 @@ Alnat_t string_to_alnat(char* string) {
     if (finalize_alnat(&b)) {
         error("string_to_alnat: couldn't finalize alnat\n");
         free_alnat(b.ptr);
+        debug(1, "/string_to_alnat\n");
         return NULL;
     }
 
+    debug(1, "/string_to_alnat\n");
     return b.ptr;
 }
 
-// Only works with alnats that fit into an uint64_t
-char* debug_print_alnat(Alnat_t alnat) {
-    if (alnat == NULL) {
-        return NULL;
+// Double the digits in a string, least significant digit first. E.g. "2678"
+// becomes "42571"
+void _double(char* num_str) {
+    INDEX index = 0;
+    uint8_t d;
+    uint8_t carry = 0;
+    BOOL go_on = TRUE;
+    while (go_on) {
+        d = num_str[index];
+        if (d == 0) {
+            go_on = FALSE;
+        } else {
+            d -= '0';
+        }
+
+        d *= 2;
+        d += carry;
+
+        carry = d > 9 ? 1 : 0;
+        d %= 10;
+
+        num_str[index] = d + '0';
+        index++;
     }
-    uint64_t sum = 0;
-    uint64_t place = 1;
-    size_t current = 0;
-    do {
-        sum += unsafe_get_digit_alnat(current, alnat) * place;
-        place = place * ALNAT_MAX;
-        current++;
-    } while (!unsafe_is_last_digit_alnat(current-1, alnat));
-    char* result = (char*)malloc(sizeof(char) * 30);
-    sprintf(result, "%llu", sum);
-    return result;
+    if (num_str[index - 1] == '0') {
+        num_str[index - 1] = 0;
+    } else {
+        num_str[index] = 0;
+    }
+}
+
+// Add the second number to the first one, least significant digit first, and
+// write it back into the first parameter. E.g. "456" and "28" becomes "637".
+void _add(char* num_str, char* num2_str) {
+    INDEX index = 0;
+    BOOL go_on = TRUE;
+    uint8_t d1;
+    uint8_t d2;
+    uint8_t d3;
+    BOOL num1_end = FALSE;
+    BOOL num2_end = FALSE;
+    uint8_t carry = 0;
+    while (go_on) {
+        d1 = num1_end == TRUE ? 0 : num_str[index];
+        d2 = num2_end == TRUE ? 0 : num2_str[index];
+
+        if (d1 == 0) {
+            num1_end = TRUE;
+        } else {
+            d1 -= '0';
+        }
+        if (d2 == 0) {
+            num2_end = TRUE;
+            go_on = FALSE;
+        } else {
+            d2 -= '0';
+        }
+
+        d3 = d1 + d2 + carry;
+        carry = d3 > 9 ? 1 : 0;
+        d3 %= 10;
+        num_str[index] = d3 + '0';
+        
+        index++;
+    }
 }
 
 char* alnat_to_string(Alnat_t alnat) {
-    // TODO
-    return NULL;
+    // The number of digits of a number N in base B can be calculated like this:
+    // log(B, N) + 1
+    // In this case, it is log(10, N) + 1.
+    // The log can be calculated without actually calculating the number.
+    // Since the number is in base 128, and we know the number of digits (D),
+    // the number will be somewhere between 128^(D - 1) - 1 and 128^D - 1.
+    // Therefore, the maximum value it can take is 128^D - 1.
+    // log(10, 128^D) = log(10, 128) * D, which is 2.1072099696479 * D
+    // In this case, we go with 2.2 just to be on the safe side
+    size_t digit_base_128_count = 0;
+    struct AlnatMarcher m = make_alnat_marcher(alnat);
+    while (!is_end_of_alnat(m)) {
+        get_next_alnat_digit(&m);
+        digit_base_128_count++;
+    }
+    rewind_marcher(&m);
+    size_t digit_base_10_count = ceil(2.2 * digit_base_128_count) + 2;
+    char* result = (char*)allocate_mem("alnat_to_string", NULL,
+        sizeof(char) * digit_base_10_count);
+    if (result == NULL) return result;
+
+    printf("Allocated %llu digits\n", digit_base_10_count);
+
+    // Zero out the buffer
+    for (INDEX i = 0; i < digit_base_10_count; i++) {
+        result[i] = 0;
+    }
+
+    while (!is_end_of_alnat(m)) {
+        // write the base-10 string repr of the next byte
+        char byte_str[4], reverse_byte_str[4];
+        sprintf(byte_str, "%d", get_next_alnat_digit(&m));
+        uint8_t padding = 0;
+        for (uint8_t i = 0; i < 4; i++) {
+            if (byte_str[i] == 0) {
+                padding = 4 - i;
+                break;
+            }
+        }
+        for (uint8_t i = 0; i < 4 - padding; i++) {
+            reverse_byte_str[i] = byte_str[3 - i - padding];
+        }
+        reverse_byte_str[4 - padding] = 0;
+        _add(result, reverse_byte_str);
+        printf("Padding: %d | Written byte: %s | reverse: %s | Alnat: %s\n", padding, byte_str, reverse_byte_str, result);
+
+        // multiply it by 2 seven times (2^7 = 128)
+        for (uint8_t i = 0; i < 7; i++) {
+            _double(result);
+            printf("Double #%d | Alnat: %s\n", i, result);
+        }
+    }
+
+    // Strip the unused characters
+    // Search for the first 0 byte
+    char* current = result;
+    INDEX first_zero = 0;
+    for (INDEX i = 0; i < digit_base_10_count; i++) {
+        if (current[i] == 0) {
+            first_zero = i;
+            break;
+        }
+    }
+    // go back until the first non-0 *digit*
+    for (INDEX i = first_zero - 1; i >= 0; i--) {
+        if (current[i] != '0') {
+            first_zero = i;
+            break;
+        }
+    }
+    printf("REALLOC %llu bytes\n", first_zero+1);
+
+    result = (char*)allocate_mem("alnat_to_string", result,
+        sizeof(char) * (first_zero + 1));
+    if (result == NULL) return result;
+    result[first_zero] = 0;
+
+    return result;
 }
 
 void free_alnat(Alnat_t alnat) {
@@ -211,7 +343,8 @@ void free_alnat(Alnat_t alnat) {
 }
 
 Alnat_t make_single_digit_alnat(uint8_t digit) {
-    Alnat_t alnat = (uint8_t*)allocate_mem("make_single_digit_alnat", NULL, sizeof(uint8_t));
+    Alnat_t alnat = (uint8_t*)allocate_mem("make_single_digit_alnat", NULL,
+        sizeof(uint8_t));
     alnat[0] = digit;
     return alnat;
 }

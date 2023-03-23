@@ -34,8 +34,7 @@ BOOL            is_valid_rational       (Rational_t);
 BOOL            is_equal_rational       (Rational_t, Rational_t);
 void            simplify                (Rational_t);
 void            reciprocate             (Rational_t);
-int             print_rational          (char*, Rational_t);
-void            debug_print_rational    (Rational_t);
+char*           rational_to_string      (Rational_t);
 
 Rational_t      add_rational            (Rational_t, Rational_t);
 Rational_t      sub_rational            (Rational_t, Rational_t);

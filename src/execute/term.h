@@ -6,9 +6,7 @@
 
 #include "memory.h"
 
-struct Term;
-struct _Env;
-struct _EnvFrame; // Forward declaration
+struct EnvFrame; // Forward declaration
 
 enum TermType {ValTerm, ExprTerm, AbsTerm};
 enum ValType {StringVal, RationalVal};
@@ -21,8 +19,9 @@ struct Value {
     };
 };
 
+typedef ErrorCode_t Apply_t(struct EnvFrame*, Expr_t, void*, struct Term*);
 struct Abstraction {
-    enum ErrorCode (*apply)(struct _EnvFrame*, Expr_t, void*, struct Term*);
+    Apply_t* apply;
     void* closure;
 };
 
@@ -31,17 +30,18 @@ struct Term {
     union {
         struct Value value;
         Expr_t expr;
-        // enum ErrorCode (*apply)(struct EnvFrame*, Expr_t, struct Term*);
         struct Abstraction abs;
     };
 };
 
-BOOL        is_equal_term           (struct Term, struct Term);
+BOOL        term_is_equal       (struct Term, struct Term);
 
-struct Term make_number             (Rational_t);
-struct Term make_string             (char*);
-struct Term make_expr               (Expr_t);
+struct Term term_make_number    (Rational_t);
+struct Term term_make_string    (char*);
+struct Term term_make_expr      (Expr_t);
 
-void        free_term               (struct Term);
+void        term_free           (struct Term);
+
+char*       term_to_string      (struct Term);
 
 #endif

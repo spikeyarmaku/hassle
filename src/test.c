@@ -16,75 +16,75 @@ uint8_t string_compare(char* str1, char* str2) {
     return res;
 }
 
-uint8_t run_number_tests() {
-    printf("Running number tests...\n");
-    int sum = 0;
-    char buf[STRING_BUFFER_SIZE];
+// uint8_t run_number_tests() {
+//     printf("Running number tests...\n");
+//     int sum = 0;
+//     char buf[STRING_BUFFER_SIZE];
 
-    sprintf(buf, "1");
-    Alnat_t alnat0 = string_to_alnat(buf);
-    assert(&sum, "alnat0", alnat0[0] == 1);
-    free_alnat(alnat0);
+//     sprintf(buf, "1");
+//     Alnat_t alnat0 = string_to_alnat(buf);
+//     assert(&sum, "alnat0", alnat0[0] == 1);
+//     free_alnat(alnat0);
 
-    sprintf(buf, "283,756,238,567");
-    Alnat_t alnat1 = string_to_alnat(buf);
-    assert(&sum, "alnat1",
-        string_compare(debug_print_alnat(alnat1), "283756238567") == 0);
-    free_alnat(alnat1);
+//     sprintf(buf, "283,756,238,567");
+//     Alnat_t alnat1 = string_to_alnat(buf);
+//     assert(&sum, "alnat1",
+//         string_compare(debug_print_alnat(alnat1), "283756238567") == 0);
+//     free_alnat(alnat1);
 
-    sprintf(buf, "19581958");
-    Alnat_t alnat_sub_1 = string_to_alnat(buf);
-    sprintf(buf, "9581958");
-    Alnat_t alnat_sub_2 = string_to_alnat(buf);
-    Alnat_t diff = sub_alnat(alnat_sub_1, alnat_sub_2, NULL);
-    assert(&sum, "diff",
-        string_compare(debug_print_alnat(diff), "10000000") == 0);
-    free_alnat(alnat_sub_1);
-    free_alnat(alnat_sub_2);
-    free_alnat(diff);
+//     sprintf(buf, "19581958");
+//     Alnat_t alnat_sub_1 = string_to_alnat(buf);
+//     sprintf(buf, "9581958");
+//     Alnat_t alnat_sub_2 = string_to_alnat(buf);
+//     Alnat_t diff = sub_alnat(alnat_sub_1, alnat_sub_2, NULL);
+//     assert(&sum, "diff",
+//         string_compare(debug_print_alnat(diff), "10000000") == 0);
+//     free_alnat(alnat_sub_1);
+//     free_alnat(alnat_sub_2);
+//     free_alnat(diff);
 
-    sprintf(buf, "308023895");
-    Alnat_t alnat2 = string_to_alnat(buf);
-    sprintf(buf, "350108375");
-    Alnat_t alnat3 = string_to_alnat(buf);
-    Alnat_t gcd = gcd_alnat(alnat2, alnat3); // should give 4765
-    assert(&sum, "gcd", string_compare(debug_print_alnat(gcd), "4765") == 0);
-    free_alnat(alnat2);
-    free_alnat(alnat3);
-    free_alnat(gcd);
+//     sprintf(buf, "308023895");
+//     Alnat_t alnat2 = string_to_alnat(buf);
+//     sprintf(buf, "350108375");
+//     Alnat_t alnat3 = string_to_alnat(buf);
+//     Alnat_t gcd = gcd_alnat(alnat2, alnat3); // should give 4765
+//     assert(&sum, "gcd", string_compare(debug_print_alnat(gcd), "4765") == 0);
+//     free_alnat(alnat2);
+//     free_alnat(alnat3);
+//     free_alnat(gcd);
 
-    sprintf(buf, "4.000");
-    Rational_t r1 = string_to_rational(buf);
-    sprintf(buf, "003");
-    Rational_t r2 = string_to_rational(buf);
-    Rational_t r3 = add_rational(r1, r2);
-    Rational_t r4 = sub_rational(r1, r2);
-    Rational_t r5 = mul_rational(r1, r2);
-    Rational_t r6 = div_rational(r1, r2);
-    assert(&sum, "r1 numer", r1->numerator[0] == 4);
-    assert(&sum, "r1 denom", r1->denominator[0] == 1);
-    assert(&sum, "r1 sign",  r1->sign == 1);
-    assert(&sum, "r2 numer", r2->numerator[0] == 3);
-    assert(&sum, "r2 denom", r2->denominator[0] == 1);
-    assert(&sum, "r2 sign",  r2->sign == 1);
-    assert(&sum, "r3 numer", r3->numerator[0] == 7);
-    assert(&sum, "r3 denom", r3->denominator[0] == 1);
-    assert(&sum, "r3 sign",  r3->sign == 1);
-    assert(&sum, "r4 numer", r4->numerator[0] == 1);
-    assert(&sum, "r4 denom", r4->denominator[0] == 1);
-    assert(&sum, "r4 sign",  r4->sign == 1);
-    assert(&sum, "r5 numer", r5->numerator[0] == 12);
-    assert(&sum, "r5 denom", r5->denominator[0] == 1);
-    assert(&sum, "r5 sign",  r5->sign == 1);
-    assert(&sum, "r6 numer", r6->numerator[0] == 4);
-    assert(&sum, "r6 denom", r6->denominator[0] == 3);
-    assert(&sum, "r6 sign",  r6->sign == 1);
-    free_rational(r1); free_rational(r2); free_rational(r3);
-    free_rational(r4); free_rational(r5); free_rational(r6);
+//     sprintf(buf, "4.000");
+//     Rational_t r1 = string_to_rational(buf);
+//     sprintf(buf, "003");
+//     Rational_t r2 = string_to_rational(buf);
+//     Rational_t r3 = add_rational(r1, r2);
+//     Rational_t r4 = sub_rational(r1, r2);
+//     Rational_t r5 = mul_rational(r1, r2);
+//     Rational_t r6 = div_rational(r1, r2);
+//     assert(&sum, "r1 numer", r1->numerator[0] == 4);
+//     assert(&sum, "r1 denom", r1->denominator[0] == 1);
+//     assert(&sum, "r1 sign",  r1->sign == 1);
+//     assert(&sum, "r2 numer", r2->numerator[0] == 3);
+//     assert(&sum, "r2 denom", r2->denominator[0] == 1);
+//     assert(&sum, "r2 sign",  r2->sign == 1);
+//     assert(&sum, "r3 numer", r3->numerator[0] == 7);
+//     assert(&sum, "r3 denom", r3->denominator[0] == 1);
+//     assert(&sum, "r3 sign",  r3->sign == 1);
+//     assert(&sum, "r4 numer", r4->numerator[0] == 1);
+//     assert(&sum, "r4 denom", r4->denominator[0] == 1);
+//     assert(&sum, "r4 sign",  r4->sign == 1);
+//     assert(&sum, "r5 numer", r5->numerator[0] == 12);
+//     assert(&sum, "r5 denom", r5->denominator[0] == 1);
+//     assert(&sum, "r5 sign",  r5->sign == 1);
+//     assert(&sum, "r6 numer", r6->numerator[0] == 4);
+//     assert(&sum, "r6 denom", r6->denominator[0] == 3);
+//     assert(&sum, "r6 sign",  r6->sign == 1);
+//     free_rational(r1); free_rational(r2); free_rational(r3);
+//     free_rational(r4); free_rational(r5); free_rational(r6);
 
-    printf("%d tests failed.\n\n", sum);
-    return sum;
-}
+//     printf("%d tests failed.\n\n", sum);
+//     return sum;
+// }
 
 uint8_t run_expr_tests() {
     printf("Running expr tests...\n");

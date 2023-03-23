@@ -1,6 +1,6 @@
 #include "term.h"
 
-BOOL is_equal_term(struct Term t1, struct Term t2) {
+BOOL term_is_equal(struct Term t1, struct Term t2) {
     if (t1.type == t2.type) {
         switch (t1.type) {
             case AbsTerm: {
@@ -31,7 +31,7 @@ BOOL is_equal_term(struct Term t1, struct Term t2) {
     }
 }
 
-struct Term make_number(Rational_t r) {
+struct Term term_make_number(Rational_t r) {
     struct Value v;
     v.type = RationalVal;
     v.rational = r;
@@ -41,7 +41,7 @@ struct Term make_number(Rational_t r) {
     return t;
 }
 
-struct Term make_string(char* str) {
+struct Term term_make_string(char* str) {
     struct Value v;
     v.type = StringVal;
     v.string = str; // Don't copy strings if it isn't necessary
@@ -51,14 +51,14 @@ struct Term make_string(char* str) {
     return t;
 }
 
-struct Term make_expr(Expr_t expr) {
+struct Term term_make_expr(Expr_t expr) {
     struct Term t;
     t.type = ExprTerm;
     t.expr = expr;
     return t;
 }
 
-void free_term(struct Term t) {
+void term_free(struct Term t) {
     switch (t.type) {
         case AbsTerm : {
             free_mem("free_term/closure", t.abs.closure);
@@ -79,5 +79,31 @@ void free_term(struct Term t) {
     }
 }
 
-
-
+char* term_to_string(struct Term t) {
+    switch (t.type) {
+        case AbsTerm: {
+            char* str = "<Function>";
+            char* result = (char*)allocate_mem("term_print/function", NULL,
+                sizeof(char) * (strlen(str) + 1));
+            strcpy(result, str);
+            return result;
+        }
+        case ValTerm: {
+            switch (t.value.type) {
+                case RationalVal: {
+                    return rational_to_string(t.value.rational);
+                }
+                case StringVal: {
+                    char* result = (char*)allocate_mem("term_print/string",
+                        NULL, sizeof(char) * (strlen(t.value.string) + 1));
+                    strcpy(result, t.value.string);
+                    return result;
+                }
+            }
+            break;
+        }
+        case ExprTerm: {
+            return expr_to_string(t.expr);
+        }
+    }
+}
