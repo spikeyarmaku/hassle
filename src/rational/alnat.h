@@ -31,45 +31,54 @@ struct AlnatBuilder {
 struct AlnatMarcher {
     Alnat_t ptr;
     size_t counter;
-    uint8_t finished;
+    BOOL finished;
 };
 
-struct AlnatBuilder make_alnat_builder      ();
+Alnat_t             string_to_alnat             (char*);
+char*               alnat_to_string             (Alnat_t);
+void                alnat_free                  (Alnat_t);
+Alnat_t             alnat_make_single_digit     (uint8_t);
+BOOL                alnat_is_null               (Alnat_t);
+BOOL                alnat_is_equal              (Alnat_t, Alnat_t);
+
+Alnat_t             alnat_add                   (Alnat_t, Alnat_t);
+Alnat_t             alnat_sub                   (Alnat_t, Alnat_t, int8_t*);
+Alnat_t             alnat_mul                   (Alnat_t, Alnat_t);
+Alnat_t             alnat_div                   (Alnat_t, Alnat_t);
+
+Alnat_t             alnat_gcd                   (Alnat_t, Alnat_t);
+
+// --- Private methods ---
+
+struct AlnatBuilder _alnat_make_builder         ();
 // Add a new block to the alnat's memory
-enum ErrorCode      expand_alnat            (struct AlnatBuilder*);
+enum ErrorCode      _alnat_expand               (struct AlnatBuilder*);
 // Add a new digit to alnat
-enum ErrorCode      add_digit_to_alnat      (uint8_t, struct AlnatBuilder*);
+enum ErrorCode      _alnat_add_digit            (uint8_t, struct AlnatBuilder*);
 // Free up unused memory and set last byte to 0
-enum ErrorCode      finalize_alnat          (struct AlnatBuilder*);
+enum ErrorCode      _alnat_finalize             (struct AlnatBuilder*);
 
-struct AlnatMarcher make_alnat_marcher      (Alnat_t);
-uint8_t             get_next_alnat_digit    (struct AlnatMarcher*);
-BOOL                is_end_of_alnat         (struct AlnatMarcher);
-size_t              get_marcher_position    (struct AlnatMarcher);
-void                rewind_marcher          (struct AlnatMarcher*);
+struct AlnatMarcher _alnat_make_marcher         (Alnat_t);
+uint8_t             _alnat_get_curr_digit       (struct AlnatMarcher);
+BOOL                _alnat_is_end               (struct AlnatMarcher);
+BOOL                _alnat_is_start             (struct AlnatMarcher);
+void                _alnat_move_forward         (struct AlnatMarcher*);
+void                _alnat_move_backward        (struct AlnatMarcher*);
+uint8_t             _alnat_get_next_digit       (struct AlnatMarcher*);
+uint8_t             _alnat_get_prev_digit       (struct AlnatMarcher*);
+size_t              _alnat_get_marcher_pos      (struct AlnatMarcher);
+void                _alnat_rewind_marcher       (struct AlnatMarcher*);
 
-uint8_t             unsafe_get_digit_alnat      (size_t, Alnat_t);
-uint8_t             unsafe_is_last_digit_alnat  (size_t, Alnat_t);
-void                unsafe_mark_digit_alnat     (size_t, uint8_t, Alnat_t);
+uint8_t             _alnat_unsafe_get_digit     (size_t, Alnat_t);
+uint8_t             _alnat_unsafe_is_last_digit (size_t, Alnat_t);
+void                _alnat_unsafe_mark_digit    (size_t, uint8_t, Alnat_t);
 
-void                _double                 (char*);
-void                _add                    (char*, char*);
-Alnat_t             string_to_alnat         (char*);
-char*               alnat_to_string         (Alnat_t);
-void                free_alnat              (Alnat_t);
-Alnat_t             make_single_digit_alnat (uint8_t);
-BOOL                is_null_alnat           (Alnat_t);
-BOOL                is_equal_alnat          (Alnat_t, Alnat_t);
-Alnat_t             copy_alnat              (Alnat_t);
+void                _alnat_str_double           (char*);
+void                _alnat_str_add              (char*, char*);
+Alnat_t             _alnat_copy                 (Alnat_t);
 
-Alnat_t             add_alnat               (Alnat_t, Alnat_t);
-Alnat_t             sub_alnat               (Alnat_t, Alnat_t, int8_t*);
-Alnat_t             mul_alnat               (Alnat_t, Alnat_t);
-Alnat_t             div_alnat               (Alnat_t, Alnat_t);
-
-Alnat_t             make_complement_alnat   (Alnat_t);
-void                strip_alnat             (Alnat_t*);
-int8_t              compare_alnat           (Alnat_t, Alnat_t);
-Alnat_t             gcd_alnat               (Alnat_t, Alnat_t);
+Alnat_t             _alnat_make_complement      (Alnat_t);
+void                _alnat_strip                (Alnat_t*);
+int8_t              _alnat_compare              (Alnat_t, Alnat_t);
 
 #endif

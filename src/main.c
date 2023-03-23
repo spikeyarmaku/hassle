@@ -145,14 +145,14 @@ int main(int argc, char *argv[]) {
         char buf[8];
         sprintf(buf, "1234567");
         Alnat_t alnat = string_to_alnat(buf);
-        struct AlnatMarcher m = make_alnat_marcher(alnat);
-        while (!is_end_of_alnat(m)) {
-            printf("%d ", get_next_alnat_digit(&m));
+        struct AlnatMarcher m = _alnat_make_marcher(alnat);
+        while (!_alnat_is_end(m)) {
+            printf("%d ", _alnat_get_next_digit(&m));
         }
         printf("\n");
         char* str = alnat_to_string(alnat);
         printf("\n%s\n", str);
-        free_alnat(alnat);
+        alnat_free(alnat);
         free_mem("main", str);
         
         // run_tests();

@@ -10,13 +10,13 @@ Rational_t _make_rational() {
 
 // A 0/0 is an invalid rational, and signifies an Error
 BOOL is_valid_rational(Rational_t r) {
-    return !(is_null_alnat(r->denominator) && is_null_alnat(r->numerator));
+    return !(alnat_is_null(r->denominator) && alnat_is_null(r->numerator));
 }
 
 BOOL is_equal_rational(Rational_t r1, Rational_t r2) {
     return
-        is_equal_alnat(r1->numerator, r2->numerator) &&
-        is_equal_alnat(r1->denominator, r2->denominator) &&
+        alnat_is_equal(r1->numerator, r2->numerator) &&
+        alnat_is_equal(r1->denominator, r2->denominator) &&
         (r1->sign == r2->sign);
 }
 
@@ -72,7 +72,7 @@ Rational_t string_to_rational(char* string) {
         *nuller = 0;
         r->denominator = string_to_alnat(fraction_digits);
     } else {
-        r->denominator = make_single_digit_alnat(1);
+        r->denominator = alnat_make_single_digit(1);
     }
 
     simplify(r);
@@ -81,9 +81,9 @@ Rational_t string_to_rational(char* string) {
 
 void free_rational(Rational_t r) {
     debug(2, "free_rational: numer...");
-    free_alnat(r->numerator);
+    alnat_free(r->numerator);
     debug(2, "done | denom...");
-    free_alnat(r->denominator);
+    alnat_free(r->denominator);
     debug(2, "done | rational...");
     free_mem("free_rational", r);
     debug(2, "done\n");
@@ -92,26 +92,26 @@ void free_rational(Rational_t r) {
 void simplify(Rational_t r) {
     // Find the greatest common divisor
     // printf("<<< Simplify "); debug_print_rational(*r);
-    Alnat_t gcd = gcd_alnat(r->numerator, r->denominator);
+    Alnat_t gcd = alnat_gcd(r->numerator, r->denominator);
     // printf("Rational simplified. >>>\n");
     
     // Construct a rational from these two integers
     if (gcd[0] == 1) {
         // Relative primes, cannot simplify
-        free_alnat(gcd);
+        alnat_free(gcd);
         return;
     } else {
         // Simplify both by gcd
-        Alnat_t simpl_numer = div_alnat(r->numerator, gcd);
-        Alnat_t simpl_denom = div_alnat(r->denominator, gcd);
+        Alnat_t simpl_numer = alnat_div(r->numerator, gcd);
+        Alnat_t simpl_denom = alnat_div(r->denominator, gcd);
         int8_t sign = r->sign;
-        free_alnat(r->numerator);
-        free_alnat(r->denominator);
+        alnat_free(r->numerator);
+        alnat_free(r->denominator);
         r->numerator = simpl_numer;
         r->denominator = simpl_denom;
         r->sign = sign;
     }
-    free_alnat(gcd);
+    alnat_free(gcd);
 }
 
 void reciprocate(Rational_t r) {
@@ -135,43 +135,43 @@ char* rational_to_string(Rational_t r) {
 // TODO don't just blindly multiply, perhaps calculating the LCM is better
 Rational_t add_rational(Rational_t r1, Rational_t r2) {
     Rational_t r = _make_rational();
-    Alnat_t n1 = mul_alnat(r1->numerator, r2->denominator);
-    Alnat_t n2 = mul_alnat(r2->numerator, r1->denominator);
+    Alnat_t n1 = alnat_mul(r1->numerator, r2->denominator);
+    Alnat_t n2 = alnat_mul(r2->numerator, r1->denominator);
     if (r1->sign == r2->sign) {
-        r->numerator = add_alnat(n1, n2);
+        r->numerator = alnat_add(n1, n2);
         r->sign = r1->sign;
     } else {
-        r->numerator = sub_alnat(n1, n2, &(r->sign));
+        r->numerator = alnat_sub(n1, n2, &(r->sign));
     }
-    r->denominator = mul_alnat(r1->denominator, r2->denominator);
+    r->denominator = alnat_mul(r1->denominator, r2->denominator);
     simplify(r);
-    free_alnat(n1);
-    free_alnat(n2);
+    alnat_free(n1);
+    alnat_free(n2);
     return r;
 }
 
 Rational_t sub_rational(Rational_t r1, Rational_t r2) {
     Rational_t r = _make_rational();
-    Alnat_t n1 = mul_alnat(r1->numerator, r2->denominator);
-    Alnat_t n2 = mul_alnat(r2->numerator, r1->denominator);
+    Alnat_t n1 = alnat_mul(r1->numerator, r2->denominator);
+    Alnat_t n2 = alnat_mul(r2->numerator, r1->denominator);
     if (r1->sign == r2->sign) {
-        r->numerator = sub_alnat(n1, n2, &(r->sign));
+        r->numerator = alnat_sub(n1, n2, &(r->sign));
     } else {
-        r->numerator = add_alnat(n1, n2);
+        r->numerator = alnat_add(n1, n2);
         r->sign = r1->sign;
     }
-    r->denominator = mul_alnat(r1->denominator, r2->denominator);
+    r->denominator = alnat_mul(r1->denominator, r2->denominator);
     simplify(r);
-    free_alnat(n1);
-    free_alnat(n2);
+    alnat_free(n1);
+    alnat_free(n2);
     return r;
 }
 
 Rational_t mul_rational(Rational_t multiplicand, Rational_t multiplier) {
     Rational_t r = _make_rational();
-    r->numerator = mul_alnat(multiplicand->numerator, multiplier->numerator);
+    r->numerator = alnat_mul(multiplicand->numerator, multiplier->numerator);
     r->denominator =
-        mul_alnat(multiplicand->denominator, multiplier->denominator);
+        alnat_mul(multiplicand->denominator, multiplier->denominator);
     simplify(r);
     r->sign = multiplicand->sign * multiplier->sign;
     return r;

@@ -24,34 +24,34 @@ uint8_t string_compare(char* str1, char* str2) {
 //     sprintf(buf, "1");
 //     Alnat_t alnat0 = string_to_alnat(buf);
 //     assert(&sum, "alnat0", alnat0[0] == 1);
-//     free_alnat(alnat0);
+//     alnat_free(alnat0);
 
 //     sprintf(buf, "283,756,238,567");
 //     Alnat_t alnat1 = string_to_alnat(buf);
 //     assert(&sum, "alnat1",
 //         string_compare(debug_print_alnat(alnat1), "283756238567") == 0);
-//     free_alnat(alnat1);
+//     alnat_free(alnat1);
 
 //     sprintf(buf, "19581958");
 //     Alnat_t alnat_sub_1 = string_to_alnat(buf);
 //     sprintf(buf, "9581958");
 //     Alnat_t alnat_sub_2 = string_to_alnat(buf);
-//     Alnat_t diff = sub_alnat(alnat_sub_1, alnat_sub_2, NULL);
+//     Alnat_t diff = alnat_sub(alnat_sub_1, alnat_sub_2, NULL);
 //     assert(&sum, "diff",
 //         string_compare(debug_print_alnat(diff), "10000000") == 0);
-//     free_alnat(alnat_sub_1);
-//     free_alnat(alnat_sub_2);
-//     free_alnat(diff);
+//     alnat_free(alnat_sub_1);
+//     alnat_free(alnat_sub_2);
+//     alnat_free(diff);
 
 //     sprintf(buf, "308023895");
 //     Alnat_t alnat2 = string_to_alnat(buf);
 //     sprintf(buf, "350108375");
 //     Alnat_t alnat3 = string_to_alnat(buf);
-//     Alnat_t gcd = gcd_alnat(alnat2, alnat3); // should give 4765
+//     Alnat_t gcd = alnat_gcd(alnat2, alnat3); // should give 4765
 //     assert(&sum, "gcd", string_compare(debug_print_alnat(gcd), "4765") == 0);
-//     free_alnat(alnat2);
-//     free_alnat(alnat3);
-//     free_alnat(gcd);
+//     alnat_free(alnat2);
+//     alnat_free(alnat3);
+//     alnat_free(gcd);
 
 //     sprintf(buf, "4.000");
 //     Rational_t r1 = string_to_rational(buf);
