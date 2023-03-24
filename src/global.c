@@ -1,5 +1,9 @@
 #include "global.h"
 
+#ifdef DEBUG_PRINTS
+uint64_t debug_level = 0;
+#endif
+
 void error(const char* s, ...) {
     #ifdef DEBUG_PRINTS
     va_list args;
@@ -9,14 +13,19 @@ void error(const char* s, ...) {
     #endif
 }
 
-void debug(int level, const char* s, ...) {
+void debug(int8_t level, const char* s, ...) {
     #ifdef DEBUG_PRINTS
-    if (level <= DEBUG_LEVEL) {
+    if (level > 0) debug_level += level;
+    if (debug_level <= DEBUG_LEVEL) {
         va_list args;
         va_start(args, s);
+        for (uint64_t i = 0; i < debug_level; i++) {
+            printf(" ");
+        }
         vprintf(s, args);
         va_end(args);
     }
+    if (level < 0) debug_level += level;
     #endif
 }
 

@@ -10,7 +10,7 @@ BOOL term_is_equal(struct Term t1, struct Term t2) {
             case ValTerm: {
                 if (t1.value.type == t2.value.type) {
                     if (t1.value.type == RationalVal) {
-                        return is_equal_rational(t1.value.rational,
+                        return rational_is_equal(t1.value.rational,
                             t2.value.rational);
                     } else {
                         return strcmp(t1.value.string, t2.value.string) == 0;
@@ -66,8 +66,8 @@ void term_free(struct Term t) {
         }
         case ValTerm: {
             if (t.value.type == RationalVal) {
-                debug(2, "free_term: freeing up rational\n");
-                free_rational(t.value.rational);
+                debug(0, "free_term: freeing up rational\n");
+                rational_free(t.value.rational);
             } else {
                 free_mem("free_term/string", t.value.string);
             }

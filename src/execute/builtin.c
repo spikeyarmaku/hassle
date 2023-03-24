@@ -11,7 +11,7 @@ struct Term make_lambda() {
 
 enum ErrorCode _lambda_helper1(EnvFrame_t env, Expr_t name, void* closure,
         struct Term* result) {
-    debug(2, "_lambda_helper1\n");
+    debug(1, "_lambda_helper1\n");
     struct Term t;
     t.type = AbsTerm;
     t.abs.apply = _lambda_helper2;
@@ -19,12 +19,13 @@ enum ErrorCode _lambda_helper1(EnvFrame_t env, Expr_t name, void* closure,
     lambda_closure->name = name;
     t.abs.closure = closure;
     *result = t;
+    debug(-1, "/_lambda_helper1\n");
     return Success;
 }
 
 enum ErrorCode _lambda_helper2(EnvFrame_t env, Expr_t body, void* closure,
         struct Term* result) {
-    debug(2, "_lambda_helper2\n");
+    debug(1, "_lambda_helper2\n");
     struct Term t;
     t.type = AbsTerm;
     t.abs.apply = _lambda_helper3;
@@ -33,31 +34,36 @@ enum ErrorCode _lambda_helper2(EnvFrame_t env, Expr_t body, void* closure,
     lambda_closure->static_env = env;
     t.abs.closure = closure;
     *result = t;
+    debug(-1, "/_lambda_helper2\n");
     return Success;
 }
 
 enum ErrorCode _lambda_helper3(EnvFrame_t env, Expr_t value, void* closure,
         struct Term* result) {
-    debug(2, "_lambda_helper3\n");
+    debug(1, "_lambda_helper3\n");
     struct LambdaClosure* lambda_closure = (struct LambdaClosure*)closure;
     enum ErrorCode Error_code = eval_expr(env, value, result);
     if (Error_code != Success) {
+        debug(-1, "/_lambda_helper3\n");
         return Error_code;
     }
     
     EnvFrame_t new_frame = make_empty_frame(lambda_closure->static_env);
     Error_code = add_entry(new_frame, lambda_closure->name, *result);
     if (Error_code != Success) {
+        debug(-1, "/_lambda_helper3\n");
         return Error_code;
     }
     
     Error_code = eval_expr(new_frame, lambda_closure->body, result);
     if (Error_code != Success) {
+        debug(-1, "/_lambda_helper3\n");
         return Error_code;
     }
 
     free_mem("_lambda_helper3", closure);
     free_frame(&new_frame); // TODO free env (currently the program crashes at this line)
+    debug(-1, "/_lambda_helper3\n");
     return Success;
 }
 
@@ -76,7 +82,7 @@ struct Term make_binop(enum BinOp binop) {
 
 enum ErrorCode _binop_helper1(EnvFrame_t env, Expr_t op1, void* closure,
         struct Term* result) {
-    debug(2, "_binop_helper1\n");
+    debug(1, "_binop_helper1\n");
     struct Term t;
     t.type = AbsTerm;
     t.abs.apply = _binop_helper2;
@@ -85,12 +91,13 @@ enum ErrorCode _binop_helper1(EnvFrame_t env, Expr_t op1, void* closure,
         (struct MathBinopClosure*)closure;
     math_binop_closure->operand1 = op1;
     *result = t;
+    debug(-1, "/_binop_helper1\n");
     return Success;
 }
 
 enum ErrorCode _binop_helper2(EnvFrame_t env, Expr_t op2, void* closure,
         struct Term* result) {
-    debug(2, "_binop_helper2\n");
+    debug(1, "_binop_helper2\n");
     struct MathBinopClosure* math_binop_closure =
         (struct MathBinopClosure*)closure;
     Expr_t op1 = math_binop_closure->operand1;
@@ -99,22 +106,26 @@ enum ErrorCode _binop_helper2(EnvFrame_t env, Expr_t op2, void* closure,
     struct Term t1, t2;
     enum ErrorCode Error_code = eval_expr(env, op1, &t1);
     if (Error_code != Success) {
+        debug(-1, "/_binop_helper2\n");
         return Error_code;
     }
     Error_code = eval_expr(env, op2, &t2);
     if (Error_code != Success) {
+        debug(-1, "/_binop_helper2\n");
         return Error_code;
     }
 
     // Check if the operands are numbers
     if (t1.type != ValTerm || t2.type != ValTerm) {
-        debug(2, "_binop_helper2: at least one operand is not a value\n");
+        debug(0, "_binop_helper2: at least one operand is not a value\n");
         free_term(t1); free_term(t2);
+        debug(-1, "/_binop_helper2\n");
         return Error;
     }
     if (t1.value.type != RationalVal || t2.value.type != RationalVal) {
-        debug(2, "_binop_helper2: at least one operand is not a number\n");
+        debug(0, "_binop_helper2: at least one operand is not a number\n");
         free_term(t1); free_term(t2);
+        debug(-1, "/_binop_helper2\n");
         return Error;
     }
 
@@ -123,30 +134,28 @@ enum ErrorCode _binop_helper2(EnvFrame_t env, Expr_t op2, void* closure,
     switch (binop) {
         case ADD: {
             result->value.rational =
-                add_rational(t1.value.rational, t2.value.rational);
+                rational_add(t1.value.rational, t2.value.rational);
             break;
         }
         case SUB: {
             result->value.rational =
-                sub_rational(t1.value.rational, t2.value.rational);
+                rational_sub(t1.value.rational, t2.value.rational);
             break;
         }
         case MUL: {
             result->value.rational =
-                mul_rational(t1.value.rational, t2.value.rational);
+                rational_mul(t1.value.rational, t2.value.rational);
             break;
         }
         case DIV: {
             result->value.rational =
-                div_rational(t1.value.rational, t2.value.rational);
+                rational_div(t1.value.rational, t2.value.rational);
             break;
         }
     }
-    debug(2, "_binop_helper2: result calculated\n");
-    // free_mem(closure);
-    // free_term(t1); free_term(t2);
-    debug(2, "_binop_helper2: cleanup done\n");
-    
+    free_mem(closure);
+    free_term(t1); free_term(t2);
+    debug(-1, "/_binop_helper2\n");
     return Success;
 }
 

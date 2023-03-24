@@ -137,11 +137,11 @@ ErrorCode_t env_add_entry(EnvFrame_t frame, Expr_t expr, struct Term t) {
 }
 
 void env_print_frame(EnvFrame_t frame) {
-    debug(2, "\n\n===\nEnvironment:\n");
+    debug(0, "\n\n===\nEnvironment:\n");
     size_t count = 0;
     while (frame != NULL) {
         //
-        debug(2, "\n  Frame #%d:\n", count);
+        debug(0, "\n  Frame #%d:\n", count);
 
         char expr_buf[1024];
         char term_buf[1024];
@@ -151,13 +151,13 @@ void env_print_frame(EnvFrame_t frame) {
                 get_term_by_id(frame->env_dict->term_dict,
                     bytes_to_index(frame->mapping[i].term_id, TERM_ID_BYTES)),
                 frame);
-            debug(2, "%s - %s", expr_buf, term_buf);
+            debug(0, "%s - %s", expr_buf, term_buf);
         }
 
         frame = frame->parent;
         count++;
     }
-    debug(2, "End of environment\n===\n\n");
+    debug(0, "End of environment\n===\n\n");
 }
 
 EnvFrame_t env_make_empty_frame(EnvFrame_t parent) {
@@ -177,14 +177,14 @@ void env_free_frame(EnvFrame_t* frame_ptr) {
     if (frame != NULL) {
         // Free the individual mappings
         for (size_t i = 0; i < frame->entry_count; i++) {
-            debug(2, "remove_last_frame/mapping/entry\n");
+            debug(0, "remove_last_frame/mapping/entry\n");
             free_entry(frame->mapping[i]);
         }
         // Free the mapping list
-        debug(2, "remove_last_frame/mapping\n");
+        debug(0, "remove_last_frame/mapping\n");
         free_mem("remove_last_frame/mapping", frame->mapping);
         // Free the dict
-        debug(2, "remove_last_frame/frame\n");
+        debug(0, "remove_last_frame/frame\n");
         free_mem("remove_last_frame/frame", frame);
     }
     *frame_ptr = NULL;

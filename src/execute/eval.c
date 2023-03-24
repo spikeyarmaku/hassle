@@ -3,7 +3,7 @@
 enum ErrorCode eval_expr(EnvFrame_t frame, Expr_t expr, struct Term* result) {
     // DEBUG
     char buf[1024]; print_expr(expr, frame, buf);
-    debug(2, "eval_expr - %s\n", buf);
+    debug(1, "eval_expr - %s\n", buf);
     print_env_frame(frame);
     // print_dict(env->dict, buf);
     // debug(2, "%s\n\n", buf);
@@ -13,27 +13,31 @@ enum ErrorCode eval_expr(EnvFrame_t frame, Expr_t expr, struct Term* result) {
 
     switch (t.type) {
         case AbsTerm: {
-            debug(2, "Abs\n");
+            debug(0, "Abs\n");
             // return t.abs.apply(env, expr, t.abs.closure, result);
             *result = t;
+            debug(-1, "/eval_expr\n", buf);
             return Success;
         }
         case ValTerm: {
-            debug(2, "Val\n");
+            debug(0, "Val\n");
             *result = t;
+            debug(-1, "/eval_expr\n", buf);
             return Success;
         }
         case ExprTerm: {
-            debug(2, "Expr\n");
+            debug(0, "Expr\n");
             // If expr is a single symbol or an empty list, return it
             if (!is_list(t.expr) || is_empty_list(t.expr)) {
                 *result = t;
+                debug(-1, "/eval_expr\n", buf);
                 return 0;
             }
 
             #ifdef MEMOIZE_SUB_EXPRS
             // TODO
             #endif
+            debug(-1, "/eval_expr\n", buf);
             return eval_combination(frame, t.expr, result);
         }
         // Control shouldn't reach this point
@@ -47,7 +51,7 @@ enum ErrorCode eval_expr(EnvFrame_t frame, Expr_t expr, struct Term* result) {
 // Here, `expr` does not contain the opening parenthesis
 enum ErrorCode eval_combination(EnvFrame_t frame, Expr_t expr, struct Term* result) {
     char buf[1024]; print_expr(expr, frame, buf);
-    debug(2, "eval_combination - %s\n", buf);
+    debug(1, "eval_combination - %s\n", buf);
     // At this point, there will be no exact match, the longest matching
     // subexpression will be at least one element shorter than the expression
     // given as parameter.
@@ -61,26 +65,31 @@ enum ErrorCode eval_combination(EnvFrame_t frame, Expr_t expr, struct Term* resu
 
         enum ErrorCode Error_code = eval_expr(frame, new_expr, result);
         if (Error_code != Success) {
+            debug(-1, "eval_combination\n", buf);
             return Error_code;
         }
 
         while (new_expr != Eos) {
             new_expr = advance_expr(new_expr);
             print_expr(new_expr, frame, buf);
-            debug(2, "advance expr: - %s\n", buf);
+            debug(0, "advance expr: - %s\n", buf);
             if (*new_expr == Eos || *new_expr == CloseParen) {
+                debug(-1, "eval_combination\n", buf);
                 return Success;
             } else {
                 Error_code = apply(frame, *result, new_expr, result);
                 if (Error_code != Success) {
+                    debug(-1, "eval_combination\n", buf);
                     return Error_code;
                 }
             }
         }
+        debug(-1, "eval_combination\n", buf);
         return Success;
     } else {
         // There is a match, take its value and continue evaluating the rest of
         // the expression from left to right
+        debug(-1, "eval_combination\n", buf);
         return apply(frame, *match, expr + matching_bytes, result);
     }
 }
@@ -89,8 +98,9 @@ enum ErrorCode apply(EnvFrame_t frame, struct Term t, Expr_t e, struct Term* res
     // char t_buf[1024]; print_term(t_buf, t, env->dict);
     // char e_buf[1024]; print_expr(e, env->dict, e_buf);
     // debug(2, "apply - %s | %s\n", t_buf, e_buf);
-    debug(2, "apply\n");
+    debug(1, "apply\n");
     if (t.type == ValTerm) {
+        debug(-1, "/apply\n");
         return Error;
     }
 
@@ -100,19 +110,23 @@ enum ErrorCode apply(EnvFrame_t frame, struct Term t, Expr_t e, struct Term* res
         while (evaled.type == ExprTerm) {
             uint8_t Error_code = eval_expr(frame, t.expr, &evaled);
             if (Error_code != Success) {
+                debug(-1, "/apply\n");
                 return Error_code;
             }
             if (evaled.type == ExprTerm) {
                 // If the evaluated expression is the same as the source
                 // expression, signal an Error
                 if (is_equal_expr(t.expr, evaled.expr)) {
+                    debug(-1, "/apply\n");
                     return Error;
                 }
             }
         }
         // free_term(evaled); // seems to do nothing?
+        debug(-1, "/apply\n");
         return apply(frame, t, e, result);
     } else {
+        debug(-1, "/apply\n");
         return t.abs.apply(frame, e, t.abs.closure, result);
     }
 }

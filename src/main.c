@@ -122,7 +122,6 @@ ErrorCode_t interpret_file(char* file_name) {
     return Success;
 }
 
-
 struct Test{
     char* msg;
 };
@@ -142,19 +141,34 @@ int main(int argc, char *argv[]) {
         // ErrorCode_t error_code = interpret_file(argv[1]);
         // if (error_code != Success) return 1;
 
-        char buf[8];
-        sprintf(buf, "1234567");
-        Alnat_t alnat = string_to_alnat(buf);
-        struct AlnatMarcher m = _alnat_make_marcher(alnat);
-        while (!_alnat_is_end(m)) {
-            printf("%d ", _alnat_get_next_digit(&m));
-        }
-        printf("\n");
-        char* str = alnat_to_string(alnat);
+        // char buf[8];
+        // sprintf(buf, "1234567");
+        // Alnat_t alnat = string_to_alnat(buf);
+        // struct AlnatMarcher m = _alnat_make_marcher(alnat);
+        // while (!_alnat_is_end(m)) {
+        //     printf("%d ", _alnat_get_next_digit(&m));
+        // }
+        // printf("\n");
+        // char* str = alnat_to_string(alnat);
+        // printf("\n%s\n", str);
+        // alnat_free(alnat);
+        // free_mem("main", str);
+
+
+        char buf[40];
+        // 0, 00, 0000000, .0, .00, .000000, 0., 00., 00000000.
+        // 0.0, 0.00, 0.0000, 00.0, 00.00, 00.0000, 00000.0, 0000.00, 00000.0000
+        // 1, 01, 0000001, 1.0, 01.0, 000001.0, 1.00000, 01.000000, 000001.0000
+        // .0000000000000001
+        // 12345.6789000, 1.110
+
+        sprintf(buf, "000001.0");
+        Rational_t rat = string_to_rational(buf);
+        char* str = rational_to_string(rat);
         printf("\n%s\n", str);
-        alnat_free(alnat);
+        rational_free(rat);
         free_mem("main", str);
-        
+
         // run_tests();
     } else {
         #ifdef REPL_ENABLED

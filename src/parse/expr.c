@@ -31,7 +31,7 @@ void expr_add_to_list(ErrorCode_t* error_code, Expr_t list_expr, Expr_t child) {
     debug(1, "expr_add_to_list\n");
     if (list_expr->_type != ExprList) {
         *error_code = Error;
-        debug(1, "/expr_add_to_list\n");
+        debug(-1, "/expr_add_to_list\n");
         return;
     }
 
@@ -45,7 +45,7 @@ void expr_add_to_list(ErrorCode_t* error_code, Expr_t list_expr, Expr_t child) {
         last_elem->_next = child;
         // child->_prev = last_elem
     }
-    debug(1, "/expr_add_to_list\n");
+    debug(-1, "/expr_add_to_list\n");
 }
 
 Expr_t expr_make_atom(ErrorCode_t* error_code, char* symbol) {
@@ -54,7 +54,7 @@ Expr_t expr_make_atom(ErrorCode_t* error_code, char* symbol) {
     if (*error_code == Success) {
         _expr_set_as_atom(expr, symbol);
     }
-    debug(1, "/expr_make_atom\n");
+    debug(-1, "/expr_make_atom\n");
     return expr;
 }
 
@@ -64,7 +64,7 @@ Expr_t expr_make_empty_list(ErrorCode_t* error_code) {
     if (*error_code == Success) {
         _expr_set_as_list(expr);
     }
-    debug(1, "/expr_make_empty_list\n");
+    debug(-1, "/expr_make_empty_list\n");
     return expr;
 }
 
@@ -117,14 +117,14 @@ BOOL expr_is_equal(Expr_t e1, Expr_t e2) {
 char* expr_to_string(Expr_t expr) {
     debug(1, "expr_to_string\n");
     if (expr == NULL) {
-        debug(1, "/expr_to_string\n");
+        debug(-1, "/expr_to_string\n");
         return NULL;
     }
     if (expr->_type == ExprAtom) {
         char* result = (char*)allocate_mem("expr_to_string/atom", NULL,
             sizeof(char) * (strlen(expr->_symbol) + 1));
         strcpy(result, expr->_symbol);
-        debug(1, "/expr_to_string\n");
+        debug(-1, "/expr_to_string\n");
         return result;
     } else {
         // Count the number of children
@@ -176,7 +176,7 @@ char* expr_to_string(Expr_t expr) {
         free_mem("expr_to_string/list/children_ptr", child_strings);
 
         // Return the result
-        debug(1, "/expr_to_string\n");
+        debug(-1, "/expr_to_string\n");
         return result;
     }
 }

@@ -57,10 +57,10 @@ uint8_t string_compare(char* str1, char* str2) {
 //     Rational_t r1 = string_to_rational(buf);
 //     sprintf(buf, "003");
 //     Rational_t r2 = string_to_rational(buf);
-//     Rational_t r3 = add_rational(r1, r2);
-//     Rational_t r4 = sub_rational(r1, r2);
-//     Rational_t r5 = mul_rational(r1, r2);
-//     Rational_t r6 = div_rational(r1, r2);
+//     Rational_t r3 = rational_add(r1, r2);
+//     Rational_t r4 = rational_sub(r1, r2);
+//     Rational_t r5 = rational_mul(r1, r2);
+//     Rational_t r6 = rational_div(r1, r2);
 //     assert(&sum, "r1 numer", r1->numerator[0] == 4);
 //     assert(&sum, "r1 denom", r1->denominator[0] == 1);
 //     assert(&sum, "r1 sign",  r1->sign == 1);
@@ -79,8 +79,8 @@ uint8_t string_compare(char* str1, char* str2) {
 //     assert(&sum, "r6 numer", r6->numerator[0] == 4);
 //     assert(&sum, "r6 denom", r6->denominator[0] == 3);
 //     assert(&sum, "r6 sign",  r6->sign == 1);
-//     free_rational(r1); free_rational(r2); free_rational(r3);
-//     free_rational(r4); free_rational(r5); free_rational(r6);
+//     rational_free(r1); rational_free(r2); rational_free(r3);
+//     rational_free(r4); rational_free(r5); rational_free(r6);
 
 //     printf("%d tests failed.\n\n", sum);
 //     return sum;

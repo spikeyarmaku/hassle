@@ -29,7 +29,7 @@ Parser_t _create_parser(char* file_name) {
 
     parser->stream = file_content;
     parser->counter = 0;
-    debug(1, "/_create_parser\n");
+    debug(-1, "/_create_parser\n");
     return parser;
 }
 
@@ -43,7 +43,7 @@ void _free_parser(Parser_t* parser_ptr) {
         free_mem("_free_parser", parser);
     }
     *parser_ptr = NULL;
-    debug(1, "/_free_parser\n");
+    debug(-1, "/_free_parser\n");
 }
 
 // Read the next token, and set the stream pointer to the next non-whitespace
@@ -75,7 +75,7 @@ struct Token _get_next_token(ErrorCode_t* error_code, Parser_t parser) {
     // Set the stream pointer to the next non-whitespace character
     _consume_whitespace(parser);
 
-    debug(1, "/_get_next_token\n");
+    debug(-1, "/_get_next_token\n");
     return token;
 }
 
@@ -86,15 +86,15 @@ ErrorCode_t _read_symbol(struct Token* token, Parser_t parser) {
     if (c == '"') {
         // String
         ErrorCode_t error_code = _read_string(token, parser);
-        debug(1, "/_read_symbol\n");
+        debug(-1, "/_read_symbol\n");
         return error_code;
     } else {
         // Not a string, disallowed characters: "() and whitespace
         ErrorCode_t error_code = _read_identifier(token, parser);
-        debug(1, "/_read_symbol\n");
+        debug(-1, "/_read_symbol\n");
         return error_code;
     }
-    debug(1, "/_read_symbol\n");
+    debug(-1, "/_read_symbol\n");
     return Success;
 }
 
@@ -136,7 +136,7 @@ ErrorCode_t _read_string(struct Token* token, Parser_t parser) {
     c = _get_current_char(parser);
     if ((!_is_whitespace(c) && c != ')' && c != 0) ||
             ending_position - starting_position == 0) {
-        debug(1, "/_read_string\n");
+        debug(-1, "/_read_string\n");
         return Error;
     }
 
@@ -165,7 +165,7 @@ ErrorCode_t _read_string(struct Token* token, Parser_t parser) {
     // Fill the token
     token->type = Symbol;
     token->str = str;
-    debug(1, "/_read_string\n");
+    debug(-1, "/_read_string\n");
     return Success;
 }
 
@@ -196,7 +196,7 @@ ErrorCode_t _read_identifier(struct Token* token, Parser_t parser) {
     c = _get_current_char(parser);
     if ((!_is_whitespace(c) && c != ')' && c != 0) ||
             ending_position - starting_position == 0) {
-        debug(1, "/_read_identifier\n");
+        debug(-1, "/_read_identifier\n");
         return Error;
     }
 
@@ -214,7 +214,7 @@ ErrorCode_t _read_identifier(struct Token* token, Parser_t parser) {
     // Fill the token
     token->type = Symbol;
     token->str = str;
-    debug(1, "/_read_identifier\n");
+    debug(-1, "/_read_identifier\n");
     return Success;
 }
 
@@ -286,13 +286,13 @@ Expr_t _parse(ErrorCode_t* error_code, Parser_t parser) {
         case Symbol: {
             Expr_t result = expr_make_atom(error_code, token.str);
             _free_token(&token);
-            debug(1, "/_parse\n");
+            debug(-1, "/_parse\n");
             return result;
         }
         case OpenParen: {
             Expr_t list = expr_make_empty_list(error_code);
             if (*error_code != Success) {
-                debug(1, "/_parse\n");
+                debug(-1, "/_parse\n");
                 return list;
             }
             Expr_t child = _parse(error_code, parser);
@@ -300,19 +300,19 @@ Expr_t _parse(ErrorCode_t* error_code, Parser_t parser) {
                 expr_add_to_list(error_code, list, child);
                 child = _parse(error_code, parser);
             }
-            debug(1, "/_parse\n");
+            debug(-1, "/_parse\n");
             return list;
         }
         case CloseParen: {
-            debug(1, "/_parse\n");
+            debug(-1, "/_parse\n");
             return NULL;
         }
         case Eos: {
-            debug(1, "/_parse\n");
+            debug(-1, "/_parse\n");
             return NULL;
         }
         default: {
-            debug(1, "/_parse\n");
+            debug(-1, "/_parse\n");
             return NULL;
         }
     }

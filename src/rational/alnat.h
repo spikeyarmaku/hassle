@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 #include "config.h"
 #include "global.h"
@@ -31,7 +32,6 @@ struct AlnatBuilder {
 struct AlnatMarcher {
     Alnat_t ptr;
     size_t counter;
-    BOOL finished;
 };
 
 Alnat_t             string_to_alnat             (char*);
@@ -48,6 +48,9 @@ Alnat_t             alnat_div                   (Alnat_t, Alnat_t);
 
 Alnat_t             alnat_gcd                   (Alnat_t, Alnat_t);
 
+void                alnat_print                 (Alnat_t);
+void                alnat_print_bytes           (Alnat_t);
+
 // --- Private methods ---
 
 struct AlnatBuilder _alnat_make_builder         ();
@@ -60,17 +63,17 @@ enum ErrorCode      _alnat_finalize             (struct AlnatBuilder*);
 
 struct AlnatMarcher _alnat_make_marcher         (Alnat_t);
 uint8_t             _alnat_get_curr_digit       (struct AlnatMarcher);
-BOOL                _alnat_is_end               (struct AlnatMarcher);
 BOOL                _alnat_is_start             (struct AlnatMarcher);
-void                _alnat_move_forward         (struct AlnatMarcher*);
-void                _alnat_move_backward        (struct AlnatMarcher*);
+BOOL                _alnat_is_end               (struct AlnatMarcher);
+BOOL                _alnat_move_forward         (struct AlnatMarcher*);
+BOOL                _alnat_move_backward        (struct AlnatMarcher*);
 uint8_t             _alnat_get_next_digit       (struct AlnatMarcher*);
 uint8_t             _alnat_get_prev_digit       (struct AlnatMarcher*);
 size_t              _alnat_get_marcher_pos      (struct AlnatMarcher);
 void                _alnat_rewind_marcher       (struct AlnatMarcher*);
 
 uint8_t             _alnat_unsafe_get_digit     (size_t, Alnat_t);
-uint8_t             _alnat_unsafe_is_last_digit (size_t, Alnat_t);
+BOOL                _alnat_unsafe_is_last_digit (size_t, Alnat_t);
 void                _alnat_unsafe_mark_digit    (size_t, uint8_t, Alnat_t);
 
 void                _alnat_str_double           (char*);

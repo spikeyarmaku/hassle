@@ -15,7 +15,7 @@
 // #define MEMORY_DIAGNOSTIC
 
 // Comment this out to disable debug prints
-#define DEBUG_PRINTS
+// #define DEBUG_PRINTS
 
 // Comment this out to speed up the interpreter a bit at the expense of
 // consuming somewhat more memory
@@ -34,7 +34,7 @@
 // --- KNOBS ---
 
 // The amount of debug prints, if DEBUG_PRINTS is defined
-#define DEBUG_LEVEL 2
+#define DEBUG_LEVEL 3
 
 // How many bytes are allocated if a string needs to be expanded
 #define STRING_BUFFER_SIZE 1024
