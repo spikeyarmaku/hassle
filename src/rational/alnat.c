@@ -36,7 +36,7 @@ enum ErrorCode _alnat_add_digit(uint8_t digit, struct AlnatBuilder* b) {
     // Check if the alnat has digits
     if (b->size != 0) {
         // If there is, set the last digit's mask to 1
-        _alnat_unsafe_mark_digit(b->next - 1, 1, b->ptr);
+        _alnat_unsafe_mark_digit(b->next - 1, FALSE, b->ptr);
     }
     // Check if we have enough space to extend the number with a new digit
     if (b->next == b->size) {
@@ -116,7 +116,7 @@ BOOL _alnat_is_start(struct AlnatMarcher m) {
 }
 
 BOOL _alnat_is_end(struct AlnatMarcher m) {
-    return (m.ptr[m.counter] & ALNAT_MAX) == 0;
+    return _alnat_unsafe_is_last_digit(m.counter, m.ptr);
 }
 
 size_t _alnat_get_marcher_pos(struct AlnatMarcher m) {
@@ -135,11 +135,11 @@ BOOL _alnat_unsafe_is_last_digit(size_t n, Alnat_t a) {
     return (a[n] & ALNAT_MAX) == ALNAT_MAX ? FALSE : TRUE;
 }
 
-void _alnat_unsafe_mark_digit(size_t n, uint8_t is_non_last, Alnat_t a) {
-    if (is_non_last) {
-        a[n] |= ALNAT_MAX;
-    } else {
+void _alnat_unsafe_mark_digit(size_t n, BOOL is_msd, Alnat_t a) {
+    if (is_msd) {
         a[n] &= ~ALNAT_MAX;
+    } else {
+        a[n] |= ALNAT_MAX;
     }
 }
 
@@ -409,6 +409,14 @@ BOOL alnat_is_equal(Alnat_t a1, Alnat_t a2) {
     return a1end == a2end;
 }
 
+void _alnat_fast_forward_marcher(struct AlnatMarcher* m) {
+    while (_alnat_move_forward(m));
+}
+
+size_t _alnat_get_marcher_counter(struct AlnatMarcher m) {
+    return m.counter;
+}
+
 Alnat_t _alnat_copy(Alnat_t a) {
     Alnat_t result;
     size_t count = 0;
@@ -480,41 +488,31 @@ Alnat_t alnat_add(Alnat_t a1, Alnat_t a2) {
     return b.ptr;
 }
 
-Alnat_t alnat_sub(Alnat_t a1, Alnat_t a2, int8_t* sign) {
-    debug(1, "alnat_sub\n");
-    
-    // alnat_print(a1); printf("("); alnat_print_bytes(a1); printf(") - ");
-    // alnat_print(a2); printf("("); alnat_print_bytes(a2); printf(")\n");
+Alnat_t alnat_sub (Alnat_t a1, Alnat_t a2, int8_t* sign) {
+    debug(1, "_alnat_sub\n");
     
     int8_t a1_gt_a2 = _alnat_compare(a1, a2);
     if (a1_gt_a2 == 0) {
-        debug(-1, "/alnat_sub\n");
+        debug(-1, "/_alnat_sub\n");
         return alnat_make_single_digit(0);
     } else {
         a1_gt_a2 = a1_gt_a2 > 0 ? 1 : 0;
         Alnat_t a1_new = a1_gt_a2 ? _alnat_make_complement(a1) : a1;
-        
-        // printf("Compl.: "); alnat_print(a1_new); printf("(");
-        // alnat_print_bytes(a1_new); printf(")\n");
-        
         Alnat_t a2_new = a1_gt_a2 ? a2 : _alnat_make_complement(a2);
         Alnat_t sum = alnat_add(a1_new, a2_new);
         Alnat_t result = _alnat_make_complement(sum);
         alnat_free(sum);
-        a1_gt_a2 ? alnat_free(a1_new) : alnat_free(a2_new);
         _alnat_strip(&result);
+        a1_gt_a2 ? alnat_free(a1_new) : alnat_free(a2_new);
         if (sign != NULL) {
             *sign = a1_gt_a2 ? 1 : -1;
         }
-    
-        // printf("RESULT: "); alnat_print(result); printf(" -- "); printf("\n");
-    
-        debug(-1, "/alnat_sub\n");
+        debug(-1, "/_alnat_sub\n");
         return result;
     }
 }
 
-// TODO maybe there is a more efficient method
+// TODO find a more efficient method
 // https://en.wikipedia.org/wiki/Multiplication_algorithm
 Alnat_t alnat_mul(Alnat_t multiplicand, Alnat_t multiplier) {
     Alnat_t result = alnat_make_single_digit(0);
@@ -538,37 +536,159 @@ Alnat_t alnat_mul(Alnat_t multiplicand, Alnat_t multiplier) {
     return result;
 }
 
-// TODO it could be made more efficient: instead of always adding `one`, these
-// additions could be batched, e.g. add ALNAT_MAX-1 each time that much
-// subtraction is done
-// TODO maybe it could return the remainder, too?
-Alnat_t alnat_div(Alnat_t dividend, Alnat_t divisor) {
+/*
+dividend:   48234756398756 - d: 14, l: 4
+divisor:              6576 - d:  4, l: 6
+digit_diff:              9
+power_diff:     1000000000
+
+48234'756398756 = 7
+ 6576
+
+ 22027'56398756 = 3
+  6576
+
+  22995'6398756 = 3
+   6576
+
+   32676'398756 = 4
+    6576
+
+    63723'98756 = 9
+     6576
+
+     45399'8756 = 6
+      6576
+
+      59438'756 = 9
+       6576
+
+        2547'56 = 0
+        6576
+
+        25475'6 = 3
+         6576
+
+         57476' = 8
+          6576
+
+          4868' = END
+          6576
+
+result: 7334969038 - d: 10 (14 - 4)
+*/
+
+/*
+36 61 21 60 104 123 10 / 48 51
+             48  51
+*/
+
+// Take enough of the digits of the dividend to be bigger than the divisor.
+// Then subtract the divisor from this new number until the new number becomes
+// smaller than the divisor. The amount of subtractions will be the new digit.
+// The quotient's digit count will be the difference between the divisor's digit
+// count and the dividend's digit count, plus one.
+AlnatDiv_t alnat_div(Alnat_t dividend, Alnat_t divisor) {
     debug(1, "alnat_div\n");
-    Alnat_t one = alnat_make_single_digit(1);
 
-    if (_alnat_compare(dividend, divisor) == 0) {
-        // If the dividend equals to the divisor, return 1
-        debug(-1, "/alnat_div\n");
-        return one;
+    AlnatDiv_t result;
+
+    // Check for divide-by-zero error
+    if (alnat_is_null(divisor)) {
+        result.quot = NULL;
+        result.rem = NULL;
+        debug(1, "/alnat_div/div_by_zero\n");
+        return result;
     }
 
-    Alnat_t result = alnat_make_single_digit(0);
-    Alnat_t inter = _alnat_copy(dividend);
-    while (_alnat_compare(inter, divisor) >= 0) {
-        Alnat_t new_inter = alnat_sub(inter, divisor, NULL);
-        alnat_free(inter);
-        // printf("# %s ->", debug_print_alnat(new_inter));
-        inter = new_inter;
+    // Count the divisor's digits
+    struct AlnatMarcher divisor_m = _alnat_make_marcher(divisor);
+    _alnat_fast_forward_marcher(&divisor_m);
+    size_t divisor_digit_count = _alnat_get_marcher_counter(divisor_m) + 1;
+    // Count the dividend's digits (necessary for estimating the result quot's
+    // digit count)
+    struct AlnatMarcher dividend_m = _alnat_make_marcher(dividend);
+    _alnat_fast_forward_marcher(&dividend_m);
+    size_t dividend_digit_count = _alnat_get_marcher_counter(dividend_m) + 1;
 
-        Alnat_t new_result = alnat_add(result, one);
-        // printf("%s #\n", debug_print_alnat(result));
-        alnat_free(result);
-        result = new_result;
+    // Allocate enough space for result.quot
+    size_t quot_digit_count = 1 + dividend_digit_count - divisor_digit_count;
+    Alnat_t quot = (Alnat_t)allocate_mem("alnat_div", NULL,
+        sizeof(uint8_t) * quot_digit_count);
+    memset(quot, 0, quot_digit_count);
+
+    // Get enough digits off of the dividend
+    // (Allocating space for one extra digit, because sometimes it will be
+    // necessary)
+    Alnat_t dividend_part = (Alnat_t)allocate_mem("alnat_div", NULL,
+        sizeof(uint8_t) * (divisor_digit_count + 1));
+
+    for (INDEX i = divisor_digit_count; i > 0; i--) {
+        dividend_part[i - 1] = _alnat_get_curr_digit(dividend_m);
+        _alnat_move_backward(&dividend_m);
+        _alnat_unsafe_mark_digit(i - 1, i == divisor_digit_count,
+            dividend_part);
     }
-    alnat_free(inter);
-    alnat_free(one);
+    // Start the loop
+    uint8_t new_digit = 0;
+    INDEX digit_counter = 0;
+    do {
+        // Add a new digit to the dividend
+        for (INDEX i = divisor_digit_count; i > 0; i--) {
+            dividend_part[i] = dividend_part[i - 1];
+        }
+        dividend_part[0] = _alnat_get_curr_digit(dividend_m);
+        _alnat_unsafe_mark_digit(0, FALSE, dividend_part);
 
-    debug(-1, "alnat_div\n");
+        // Use _alnat_sub instead of alnat_sub, as the former doesn't strip the
+        // alnat
+        while (_alnat_compare(dividend_part, divisor) >= 0) {
+            Alnat_t new_dividend_part =
+                alnat_sub(dividend_part, divisor, NULL);
+            new_digit++;
+
+            // Copy new_dividend_part back to dividend_part
+            INDEX idx = 0;
+            do {
+                dividend_part[idx] = new_dividend_part[idx];
+                idx++;
+            } while (!_alnat_unsafe_is_last_digit(idx - 1, new_dividend_part));
+
+            // Free new_dividend_part
+            alnat_free(new_dividend_part);
+        }
+
+        // Record the new digit
+        quot[digit_counter] = new_digit;
+        new_digit = 0;
+        _alnat_unsafe_mark_digit(digit_counter, TRUE, quot);
+        if (digit_counter > 0) {
+            _alnat_unsafe_mark_digit(digit_counter - 1, FALSE, quot);
+        }
+        digit_counter++;
+    } while (_alnat_move_backward(&dividend_m));
+
+    if (digit_counter == 0) {
+        quot[0] = 0;
+    } else {
+        // Reverse digits
+        uint8_t temp;
+        for (INDEX i = 0; i < digit_counter / 2; i++) {
+            temp = quot[i];
+            quot[i] = quot[digit_counter - i - 1];
+            quot[digit_counter - i - 1] = temp;
+        }
+        _alnat_unsafe_mark_digit(0, FALSE, quot);
+        _alnat_unsafe_mark_digit(digit_counter - 1, TRUE, quot);
+        _alnat_strip(&quot);
+    }
+
+    _alnat_strip(&dividend_part);
+
+    result.quot = quot;
+    result.rem = dividend_part;
+
+    debug(1, "/alnat_div\n");
     return result;
 }
 
@@ -728,3 +848,12 @@ void alnat_print_bytes(Alnat_t alnat) {
     } while (_alnat_move_forward(&m));
 }
 
+void alnat_print_raw_bytes(Alnat_t alnat) {
+    struct AlnatMarcher m = _alnat_make_marcher(alnat);
+    do {
+        printf("%d", m.ptr[m.counter]);
+        if (!_alnat_is_end(m)) {
+            printf(" ");
+        }
+    } while (_alnat_move_forward(&m));
+}

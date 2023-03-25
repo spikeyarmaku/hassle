@@ -103,13 +103,13 @@ void rational_simplify(Rational_t r) {
         return;
     } else {
         // Simplify both by gcd
-        Alnat_t simpl_numer = alnat_div(r->numerator, gcd);
-        Alnat_t simpl_denom = alnat_div(r->denominator, gcd);
+        AlnatDiv_t simpl_numer = alnat_div(r->numerator, gcd);
+        AlnatDiv_t simpl_denom = alnat_div(r->denominator, gcd);
         int8_t sign = r->sign;
         alnat_free(r->numerator);
         alnat_free(r->denominator);
-        r->numerator = simpl_numer;
-        r->denominator = simpl_denom;
+        r->numerator = simpl_numer.quot;
+        r->denominator = simpl_denom.quot;
         r->sign = sign;
     }
     alnat_free(gcd);

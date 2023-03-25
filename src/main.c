@@ -141,33 +141,34 @@ int main(int argc, char *argv[]) {
         // ErrorCode_t error_code = interpret_file(argv[1]);
         // if (error_code != Success) return 1;
 
-        // char buf[8];
-        // sprintf(buf, "1234567");
-        // Alnat_t alnat = string_to_alnat(buf);
-        // struct AlnatMarcher m = _alnat_make_marcher(alnat);
-        // while (!_alnat_is_end(m)) {
-        //     printf("%d ", _alnat_get_next_digit(&m));
-        // }
-        // printf("\n");
-        // char* str = alnat_to_string(alnat);
-        // printf("\n%s\n", str);
-        // alnat_free(alnat);
-        // free_mem("main", str);
+        char buf[20];
+        sprintf(buf, "48234756398756");
+        Alnat_t dividend = string_to_alnat(buf);
+        sprintf(buf, "6576");
+        Alnat_t divisor = string_to_alnat(buf);
+        AlnatDiv_t div_result = alnat_div(dividend, divisor);
+        alnat_print(dividend); printf("("); alnat_print_bytes(dividend);
+        printf(") / "); alnat_print(divisor); printf("(");
+        alnat_print_bytes(divisor); printf(") = ");
+        alnat_print(div_result.quot); printf(" (");
+        alnat_print_bytes(div_result.quot); printf(") + ");
+        alnat_print(div_result.rem); printf("(");
+        alnat_print_bytes(div_result.rem); printf(")\n");
+        alnat_free(dividend); alnat_free(divisor); alnat_free(div_result.quot);
+        alnat_free(div_result.rem);
 
-
-        char buf[40];
         // 0, 00, 0000000, .0, .00, .000000, 0., 00., 00000000.
         // 0.0, 0.00, 0.0000, 00.0, 00.00, 00.0000, 00000.0, 0000.00, 00000.0000
         // 1, 01, 0000001, 1.0, 01.0, 000001.0, 1.00000, 01.000000, 000001.0000
         // .0000000000000001
         // 12345.6789000, 1.110
 
-        sprintf(buf, "000001.0");
-        Rational_t rat = string_to_rational(buf);
-        char* str = rational_to_string(rat);
-        printf("\n%s\n", str);
-        rational_free(rat);
-        free_mem("main", str);
+        // sprintf(buf, "000001.0");
+        // Rational_t rat = string_to_rational(buf);
+        // char* str = rational_to_string(rat);
+        // printf("\n%s\n", str);
+        // rational_free(rat);
+        // free_mem("main", str);
 
         // run_tests();
     } else {

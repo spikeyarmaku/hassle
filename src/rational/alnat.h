@@ -1,4 +1,7 @@
-// TODO Mark what is public and what is private
+/*
+MSD - Most Significatn Digit
+LSD - Least Significant Digit
+*/
 
 #ifndef _ALNAT_H_
 #define _ALNAT_H_
@@ -29,6 +32,12 @@ struct AlnatBuilder {
     size_t next; // Always points to the next empty address
 };
 
+struct AlnatDiv {
+    Alnat_t quot;
+    Alnat_t rem;
+};
+typedef struct AlnatDiv AlnatDiv_t;
+
 struct AlnatMarcher {
     Alnat_t ptr;
     size_t counter;
@@ -44,12 +53,13 @@ BOOL                alnat_is_equal              (Alnat_t, Alnat_t);
 Alnat_t             alnat_add                   (Alnat_t, Alnat_t);
 Alnat_t             alnat_sub                   (Alnat_t, Alnat_t, int8_t*);
 Alnat_t             alnat_mul                   (Alnat_t, Alnat_t);
-Alnat_t             alnat_div                   (Alnat_t, Alnat_t);
+AlnatDiv_t          alnat_div                   (Alnat_t, Alnat_t);
 
 Alnat_t             alnat_gcd                   (Alnat_t, Alnat_t);
 
 void                alnat_print                 (Alnat_t);
 void                alnat_print_bytes           (Alnat_t);
+void                alnat_print_raw_bytes       (Alnat_t);
 
 // --- Private methods ---
 
@@ -71,10 +81,12 @@ uint8_t             _alnat_get_next_digit       (struct AlnatMarcher*);
 uint8_t             _alnat_get_prev_digit       (struct AlnatMarcher*);
 size_t              _alnat_get_marcher_pos      (struct AlnatMarcher);
 void                _alnat_rewind_marcher       (struct AlnatMarcher*);
+void                _alnat_fast_forward_marcher (struct AlnatMarcher*);
+size_t              _alnat_get_marcher_counter  (struct AlnatMarcher);
 
 uint8_t             _alnat_unsafe_get_digit     (size_t, Alnat_t);
 BOOL                _alnat_unsafe_is_last_digit (size_t, Alnat_t);
-void                _alnat_unsafe_mark_digit    (size_t, uint8_t, Alnat_t);
+void                _alnat_unsafe_mark_digit    (size_t, BOOL, Alnat_t);
 
 void                _alnat_str_double           (char*);
 void                _alnat_str_add              (char*, char*);
