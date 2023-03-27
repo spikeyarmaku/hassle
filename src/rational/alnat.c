@@ -554,9 +554,7 @@ Alnat_t alnat_mul(Alnat_t multiplicand, Alnat_t multiplier) {
     // At this point, both marchers point to the MSDs
     do {
         carry = 0;
-        printf("\n--- NEW INTERATION ---\n");
         digit = _alnat_get_curr_digit(multiplier_m);
-        printf("    read digit: %d\n", digit);
         if (digit != 0) {
             _alnat_rewind_marcher(&multiplicand_m);
             // If current digit is 0, just continue with the rest
@@ -565,8 +563,6 @@ Alnat_t alnat_mul(Alnat_t multiplicand, Alnat_t multiplier) {
             do {
                 new_digit =
                     digit * _alnat_get_curr_digit(multiplicand_m) + carry;
-                printf("    new digit: %d * %d + %d = %d | ", digit,
-                    _alnat_get_curr_digit(multiplicand_m), carry, new_digit);
                 if (new_digit >= ALNAT_MAX) {
                     div_t d = div(new_digit, ALNAT_MAX);
                     new_digit = d.rem;
@@ -577,7 +573,6 @@ Alnat_t alnat_mul(Alnat_t multiplicand, Alnat_t multiplier) {
                 } else {
                     carry = 0;
                 }
-                printf("digit: %d | carry: %d\n", new_digit, carry);
                 intermediate[_alnat_get_marcher_counter(multiplicand_m)] =
                         new_digit;
                 _alnat_unsafe_mark_digit(
@@ -585,17 +580,16 @@ Alnat_t alnat_mul(Alnat_t multiplicand, Alnat_t multiplier) {
                         intermediate);
             } while(_alnat_move_forward(&multiplicand_m));
             // Set the MSD
-            intermediate[_alnat_get_marcher_counter(multiplicand_m) + 1] = carry;
+            intermediate[_alnat_get_marcher_counter(multiplicand_m) + 1] =
+                carry;
             _alnat_unsafe_mark_digit(
-                _alnat_get_marcher_counter(multiplicand_m) + 1, TRUE, intermediate);
+                _alnat_get_marcher_counter(multiplicand_m) + 1, TRUE,
+                intermediate);
             
             // Shift the intermediate result
             Alnat_t intermediate_shifted =
                 _alnat_shifted(intermediate, power_counter, TRUE);
             alnat_free(intermediate);
-            printf("Intermediate result: ");
-            alnat_print_bytes(intermediate_shifted);
-            printf("\n");
             
             // Add the intermediate result to the total
             Alnat_t new_result = alnat_add(result, intermediate_shifted);
@@ -923,9 +917,6 @@ Alnat_t _alnat_shifted(Alnat_t alnat, size_t amount, BOOL towards_msd) {
             towards_msd ? digit_count + amount : digit_count - amount;
         Alnat_t new_alnat = (Alnat_t)allocate_mem("_alnat_shift", NULL,
             sizeof(uint8_t) * new_digit_count);
-
-        printf("amnt %llu, ->msd: %d, d count: %llu, new d count: %llu\n",
-            amount, towards_msd, digit_count, new_digit_count);
 
         // Copy digits
         if (towards_msd) {

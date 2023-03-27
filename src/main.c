@@ -148,30 +148,12 @@ int main(int argc, char *argv[]) {
         // 12345.6789000, 1.110
 
         char buf[40];
-        // sprintf(buf, "12345.6789000");
-        // Rational_t rat = string_to_rational(buf);
-        // char* str = rational_to_string(rat);
-        // printf("\n%s\n", str);
-        // rational_free(rat);
-        // free_mem("main", str);
-
-        sprintf(buf, "23958233");
-        Alnat_t test1 = string_to_alnat(buf);
-        alnat_print(test1); printf(" ("); alnat_print_bytes(test1);
-        printf(")\n");
-        sprintf(buf, "5830");
-        Alnat_t test2 = string_to_alnat(buf);
-        alnat_print(test2); printf(" ("); alnat_print_bytes(test2);
-        printf(")\nRESULT: ");
-        Alnat_t result = alnat_mul(test1, test2);
-        alnat_print(result); printf(" ("); alnat_print_bytes(result);
-        printf(")\n");
-
-        printf("\n\nCorrect result:\n");
-        sprintf(buf, "139676498390");
-        Alnat_t correct = string_to_alnat(buf);
-        alnat_print(correct); printf(" ("); alnat_print_bytes(correct);
-        printf(")\n");
+        sprintf(buf, "12345.6789000");
+        Rational_t rat = string_to_rational(buf);
+        char* str = rational_to_string(rat);
+        printf("\n%s\n", str);
+        rational_free(rat);
+        free_mem("main", str);
 
         // run_tests();
     } else {
