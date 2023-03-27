@@ -141,34 +141,37 @@ int main(int argc, char *argv[]) {
         // ErrorCode_t error_code = interpret_file(argv[1]);
         // if (error_code != Success) return 1;
 
-        char buf[20];
-        sprintf(buf, "48234756398756");
-        Alnat_t dividend = string_to_alnat(buf);
-        sprintf(buf, "6576");
-        Alnat_t divisor = string_to_alnat(buf);
-        AlnatDiv_t div_result = alnat_div(dividend, divisor);
-        alnat_print(dividend); printf("("); alnat_print_bytes(dividend);
-        printf(") / "); alnat_print(divisor); printf("(");
-        alnat_print_bytes(divisor); printf(") = ");
-        alnat_print(div_result.quot); printf(" (");
-        alnat_print_bytes(div_result.quot); printf(") + ");
-        alnat_print(div_result.rem); printf("(");
-        alnat_print_bytes(div_result.rem); printf(")\n");
-        alnat_free(dividend); alnat_free(divisor); alnat_free(div_result.quot);
-        alnat_free(div_result.rem);
-
         // 0, 00, 0000000, .0, .00, .000000, 0., 00., 00000000.
         // 0.0, 0.00, 0.0000, 00.0, 00.00, 00.0000, 00000.0, 0000.00, 00000.0000
         // 1, 01, 0000001, 1.0, 01.0, 000001.0, 1.00000, 01.000000, 000001.0000
         // .0000000000000001
         // 12345.6789000, 1.110
 
-        // sprintf(buf, "000001.0");
+        char buf[40];
+        // sprintf(buf, "12345.6789000");
         // Rational_t rat = string_to_rational(buf);
         // char* str = rational_to_string(rat);
         // printf("\n%s\n", str);
         // rational_free(rat);
         // free_mem("main", str);
+
+        sprintf(buf, "23958233");
+        Alnat_t test1 = string_to_alnat(buf);
+        alnat_print(test1); printf(" ("); alnat_print_bytes(test1);
+        printf(")\n");
+        sprintf(buf, "5830");
+        Alnat_t test2 = string_to_alnat(buf);
+        alnat_print(test2); printf(" ("); alnat_print_bytes(test2);
+        printf(")\nRESULT: ");
+        Alnat_t result = alnat_mul(test1, test2);
+        alnat_print(result); printf(" ("); alnat_print_bytes(result);
+        printf(")\n");
+
+        printf("\n\nCorrect result:\n");
+        sprintf(buf, "139676498390");
+        Alnat_t correct = string_to_alnat(buf);
+        alnat_print(correct); printf(" ("); alnat_print_bytes(correct);
+        printf(")\n");
 
         // run_tests();
     } else {

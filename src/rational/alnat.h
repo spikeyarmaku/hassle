@@ -95,5 +95,6 @@ Alnat_t             _alnat_copy                 (Alnat_t);
 Alnat_t             _alnat_make_complement      (Alnat_t);
 void                _alnat_strip                (Alnat_t*);
 int8_t              _alnat_compare              (Alnat_t, Alnat_t);
+Alnat_t             _alnat_shifted              (Alnat_t, size_t, BOOL);
 
 #endif
