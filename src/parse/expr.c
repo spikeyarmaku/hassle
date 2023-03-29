@@ -10,7 +10,7 @@ Expr_t _expr_make_empty(ErrorCode_t* error_code) {
         expr->_next = NULL;
         // expr->_prev = NULL;
     }
-    debug(1, "/_expr_make_empty\n");
+    debug(-1, "/_expr_make_empty\n");
     return expr;
 }
 
@@ -83,6 +83,14 @@ BOOL expr_is_list(Expr_t expr) {
     return expr->_type == ExprList;
 }
 
+BOOL expr_is_empty_list(Expr_t expr) {
+    if (expr_is_list(expr)) {
+        return expr->_list == NULL;
+    } else {
+        return FALSE;
+    }
+}
+
 Expr_t expr_get_list(Expr_t expr) {
     if (expr == NULL) return NULL;
     return expr->_list;
@@ -114,17 +122,40 @@ BOOL expr_is_equal(Expr_t e1, Expr_t e2) {
     }
 }
 
+// Return the number of the longest series of sub-expressions, starting from the
+// start, that both expressions share. E.g. (a b (c d) e) and (a b (c f) e)
+// would yield 2
+size_t expr_match_size(Expr_t expr1, Expr_t expr2) {
+    if (expr_is_list(expr1) != expr_is_list(expr2)) {
+        return 0;
+    }
+
+    if (!expr_is_list(expr1)) {
+        return expr_is_equal(expr1, expr2) ? 1 : 0;
+    }
+
+    size_t counter = 0;
+    Expr_t list1 = expr_get_list(expr1);
+    Expr_t list2 = expr_get_list(expr2);
+    while (expr_is_equal(list1, list2) && list1 != NULL && list2 != NULL) {
+        counter++;
+        list1 = expr_get_next(list1);
+        list2 = expr_get_next(list2);
+    }
+    return counter;
+}
+
 char* expr_to_string(Expr_t expr) {
-    debug(1, "expr_to_string\n");
+    // debug(1, "expr_to_string\n");
     if (expr == NULL) {
-        debug(-1, "/expr_to_string\n");
+        // debug(-1, "/expr_to_string\n");
         return NULL;
     }
     if (expr->_type == ExprAtom) {
         char* result = (char*)allocate_mem("expr_to_string/atom", NULL,
             sizeof(char) * (strlen(expr->_symbol) + 1));
         strcpy(result, expr->_symbol);
-        debug(-1, "/expr_to_string\n");
+        // debug(-1, "/expr_to_string\n");
         return result;
     } else {
         // Count the number of children
@@ -169,16 +200,22 @@ char* expr_to_string(Expr_t expr) {
         }
         strcat(result, ")");
 
-        // Free up the children's strings#
+        // Free up the children's strings
         for (size_t i = 0; i < child_count; i++) {
             free_mem("expr_to_string/list/children", child_strings[i]);
         }
         free_mem("expr_to_string/list/children_ptr", child_strings);
 
         // Return the result
-        debug(-1, "/expr_to_string\n");
+        // debug(-1, "/expr_to_string\n");
         return result;
     }
+}
+
+void expr_print(Expr_t expr) {
+    char* str = expr_to_string(expr);
+    printf("%s", str);
+    free_mem("expr_print", str);
 }
 
 void expr_free(Expr_t* expr_ptr) {
@@ -197,4 +234,37 @@ void expr_free(Expr_t* expr_ptr) {
         }
     }
     free_mem("expr_free/atom", expr);
+}
+
+Expr_t expr_copy(Expr_t expr) {
+    if (expr == NULL) return NULL;
+
+    Expr_t result =
+        (Expr_t)allocate_mem("expr_copy", NULL, sizeof(struct Expr));
+    result->_type = expr->_type;
+    result->_next = NULL;
+    if (result->_type == ExprAtom) {
+        char* symbol = (char*)allocate_mem("expr_copy/symbol", NULL,
+            sizeof(char) * (strlen(expr->_symbol) + 1));
+        strcpy(symbol, expr->_symbol);
+        result->_symbol = symbol;
+    } else {
+        Expr_t elem = expr->_list;
+        result->_list = NULL;
+        Expr_t prev_elem = NULL;
+        Expr_t new_elem = NULL;
+        while (elem != NULL) {
+            new_elem = expr_copy(elem);
+            if (result->_list == NULL) {
+                result->_list = new_elem;
+            }
+            if (prev_elem == NULL) {
+                prev_elem = new_elem;
+            } else {
+                prev_elem->_next = new_elem;
+            }
+            elem = elem->_next;
+        }
+    }
+    return result;
 }

@@ -22,6 +22,7 @@ struct Token {
 
 struct Parser {
     char* stream;
+    BOOL can_free_stream;
     long int counter;
 };
 typedef struct Parser* Parser_t;

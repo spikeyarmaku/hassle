@@ -106,20 +106,24 @@ enum ErrorCode repl() {
 
 ErrorCode_t interpret_file(char* file_name) {
     printf("%s\n", file_name);
-    // EnvFrame_t env = make_default_frame();
-    ErrorCode_t error_code;
+    EnvFrame_t env = env_make_default();
+    ErrorCode_t error_code = Success;
     Expr_t expr = parse_from_file(&error_code, file_name);
     if (error_code != Success) return error_code;
 
-    char* str = expr_to_string(expr);
-    printf("Expression: %s\n", str);
-    free_mem("main", str);
-    // interpret(env, expr);
-    // free_env(&env);
+    struct Term result;
+    error_code = eval_expr(env, expr, &result);
+    if (error_code == Success) {
+        printf("RESULT:\n");
+        term_print(result);
+        printf("\n");
+    }
+    env_free_frame(&env);
     expr_free(&expr);
-
-    // show_logger_entries(_logger);
-    return Success;
+    term_free(result);
+    
+    show_logger_entries(_logger);
+    return error_code;
 }
 
 struct Test{
@@ -138,22 +142,8 @@ int main(int argc, char *argv[]) {
     
     if (argc > 1) {
         // There is at least one parameter
-        // ErrorCode_t error_code = interpret_file(argv[1]);
-        // if (error_code != Success) return 1;
-
-        // 0, 00, 0000000, .0, .00, .000000, 0., 00., 00000000.
-        // 0.0, 0.00, 0.0000, 00.0, 00.00, 00.0000, 00000.0, 0000.00, 00000.0000
-        // 1, 01, 0000001, 1.0, 01.0, 000001.0, 1.00000, 01.000000, 000001.0000
-        // .0000000000000001
-        // 12345.6789000, 1.110
-
-        char buf[40];
-        sprintf(buf, "12345.6789000");
-        Rational_t rat = string_to_rational(buf);
-        char* str = rational_to_string(rat);
-        printf("\n%s\n", str);
-        rational_free(rat);
-        free_mem("main", str);
+        ErrorCode_t error_code = interpret_file(argv[1]);
+        if (error_code != Success) return 1;
 
         // run_tests();
     } else {

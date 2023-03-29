@@ -29,6 +29,7 @@ Parser_t _create_parser(char* file_name) {
 
     parser->stream = file_content;
     parser->counter = 0;
+    parser->can_free_stream = TRUE;
     debug(-1, "/_create_parser\n");
     return parser;
 }
@@ -37,7 +38,7 @@ void _free_parser(Parser_t* parser_ptr) {
     debug(1, "_free_parser\n");
     Parser_t parser = *parser_ptr;
     if (parser != NULL) {
-        if (parser->stream != NULL) {
+        if (parser->stream != NULL && parser->can_free_stream) {
             free_mem("_free_parser", parser->stream);
         }
         free_mem("_free_parser", parser);
@@ -273,8 +274,11 @@ Expr_t parse_from_str(ErrorCode_t* error_code, char* input) {
         sizeof(struct Parser));
     parser->stream = input;
     parser->counter = 0;
+    parser->can_free_stream = FALSE;
     
-    return _parse(error_code, parser);
+    Expr_t result = _parse(error_code, parser);
+    _free_parser(&parser);
+    return result;
 }
 
 Expr_t _parse(ErrorCode_t* error_code, Parser_t parser) {

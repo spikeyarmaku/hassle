@@ -7,7 +7,8 @@
 #include "global.h"
 #include "memory.h"
 
-#include "rational\rational.h"
+#include "parse\expr.h"
+#include "execute\term.h"
 
 /*
 Env usage:
@@ -32,8 +33,7 @@ struct Entry {
 struct EnvFrame {
     size_t entry_count;
     struct Entry* mapping;
-    struct _EnvFrame* parent;
-    EnvDict_t env_dict;
+    struct EnvFrame* parent;
 };
 typedef struct EnvFrame* EnvFrame_t;
 

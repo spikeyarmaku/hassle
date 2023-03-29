@@ -15,6 +15,7 @@ void error(const char* s, ...) {
 
 void debug(int8_t level, const char* s, ...) {
     #ifdef DEBUG_PRINTS
+    // printf("%llu ", debug_level);
     if (level > 0) debug_level += level;
     if (debug_level <= DEBUG_LEVEL) {
         va_list args;

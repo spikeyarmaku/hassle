@@ -434,9 +434,7 @@ Alnat_t _alnat_copy(Alnat_t a) {
 
 Alnat_t alnat_add(Alnat_t a1, Alnat_t a2) {
     debug(1, "alnat_add\n");
-    
-    // alnat_print_bytes(a1); printf(" + "); alnat_print_bytes(a2); printf("\n");
-    
+
     struct AlnatBuilder b = _alnat_make_builder();
     struct AlnatMarcher m1 = _alnat_make_marcher(a1);
     struct AlnatMarcher m2 = _alnat_make_marcher(a2);

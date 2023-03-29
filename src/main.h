@@ -5,6 +5,8 @@
 #include "global.h"
 
 #include "parse\parse.h"
+#include "execute\env.h"
+#include "execute\builtin.h"
 
 #include "memory.h"
 #include "test.h"

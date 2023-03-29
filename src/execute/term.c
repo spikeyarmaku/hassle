@@ -20,7 +20,7 @@ BOOL term_is_equal(struct Term t1, struct Term t2) {
                 }
             }
             case ExprTerm: {
-                return is_equal_expr(t1.expr, t2.expr);
+                return expr_is_equal(t1.expr, t2.expr);
             }
             default: {
                 return FALSE;
@@ -67,6 +67,7 @@ void term_free(struct Term t) {
         case ValTerm: {
             if (t.value.type == RationalVal) {
                 debug(0, "free_term: freeing up rational\n");
+                rational_print(t.value.rational);
                 rational_free(t.value.rational);
             } else {
                 free_mem("free_term/string", t.value.string);
@@ -99,11 +100,22 @@ char* term_to_string(struct Term t) {
                     strcpy(result, t.value.string);
                     return result;
                 }
+                default: {
+                    return NULL;
+                }
             }
-            break;
         }
         case ExprTerm: {
             return expr_to_string(t.expr);
         }
+        default: {
+            return NULL;
+        }
     }
+}
+
+void term_print(struct Term t) {
+    char* str = term_to_string(t);
+    printf("%s", str);
+    free_mem("term_print", str);
 }

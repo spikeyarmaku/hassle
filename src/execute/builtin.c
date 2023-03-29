@@ -48,8 +48,8 @@ enum ErrorCode _lambda_helper3(EnvFrame_t env, Expr_t value, void* closure,
         return Error_code;
     }
     
-    EnvFrame_t new_frame = make_empty_frame(lambda_closure->static_env);
-    Error_code = add_entry(new_frame, lambda_closure->name, *result);
+    EnvFrame_t new_frame = env_make_empty_frame(lambda_closure->static_env);
+    Error_code = env_add_entry(new_frame, lambda_closure->name, *result);
     if (Error_code != Success) {
         debug(-1, "/_lambda_helper3\n");
         return Error_code;
@@ -61,8 +61,8 @@ enum ErrorCode _lambda_helper3(EnvFrame_t env, Expr_t value, void* closure,
         return Error_code;
     }
 
-    free_mem("_lambda_helper3", closure);
-    free_frame(&new_frame); // TODO free env (currently the program crashes at this line)
+    // free_mem("_lambda_helper3", closure);
+    env_free_frame(&new_frame); // TODO free env (currently the program crashes at this line)
     debug(-1, "/_lambda_helper3\n");
     return Success;
 }
@@ -118,13 +118,13 @@ enum ErrorCode _binop_helper2(EnvFrame_t env, Expr_t op2, void* closure,
     // Check if the operands are numbers
     if (t1.type != ValTerm || t2.type != ValTerm) {
         debug(0, "_binop_helper2: at least one operand is not a value\n");
-        free_term(t1); free_term(t2);
+        // term_free(t1); term_free(t2);
         debug(-1, "/_binop_helper2\n");
         return Error;
     }
     if (t1.value.type != RationalVal || t2.value.type != RationalVal) {
         debug(0, "_binop_helper2: at least one operand is not a number\n");
-        free_term(t1); free_term(t2);
+        // term_free(t1); term_free(t2);
         debug(-1, "/_binop_helper2\n");
         return Error;
     }
@@ -153,27 +153,28 @@ enum ErrorCode _binop_helper2(EnvFrame_t env, Expr_t op2, void* closure,
             break;
         }
     }
-    free_mem(closure);
-    free_term(t1); free_term(t2);
+    // free_mem("_binop_helper2/closure", closure);
+    // term_free(t1); term_free(t2);
     debug(-1, "/_binop_helper2\n");
     return Success;
 }
 
 enum ErrorCode _add_builtin (EnvFrame_t env, char* name, struct Term term) {
-    Expr_t expr;
-    enum ErrorCode Error_code =
-        parse_from_str(name, &expr, &(env->env_dict->symbol_dict));
-    if (Error_code != Success) {
-        return Error_code;
+    ErrorCode_t error_code;
+    Expr_t expr = parse_from_str(&error_code, name);
+    if (error_code != Success) {
+        expr_free(&expr);
+        return error_code;
     }
-    add_entry(env, expr, term);
+    env_add_entry(env, expr, term);
+    expr_free(&expr);
     return Success;
 }
 
 // Create the ground environment, with the default lookup values and the
 // built-in functions
-EnvFrame_t make_default_frame() {
-    EnvFrame_t env = make_empty_frame(NULL);
+EnvFrame_t env_make_default() {
+    EnvFrame_t env = env_make_empty_frame(NULL);
     if (env != NULL) {
         _add_builtin(env, "lambda", make_lambda());
         _add_builtin(env, "+",      make_binop(ADD));

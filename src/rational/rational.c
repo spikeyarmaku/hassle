@@ -123,25 +123,31 @@ void rational_reciprocate(Rational_t r) {
 }
 
 char* rational_to_string(Rational_t r) {
-    char* alnat1 = alnat_to_string(r->numerator);
-    char* alnat2 = alnat_to_string(r->denominator);
+    char* alnat1_str = alnat_to_string(r->numerator);
+    char* alnat2_str = alnat_to_string(r->denominator);
     // negative sign + first number + space + / + space + second number +
     // terminating 0
     size_t length =
-        ((r->sign == -1) ? 1 : 0) + strlen(alnat1) + 3 + strlen(alnat2) + 1;
+        ((r->sign == -1) ? 1 : 0) + strlen(alnat1_str) + 3 + strlen(alnat2_str) + 1;
     char* rational_str = (char*)allocate_mem("rational_to_string", NULL,
         sizeof(char) * length);
     memset(rational_str, 0, sizeof(char) * length);
     if (r->sign == -1) {
         strcat(rational_str, "-");
     }
-    strcat(rational_str, alnat1);
+    strcat(rational_str, alnat1_str);
     strcat(rational_str, " / ");
-    strcat(rational_str, alnat2);
+    strcat(rational_str, alnat2_str);
 
-    free_mem("rational_to_string", alnat1);
-    free_mem("rational_to_string", alnat2);
+    free_mem("rational_to_string", alnat1_str);
+    free_mem("rational_to_string", alnat2_str);
     return rational_str;
+}
+
+void rational_print(Rational_t r) {
+    char* str = rational_to_string(r);
+    printf("%s", str);
+    free_mem("rational_print", str);
 }
 
 // TODO don't just blindly multiply, perhaps calculating the LCM is better

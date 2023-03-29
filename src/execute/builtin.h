@@ -22,18 +22,18 @@ struct MathBinopClosure {
 };
 
 // lambda
-struct Term make_lambda         ();
-enum ErrorCode _lambda_helper1     (EnvFrame_t, Expr_t, void*, struct Term*);
-enum ErrorCode _lambda_helper2     (EnvFrame_t, Expr_t, void*, struct Term*);
-enum ErrorCode _lambda_helper3     (EnvFrame_t, Expr_t, void*, struct Term*);
+struct Term     make_lambda         ();
+enum ErrorCode  _lambda_helper1     (EnvFrame_t, Expr_t, void*, struct Term*);
+enum ErrorCode  _lambda_helper2     (EnvFrame_t, Expr_t, void*, struct Term*);
+enum ErrorCode  _lambda_helper3     (EnvFrame_t, Expr_t, void*, struct Term*);
 
 // math operations
-struct Term make_binop          (enum BinOp);
-enum ErrorCode _binop_helper1      (EnvFrame_t, Expr_t, void*, struct Term*);
-enum ErrorCode _binop_helper2      (EnvFrame_t, Expr_t, void*, struct Term*);
+struct Term     make_binop          (enum BinOp);
+enum ErrorCode  _binop_helper1      (EnvFrame_t, Expr_t, void*, struct Term*);
+enum ErrorCode  _binop_helper2      (EnvFrame_t, Expr_t, void*, struct Term*);
 
 // Create the ground environment
-enum ErrorCode _add_builtin        (EnvFrame_t, char*, struct Term);
-EnvFrame_t  make_default_frame  ();
+enum ErrorCode  _add_builtin        (EnvFrame_t, char*, struct Term);
+EnvFrame_t      env_make_default    ();
 
 #endif

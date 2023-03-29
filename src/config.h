@@ -12,15 +12,10 @@
 #define REPL_ENABLED
 
 // Comment this out to disable logging memory usage
-// #define MEMORY_DIAGNOSTIC
+#define MEMORY_DIAGNOSTIC
 
 // Comment this out to disable debug prints
-// #define DEBUG_PRINTS
-
-// Comment this out to speed up the interpreter a bit at the expense of
-// consuming somewhat more memory
-// TODO implement bitpacking
-// #define BITPACK_EXPR
+#define DEBUG_PRINTS
 
 // Comment this out to disable memoization. Useful in low-memory environments
 // #define MEMOIZE_SUB_EXPRS
@@ -34,7 +29,7 @@
 // --- KNOBS ---
 
 // The amount of debug prints, if DEBUG_PRINTS is defined
-#define DEBUG_LEVEL 3
+#define DEBUG_LEVEL 8
 
 // How many bytes are allocated if a string needs to be expanded
 #define STRING_BUFFER_SIZE 1024
@@ -47,11 +42,5 @@
 
 // If a dict ha to be grown, enough space is allocated for this many elements
 #define DICT_BUFFER_SIZE 8
-
-// The number of bytes in a symbol ID
-#define SYMBOL_ID_BYTES 2
-
-// The number of bytes in a term ID
-#define TERM_ID_BYTES 2
 
 #endif

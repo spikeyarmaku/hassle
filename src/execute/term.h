@@ -6,6 +6,7 @@
 
 #include "memory.h"
 
+struct Term;
 struct EnvFrame; // Forward declaration
 
 enum TermType {ValTerm, ExprTerm, AbsTerm};
@@ -43,5 +44,6 @@ struct Term term_make_expr      (Expr_t);
 void        term_free           (struct Term);
 
 char*       term_to_string      (struct Term);
+void        term_print          (struct Term);
 
 #endif
