@@ -1,7 +1,14 @@
 #include "rational.h"
 
+struct Rational {
+    int8_t sign;
+    Alnat_t numerator;
+    Alnat_t denominator; // If it is NULL, treat it as 1
+};
+
 Rational_t _rational_make() {
-    Rational_t r = (Rational_t)allocate_mem("_rational_make", NULL, sizeof(struct _Rational));
+    Rational_t r = (Rational_t)allocate_mem("_rational_make", NULL,
+        sizeof(struct Rational));
     r->numerator = NULL;
     r->denominator = NULL;
     r->sign = 0;
@@ -83,6 +90,8 @@ Rational_t string_to_rational(char* string) {
 }
 
 void rational_free(Rational_t r) {
+    debug(0, "Rational to free (%llu / %llu):\n", r->numerator, r->denominator);
+        // rational_print(r); debug(0, "\n");
     alnat_free(r->numerator);
     alnat_free(r->denominator);
     free_mem("rational_free", r);
@@ -90,6 +99,16 @@ void rational_free(Rational_t r) {
 
 void rational_simplify(Rational_t r) {
     debug(1, "rational_simplify\n");
+    if (alnat_is_null(r->numerator)) {
+        alnat_free(r->denominator);
+        r->denominator = alnat_make_single_digit(1);
+        return;
+    }
+
+    if (*(r->denominator) == 1) {
+        return;
+    }
+
     // Find the greatest common divisor
     // printf("<<< Simplify "); debug_print_rational(*r);
     Alnat_t gcd = alnat_gcd(r->numerator, r->denominator);
@@ -142,6 +161,19 @@ char* rational_to_string(Rational_t r) {
     free_mem("rational_to_string", alnat1_str);
     free_mem("rational_to_string", alnat2_str);
     return rational_str;
+}
+
+Rational_t rational_copy(Rational_t r) {
+    debug(1, "rational_copy - %llu\n", r);
+    if (r == NULL) return NULL;
+    
+    Rational_t result = (Rational_t)allocate_mem("rational_copy", NULL,
+        sizeof(struct Rational));
+    result->sign = r->sign;
+    result->denominator = alnat_copy(r->denominator);
+    result->numerator = alnat_copy(r->numerator);
+    debug(-1, "/rational_copy\n");
+    return result;
 }
 
 void rational_print(Rational_t r) {

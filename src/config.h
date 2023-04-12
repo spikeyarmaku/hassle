@@ -12,10 +12,10 @@
 #define REPL_ENABLED
 
 // Comment this out to disable logging memory usage
-#define MEMORY_DIAGNOSTIC
+// #define MEMORY_DIAGNOSTIC
 
 // Comment this out to disable debug prints
-#define DEBUG_PRINTS
+// #define DEBUG_PRINTS
 
 // Comment this out to disable memoization. Useful in low-memory environments
 // #define MEMOIZE_SUB_EXPRS
@@ -29,7 +29,7 @@
 // --- KNOBS ---
 
 // The amount of debug prints, if DEBUG_PRINTS is defined
-#define DEBUG_LEVEL 8
+#define DEBUG_LEVEL 200
 
 // How many bytes are allocated if a string needs to be expanded
 #define STRING_BUFFER_SIZE 1024

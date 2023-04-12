@@ -22,21 +22,7 @@ Destruction:
 
 enum ExprType {ExprAtom, ExprList};
 
-// https://benpaulhanna.com/writing-a-game-in-c-parsing-s-expressions.html
-struct Expr {
-  struct Expr* _next;
-//   struct Expr* _prev;
-  enum ExprType _type;
-  union {
-    struct Expr* _list;
-    char* _symbol;
-  };
-};
 typedef struct Expr* Expr_t;
-
-Expr_t  _expr_make_empty        (ErrorCode_t*);
-void    _expr_set_as_atom       (Expr_t, char*);
-void    _expr_set_as_list       (Expr_t);
 
 void    expr_add_to_list        (ErrorCode_t*, Expr_t list, Expr_t child);
 Expr_t  expr_make_atom          (ErrorCode_t*, char*);

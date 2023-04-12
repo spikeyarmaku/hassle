@@ -1,5 +1,20 @@
 #include "expr.h"
 
+// https://benpaulhanna.com/writing-a-game-in-c-parsing-s-expressions.html
+struct Expr {
+  struct Expr* _next;
+//   struct Expr* _prev;
+  enum ExprType _type;
+  union {
+    struct Expr* _list;
+    char* _symbol;
+  };
+};
+
+Expr_t  _expr_make_empty        (ErrorCode_t*);
+void    _expr_set_as_atom       (Expr_t, char*);
+void    _expr_set_as_list       (Expr_t);
+
 Expr_t _expr_make_empty(ErrorCode_t* error_code) {
     debug(1, "_expr_make_empty\n");
     Expr_t expr = (Expr_t)allocate_mem("_expr_make_empty", NULL,
@@ -16,10 +31,7 @@ Expr_t _expr_make_empty(ErrorCode_t* error_code) {
 
 void _expr_set_as_atom(Expr_t expr, char* symbol) {
     expr->_type = ExprAtom;
-    char* my_symbol = (char*)allocate_mem("_expr_set_as_atom", NULL,
-        sizeof(char) * (strlen(symbol) + 1));
-    strcpy(my_symbol, symbol);
-    expr->_symbol = my_symbol;
+    expr->_symbol = str_cpy(symbol);
 }
 
 void _expr_set_as_list(Expr_t expr) {
@@ -80,7 +92,7 @@ Expr_t expr_get_next(Expr_t expr) {
 
 BOOL expr_is_list(Expr_t expr) {
     if (expr == NULL) return FALSE;
-    return expr->_type == ExprList;
+    return expr->_type == ExprList ? TRUE : FALSE;
 }
 
 BOOL expr_is_empty_list(Expr_t expr) {
@@ -146,18 +158,18 @@ size_t expr_match_size(Expr_t expr1, Expr_t expr2) {
 }
 
 char* expr_to_string(Expr_t expr) {
-    // debug(1, "expr_to_string\n");
+    debug(1, "expr_to_string\n");
     if (expr == NULL) {
-        // debug(-1, "/expr_to_string\n");
+        debug(-1, "/expr_to_string\n");
         return NULL;
     }
     if (expr->_type == ExprAtom) {
-        char* result = (char*)allocate_mem("expr_to_string/atom", NULL,
-            sizeof(char) * (strlen(expr->_symbol) + 1));
-        strcpy(result, expr->_symbol);
-        // debug(-1, "/expr_to_string\n");
+        debug(0, "expr_to_string - Atom\n");
+        char* result = str_cpy(expr->_symbol);
+        debug(-1, "/expr_to_string - Atom\n");
         return result;
     } else {
+        debug(0, "expr_to_string - List\n");
         // Count the number of children
         size_t child_count = 0;
         Expr_t child = expr->_list;
@@ -207,7 +219,7 @@ char* expr_to_string(Expr_t expr) {
         free_mem("expr_to_string/list/children_ptr", child_strings);
 
         // Return the result
-        // debug(-1, "/expr_to_string\n");
+        debug(-1, "/expr_to_string - List\n");
         return result;
     }
 }
@@ -233,38 +245,41 @@ void expr_free(Expr_t* expr_ptr) {
             expr_free(&dummy);
         }
     }
-    free_mem("expr_free/atom", expr);
+    free_mem("expr_free/expr", expr);
 }
 
 Expr_t expr_copy(Expr_t expr) {
-    if (expr == NULL) return NULL;
+    debug(1, "expr_copy - %llu\n", (size_t)expr);
+    if (expr == NULL) {
+        debug(-1, "/expr_copy\n");
+        return NULL;
+    }
 
     Expr_t result =
         (Expr_t)allocate_mem("expr_copy", NULL, sizeof(struct Expr));
     result->_type = expr->_type;
     result->_next = NULL;
-    if (result->_type == ExprAtom) {
-        char* symbol = (char*)allocate_mem("expr_copy/symbol", NULL,
-            sizeof(char) * (strlen(expr->_symbol) + 1));
-        strcpy(symbol, expr->_symbol);
-        result->_symbol = symbol;
+    if (expr->_type == ExprAtom) {
+        result->_symbol = str_cpy(expr->_symbol);
     } else {
-        Expr_t elem = expr->_list;
+        Expr_t elem_iterator = expr->_list;
         result->_list = NULL;
-        Expr_t prev_elem = NULL;
+        Expr_t last_elem = NULL;
         Expr_t new_elem = NULL;
-        while (elem != NULL) {
-            new_elem = expr_copy(elem);
+        while (elem_iterator != NULL) {
+            // debug(0, "expr_copy/new_elem\n");
+            new_elem = expr_copy(elem_iterator);
+            // expr_print(new_elem); debug(0, "\n");
             if (result->_list == NULL) {
                 result->_list = new_elem;
-            }
-            if (prev_elem == NULL) {
-                prev_elem = new_elem;
+                last_elem = new_elem;
             } else {
-                prev_elem->_next = new_elem;
+                last_elem->_next = new_elem;
+                last_elem = new_elem;
             }
-            elem = elem->_next;
+            elem_iterator = elem_iterator->_next;
         }
     }
+    debug(-1, "/expr_copy\n");
     return result;
 }

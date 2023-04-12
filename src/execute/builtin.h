@@ -14,6 +14,7 @@ struct LambdaClosure {
     EnvFrame_t static_env;
     Expr_t name;
     Expr_t body;
+    Expr_t value;
 };
 
 struct MathBinopClosure {
@@ -22,18 +23,12 @@ struct MathBinopClosure {
 };
 
 // lambda
-struct Term     make_lambda         ();
-enum ErrorCode  _lambda_helper1     (EnvFrame_t, Expr_t, void*, struct Term*);
-enum ErrorCode  _lambda_helper2     (EnvFrame_t, Expr_t, void*, struct Term*);
-enum ErrorCode  _lambda_helper3     (EnvFrame_t, Expr_t, void*, struct Term*);
-
-// math operations
-struct Term     make_binop          (enum BinOp);
-enum ErrorCode  _binop_helper1      (EnvFrame_t, Expr_t, void*, struct Term*);
-enum ErrorCode  _binop_helper2      (EnvFrame_t, Expr_t, void*, struct Term*);
+Term_t      make_lambda         ();
+Term_t      make_let            ();
+Term_t      make_binop          (enum BinOp);
 
 // Create the ground environment
-enum ErrorCode  _add_builtin        (EnvFrame_t, char*, struct Term);
-EnvFrame_t      env_make_default    ();
+ErrorCode_t add_builtin         (EnvFrame_t, char*, Term_t);
+EnvFrame_t  env_make_default    ();
 
 #endif

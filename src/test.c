@@ -129,7 +129,7 @@ uint8_t run_expr_tests() {
     char* msg3 = expr_to_string(expr3); printf("expr3: %s\n", msg3);
     free_mem("run_expr_tests", msg2); free_mem("run_expr_tests", msg3);
     assert(&sum, "Compare two different subexpressions",
-        expr_is_equal(expr2 + 1, expr3 + 1) == TRUE);
+        expr_is_equal(expr2, expr3) == TRUE);
     // assert(&sum, "Find longest match", match_size(expr2, expr3) == 2);
     printf("%d tests failed.\n\n", sum);
     expr_free(&expr2); expr_free(&expr3);

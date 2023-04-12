@@ -16,17 +16,16 @@ void error(const char* s, ...) {
 void debug(int8_t level, const char* s, ...) {
     #ifdef DEBUG_PRINTS
     // printf("%llu ", debug_level);
-    if (level > 0) debug_level += level;
+    debug_level += level;
     if (debug_level <= DEBUG_LEVEL) {
         va_list args;
         va_start(args, s);
         for (uint64_t i = 0; i < debug_level; i++) {
-            printf(" ");
+            printf("  ");
         }
         vprintf(s, args);
         va_end(args);
     }
-    if (level < 0) debug_level += level;
     #endif
 }
 
@@ -46,4 +45,11 @@ void index_to_bytes(INDEX index, uint8_t* buffer, uint8_t count) {
         buffer[i] = (index & temp) >> (8 * i);
         temp <<= 8;
     }
+}
+
+char* str_cpy(char* src) {
+    char* result = (char*)allocate_mem("str_cpy", NULL,
+        sizeof(char) * (strlen(src) + 1));
+    strcpy(result, src);
+    return result;
 }

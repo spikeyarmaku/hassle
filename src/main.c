@@ -1,59 +1,15 @@
 /*
-https://stackoverflow.com/questions/31673065/creating-classes-in-c-on-the-stack-vs-the-heap
-General rules regarding structs.
-
-Opaque structs = structs that disallow the user to peek into its internals.
-Transparent structs = structs that allow the user to peek into its internals.
-
---- Creation ---
-
-All Opaque structs are defined like this:
-
-    struct _ComplexStruct {....};
-    typedef struct _ComplexStruct* ComplexStruct;
-
-All Opaque structs are created like this:
-
-    ComplexStruct data = make_complex_struct();
-
-`make_complex_struct` is responsible for allocating space for the struct itself.
-
-Transparent structs can just be created on the stack:
-
-    struct TransparentStruct data = make_transparent_struct();
-
---- Deletion ---
-
-All opaque structs are destroyed like this:
-
-    free(data);
-
-`free` is responsible for freeing up the data `data` is pointing to, but not
-responsible for setting the pointer to NULL.
-
---- Usage ---
-
-All opauqe structs are passed by pointer, all transparent structs are passed by
-value, unless they require to be passed by pointer (e.g. when change needs to be
-made to them).
-*/
-
-/*
 TODO
 - add Unicode support
 - check memory allocations for leaks
 - when a failure happens, do a cleanup
   (check every code block with `if (error_code != Success)`)
 - Check if the input expression is well-formed (all parens match)
-- add `_t` suffix to typedef'd types
-- rename size_t to INDEX where it makes sense
 - when freeing an object, overwrite the memory with random data
   (SECURE_DESTRUCTION)
 */
 
 #include "main.h"
-
-struct _Logger _logger;
 
 // enum ErrorCode interpret(EnvFrame_t env, Expr_t expr) {
 //     struct Term result;
@@ -106,23 +62,38 @@ enum ErrorCode repl() {
 
 ErrorCode_t interpret_file(char* file_name) {
     printf("%s\n", file_name);
-    EnvFrame_t env = env_make_default();
     ErrorCode_t error_code = Success;
+    
+    debug(0, "\n\n------PARSE------\n\n");
+
     Expr_t expr = parse_from_file(&error_code, file_name);
     if (error_code != Success) return error_code;
 
-    struct Term result;
-    error_code = eval_expr(env, expr, &result);
-    if (error_code == Success) {
+    debug(0, "\n\n------DEFAULT ENV------\n\n");
+
+    EnvFrame_t env = env_make_default();
+
+    debug(0, "\n\n------EVAL------\n\n");
+
+    Term_t result = eval_expr(env, expr);
+
+    if (result != NULL) {
         printf("RESULT:\n");
         term_print(result);
         printf("\n");
     }
+    debug(0, "\n\n------FREE ENV------\n\n");
     env_free_frame(&env);
+
+    debug(0, "\n\n------FREE RESULT------\n\n");
+
+    term_free(&result);
+
+    debug(0, "\n\n------FREE EXPR------\n\n");
+
     expr_free(&expr);
-    term_free(result);
-    
-    show_logger_entries(_logger);
+
+    show_logger_entries();
     return error_code;
 }
 

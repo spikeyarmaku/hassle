@@ -1,27 +1,45 @@
 #include "term.h"
 
-BOOL term_is_equal(struct Term t1, struct Term t2) {
-    if (t1.type == t2.type) {
-        switch (t1.type) {
+struct Term {
+    enum TermType type;
+    union {
+        struct Value        value;
+        Expr_t              expr;
+        struct Abstraction  abs;
+        // char*               err;
+    };
+};
+
+BOOL term_is_equal(Term_t t1, Term_t t2) {
+    if (t1 == NULL && t2 == NULL) return TRUE;
+    if (t1 == NULL || t2 == NULL) return FALSE;
+
+    if (t1->type == t2->type) {
+        switch (t1->type) {
             case AbsTerm: {
-                return t1.abs.apply == t2.abs.apply &&
-                    t1.abs.closure == t2.abs.closure;
+                return t1->abs.apply == t2->abs.apply &&
+                    t1->abs.closure.size == t2->abs.closure.size &&
+                    t1->abs.closure.data == t2->abs.closure.data;
             }
             case ValTerm: {
-                if (t1.value.type == t2.value.type) {
-                    if (t1.value.type == RationalVal) {
-                        return rational_is_equal(t1.value.rational,
-                            t2.value.rational);
+                if (t1->value.type == t2->value.type) {
+                    if (t1->value.type == RationalVal) {
+                        return rational_is_equal(t1->value.rational,
+                            t2->value.rational);
                     } else {
-                        return strcmp(t1.value.string, t2.value.string) == 0;
+                        return strcmp(t1->value.string, t2->value.string) == 0;
                     }
                 } else {
                     return FALSE;
                 }
             }
             case ExprTerm: {
-                return expr_is_equal(t1.expr, t2.expr);
+                return expr_is_equal(t1->expr, t2->expr);
             }
+            // case ErrTerm: {
+            //     return strcmp(t1->err, t2->err) == 0 ? TRUE : FALSE;
+            //     break;
+            // }
             default: {
                 return FALSE;
             }
@@ -31,74 +49,192 @@ BOOL term_is_equal(struct Term t1, struct Term t2) {
     }
 }
 
-struct Term term_make_number(Rational_t r) {
+Term_t term_make_number(Rational_t r) {
     struct Value v;
     v.type = RationalVal;
-    v.rational = r;
-    struct Term t;
-    t.type = ValTerm;
-    t.value = v;
+    v.rational = rational_copy(r);
+    Term_t t = (Term_t)allocate_mem("term_make_number", NULL,
+        sizeof(struct Term));
+    t->type = ValTerm;
+    t->value = v;
     return t;
 }
 
-struct Term term_make_string(char* str) {
+Term_t term_make_string(char* str) {
     struct Value v;
     v.type = StringVal;
     v.string = str; // Don't copy strings if it isn't necessary
-    struct Term t;
-    t.type = ValTerm;
-    t.value = v;
+    Term_t t = (Term_t)allocate_mem("term_make_string", NULL,
+        sizeof(struct Term));
+    t->type = ValTerm;
+    t->value = v;
     return t;
 }
 
-struct Term term_make_expr(Expr_t expr) {
-    struct Term t;
-    t.type = ExprTerm;
-    t.expr = expr;
+Term_t term_make_expr(Expr_t expr) {
+    Term_t t = (Term_t)allocate_mem("term_make_expr", NULL,
+        sizeof(struct Term));
+    t->type = ExprTerm;
+    t->expr = expr_copy(expr);
     return t;
 }
 
-void term_free(struct Term t) {
-    switch (t.type) {
+Term_t term_make_abs(Apply_t apply, void* closure_data, size_t closure_size,
+        ClosureFree_t *closure_free) {
+    Term_t t = (Term_t)allocate_mem("term_make_abs", NULL,
+        sizeof(struct Term));
+    debug(0, "term_make_abs - %llu %llu\n", (size_t)closure_data, (size_t)closure_free);
+    t->type = AbsTerm;
+    t->abs.apply = apply;
+    t->abs.closure.data = closure_data;
+    t->abs.closure.size = closure_size;
+    t->abs.closure.closure_free = closure_free;
+    return t;
+}
+
+ErrorCode_t term_get_type(Term_t term, enum TermType* result) {
+    if (term == NULL) return Error;
+
+    *result = term->type;
+    return Success;
+}
+
+ErrorCode_t term_get_value(Term_t term, struct Value* result) {
+    if (term == NULL) return Error;
+    if (term->type != ValTerm) return Error;
+
+    *result = term->value;
+    return Success;
+}
+
+ErrorCode_t term_get_expr(Term_t term, Expr_t* result) {
+    if (term == NULL) return Error;
+    if (term->type != ExprTerm) return Error;
+
+    *result = term->expr;
+    return Success;
+}
+
+ErrorCode_t term_get_abs(Term_t term, struct Abstraction* result) {
+    if (term == NULL) return Error;
+    if (term->type != AbsTerm) return Error;
+
+    *result = term->abs;
+    return Success;
+}
+
+// ErrorCode_t term_get_err(Term_t term, char** result) {
+//     if (term == NULL) return Error;
+//     if (term->type != ErrTerm) return Error;
+
+//     *result = term->err;
+//     return Success;
+// }
+
+void term_free(Term_t* term_ptr) {
+    if (term_ptr == NULL) return;
+    Term_t term = *term_ptr;
+    *term_ptr = NULL;
+    if (term == NULL) return;
+
+    switch (term->type) {
         case AbsTerm : {
-            free_mem("free_term/closure", t.abs.closure);
+            debug(0, "term_free/abstraction - %llu, %llu, %llu\n",
+                (size_t)term, (size_t)term->abs.closure.closure_free,
+                (size_t)term->abs.closure.data);
+            // debug(0, "term_free/abstraction - %llu, %llu\n",
+            //     (size_t)term, (size_t)term->abs.closure.closure_free);
+            // term->abs.closure.closure_free(term->abs.closure.data);
+            free_mem("free_term/closure", term->abs.closure.data);
             break;
         }
         case ValTerm: {
-            if (t.value.type == RationalVal) {
-                debug(0, "free_term: freeing up rational\n");
-                rational_print(t.value.rational);
-                rational_free(t.value.rational);
+            debug(0, "term_free/value\n");
+            if (term->value.type == RationalVal) {
+                rational_free(term->value.rational);
+                term->value.rational = NULL;
             } else {
-                free_mem("free_term/string", t.value.string);
+                free_mem("free_term/string", term->value.string);
+                term->value.string = NULL;
             }
             break;
         }
         case ExprTerm: {
+            debug(0, "term_free/expression\n");
+            expr_free(&(term->expr));
             break;
         }
     }
+    free_mem("term_free", term);
+    *term_ptr = NULL;
 }
 
-char* term_to_string(struct Term t) {
-    switch (t.type) {
+Term_t term_copy(Term_t term) {
+    debug(1, "term_copy\n");
+    Term_t result = (Term_t)allocate_mem("term_copy", NULL,
+        sizeof(struct Term));
+
+    result->type = term->type;
+    switch (term->type) {
+        case ValTerm : {
+            result->value.type = term->value.type;
+            if (term->value.type == StringVal) {
+                result->value.string = str_cpy(term->value.string);
+            } else {
+                result->value.rational = rational_copy(term->value.rational);
+            }
+            break;
+        }
+        case ExprTerm : {
+            result->expr = expr_copy(term->expr);
+            break;
+        }
+        case AbsTerm : {
+            result->abs.apply = term->abs.apply;
+            result->abs.closure.size = term->abs.closure.size;
+            result->abs.closure.closure_free = term->abs.closure.closure_free;
+            if (term->abs.closure.data != NULL) {
+                result->abs.closure.data =
+                    allocate_mem("term_copy/closure", NULL,
+                        term->abs.closure.size);
+            
+                memcpy(result->abs.closure.data, term->abs.closure.data,
+                    term->abs.closure.size);
+            } else {
+                result->abs.closure.data = NULL;
+            }
+            break;
+        }
+        // case ErrTerm: {
+        //     result->err = str_cpy(term->err);
+        //     break;
+        // }
+        default: {
+            break;
+        }
+    }
+
+    debug(-1, "/term_copy\n");
+    return result;
+}
+
+char* term_to_string(Term_t t) {
+    if (t == NULL) return NULL;
+
+    switch (t->type) {
         case AbsTerm: {
-            char* str = "<Function>";
-            char* result = (char*)allocate_mem("term_print/function", NULL,
-                sizeof(char) * (strlen(str) + 1));
-            strcpy(result, str);
-            return result;
+            char buf[100];
+            sprintf(buf, "<Function with closure at %llu>",
+                (size_t)t->abs.closure.data);
+            return str_cpy(buf);
         }
         case ValTerm: {
-            switch (t.value.type) {
+            switch (t->value.type) {
                 case RationalVal: {
-                    return rational_to_string(t.value.rational);
+                    return rational_to_string(t->value.rational);
                 }
                 case StringVal: {
-                    char* result = (char*)allocate_mem("term_print/string",
-                        NULL, sizeof(char) * (strlen(t.value.string) + 1));
-                    strcpy(result, t.value.string);
-                    return result;
+                    return str_cpy(t->value.string);
                 }
                 default: {
                     return NULL;
@@ -106,16 +242,27 @@ char* term_to_string(struct Term t) {
             }
         }
         case ExprTerm: {
-            return expr_to_string(t.expr);
+            return expr_to_string(t->expr);
         }
+        // case ErrTerm: {
+        //     return str_cpy(t->err);
+        // }
         default: {
             return NULL;
         }
     }
 }
 
-void term_print(struct Term t) {
+void term_print(Term_t t) {
     char* str = term_to_string(t);
     printf("%s", str);
     free_mem("term_print", str);
 }
+
+// struct Closure closure_copy(struct Closure closure) {
+//     struct Closure result;
+//     result.size = closure.size;
+//     result.data = allocate_mem("closure_copy", NULL, closure.size);
+//     memcpy(result.data, closure.data, closure.size);
+//     return result;
+// }

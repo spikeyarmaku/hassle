@@ -1,15 +1,21 @@
+// Values belong to `Closure`s, `Closure`s belong to `Term`s, and `Term`s belong
+// to either a frame or to the result
+
 #ifndef _TERM_H_
 #define _TERM_H_
 
 #include "parse\expr.h"
 #include "rational\rational.h"
 
+#include "global.h"
 #include "memory.h"
 
 struct Term;
 struct EnvFrame; // Forward declaration
 
-enum TermType {ValTerm, ExprTerm, AbsTerm};
+typedef struct Term* Term_t;
+
+enum TermType {ValTerm, ExprTerm, AbsTerm}; // , ErrTerm};
 enum ValType {StringVal, RationalVal};
 
 struct Value {
@@ -20,30 +26,38 @@ struct Value {
     };
 };
 
-typedef ErrorCode_t Apply_t(struct EnvFrame*, Expr_t, void*, struct Term*);
+typedef void ClosureFree_t(void*);
+struct Closure {
+    size_t size;
+    void* data;
+    ClosureFree_t *closure_free;
+};
+
+typedef Term_t Apply_t(struct EnvFrame*, Expr_t, struct Closure);
 struct Abstraction {
     Apply_t* apply;
-    void* closure;
+    struct Closure closure;
 };
 
-struct Term {
-    enum TermType type;
-    union {
-        struct Value value;
-        Expr_t expr;
-        struct Abstraction abs;
-    };
-};
+BOOL        term_is_equal       (Term_t, Term_t);
 
-BOOL        term_is_equal       (struct Term, struct Term);
+Term_t      term_make_number    (Rational_t);
+Term_t      term_make_string    (char*);
+Term_t      term_make_expr      (Expr_t);
+Term_t      term_make_abs       (Apply_t, void*, size_t, ClosureFree_t);
 
-struct Term term_make_number    (Rational_t);
-struct Term term_make_string    (char*);
-struct Term term_make_expr      (Expr_t);
+ErrorCode_t term_get_type       (Term_t, enum TermType*);
+ErrorCode_t term_get_value      (Term_t, struct Value*);
+ErrorCode_t term_get_expr       (Term_t, Expr_t*);
+ErrorCode_t term_get_abs        (Term_t, struct Abstraction*);
+// ErrorCode_t term_get_err        (Term_t, char**);
 
-void        term_free           (struct Term);
+void        term_free           (Term_t*);
+Term_t      term_copy           (Term_t);
 
-char*       term_to_string      (struct Term);
-void        term_print          (struct Term);
+char*       term_to_string      (Term_t);
+void        term_print          (Term_t);
+
+// struct Closure  closure_copy    (struct Closure);
 
 #endif

@@ -1,5 +1,33 @@
 #include "parse.h"
 
+struct Token {
+    enum TokenType type;
+    char* str;
+};
+
+struct Parser {
+    char* stream;
+    BOOL can_free_stream;
+    long int counter;
+};
+
+Parser_t        _create_parser      (char*);
+void            _free_parser        (Parser_t*);
+
+struct Token    _get_next_token     (ErrorCode_t*, Parser_t);
+ErrorCode_t     _read_symbol        (struct Token*, Parser_t);
+ErrorCode_t     _read_string        (struct Token*, Parser_t);
+ErrorCode_t     _read_identifier    (struct Token*, Parser_t);
+void            _free_token         (struct Token*);
+
+char            _get_next_char      (Parser_t);
+char            _get_current_char   (Parser_t);
+
+BOOL            _is_whitespace      (char);
+void            _consume_whitespace (Parser_t);
+
+Expr_t          _parse              (ErrorCode_t*, Parser_t);
+
 Parser_t _create_parser(char* file_name) {
     debug(1, "_create_parser\n");
     Parser_t parser = (Parser_t)allocate_mem("_create_parser/parser", NULL,
@@ -146,7 +174,8 @@ ErrorCode_t _read_string(struct Token* token, Parser_t parser) {
     long int char_count = total_char_count - escape_counter;
     escape_counter = 0;
     is_escaped = 0;
-    char* str = (char*)allocate_mem("parse/_read_string", NULL, sizeof(char) * (char_count + 1));
+    char* str = (char*)allocate_mem("parse/_read_string", NULL,
+        sizeof(char) * (char_count + 1));
     for (long int i = 0; i < total_char_count; i++) {
         char c = parser->stream[starting_position + i];
         if (is_escaped) {
@@ -270,6 +299,7 @@ Expr_t parse_from_file(ErrorCode_t* error_code, char* file_name) {
 }
 
 Expr_t parse_from_str(ErrorCode_t* error_code, char* input) {
+    debug(0, "Parsing: %s\n", input);
     Parser_t parser = (Parser_t)allocate_mem("parse_from_str", NULL,
         sizeof(struct Parser));
     parser->stream = input;

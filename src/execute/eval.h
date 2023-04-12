@@ -8,8 +8,8 @@
 #include "parse\expr.h"
 #include "execute\env.h"
 
-enum ErrorCode eval_expr         (EnvFrame_t, Expr_t, struct Term*);
-enum ErrorCode eval_combination  (EnvFrame_t, Expr_t, struct Term*);
-enum ErrorCode apply             (EnvFrame_t, struct Term, Expr_t, struct Term*);
+Term_t  eval_expr         (EnvFrame_t, Expr_t);
+Term_t  eval_combination  (EnvFrame_t, Expr_t);
+Term_t  apply             (EnvFrame_t, Term_t, Expr_t);
 
 #endif
