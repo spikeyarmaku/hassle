@@ -5,7 +5,7 @@
 #include "execute\eval.h"
 #include "parse\parse.h"
 
-#include "rational/rational.h"
+#include "rational\rational.h"
 
 enum BinOp {ADD, SUB, MUL, DIV};
 

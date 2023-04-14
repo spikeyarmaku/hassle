@@ -1,10 +1,19 @@
 #include "env.h"
 
+struct EnvFrame {
+    size_t entry_count;
+    struct Entry* mapping;
+
+    struct EnvFrame* parent;
+
+    Stack_t stack;
+};
+
 Term_t env_default_rules(Expr_t expr) {
-    debug(1, "env_default_rules\n");
+    debug_start("env_default_rules\n");
     if (expr_is_list(expr)) {
         Term_t result = term_make_expr(expr);
-        debug(-1, "/env_default_rules\n");
+        debug_end("/env_default_rules\n");
         return result;
     }
     
@@ -23,7 +32,7 @@ Term_t env_default_rules(Expr_t expr) {
         Rational_t r = string_to_rational(expr_get_symbol(expr));
         Term_t term = term_make_number(r);
         rational_free(r);
-        debug(-1, "/env_default_rules\n");
+        debug_end("/env_default_rules\n");
         return term;
     }
 
@@ -37,20 +46,20 @@ Term_t env_default_rules(Expr_t expr) {
     is_string = is_string && *(ptr-1) == '"';
     if (is_string) {
         Term_t result = term_make_string(expr_get_symbol(expr));
-        debug(-1, "/env_default_rules\n");
+        debug_end("/env_default_rules\n");
         return result;
     }
 
     // If it is neither, return the symbol as an Expr_t
     Term_t result = term_make_expr(expr);
-    debug(-1, "/env_default_rules\n");
+    debug_end("/env_default_rules\n");
     return result;
 }
 
 // Retrieve a copy of the value of an expr from an env, or return a newly
 // created value
 Term_t env_lookup_term(EnvFrame_t frame, Expr_t expr) {
-    debug(1, "env_lookup_term\n");
+    debug_start("env_lookup_term\n");
     // First we check if there is an entry for the expr in the mappings in the
     // current env
     EnvFrame_t current_frame = frame;
@@ -58,7 +67,7 @@ Term_t env_lookup_term(EnvFrame_t frame, Expr_t expr) {
         for (INDEX i = 0; i < current_frame->entry_count; i++) {
             if (expr_is_equal(current_frame->mapping[i].name, expr)) {
                 Term_t result = term_copy(current_frame->mapping[i].value);
-                debug(-1, "/env_lookup_term\n");
+                debug_end("/env_lookup_term\n");
                 return result;
             }
         }
@@ -70,7 +79,7 @@ Term_t env_lookup_term(EnvFrame_t frame, Expr_t expr) {
     if (expr_is_list(expr)) {
         // If it is a list, return the list
         Term_t result = term_make_expr(expr);
-        debug(-1, "/env_lookup_term\n");
+        debug_end("/env_lookup_term\n");
         return result;
     } else {
         // If it is an atom, apply the rules
@@ -78,7 +87,7 @@ Term_t env_lookup_term(EnvFrame_t frame, Expr_t expr) {
         Term_t result = env_default_rules(expr);
         // env_add_entry(frame, expr, t); // If you cache it here, it will get
         // cached in the ground env, which makes for a nice crash later on
-        debug(-1, "/env_lookup_term\n");
+        debug_end("/env_lookup_term\n");
         return result;
     }
 }
@@ -112,17 +121,17 @@ Term_t env_find_longest_match(EnvFrame_t frame, Expr_t expr, size_t* bytes) {
 }
 
 ErrorCode_t env_add_entry(EnvFrame_t frame, Expr_t expr, struct Term* term) {
-    debug(1, "env_add_entry - expr_ptr: %llu\n", (size_t)expr);
+    debug_start("env_add_entry - expr_ptr: %llu\n", (size_t)expr);
     if (frame == NULL) {
         frame = env_make_empty_frame(NULL);
         if (frame == NULL) {
-            debug(-1, "/env_add_entry\n");
+            debug_end("/env_add_entry\n");
             return Error;
         }
     }
     EnvFrame_t current_frame = frame;
 
-    // Check if the term already exists
+    // Check if the term already exists in the current frame (parents excluded)
     INDEX index = 0;
     BOOL found = FALSE;
     while (index < current_frame->entry_count && found == FALSE) {
@@ -140,7 +149,7 @@ ErrorCode_t env_add_entry(EnvFrame_t frame, Expr_t expr, struct Term* term) {
             (struct Entry*)allocate_mem("env_add_entry", current_frame->mapping,
             sizeof(struct Entry) * (current_frame->entry_count + 1));
         if (new_mapping == NULL) {
-            debug(-1, "/env_add_entry\n");
+            debug_end("/env_add_entry\n");
             return Error;
         }
         current_frame->mapping = new_mapping;
@@ -150,15 +159,17 @@ ErrorCode_t env_add_entry(EnvFrame_t frame, Expr_t expr, struct Term* term) {
             term_copy(term);
         current_frame->entry_count++;
     }
-    debug(-1, "/env_add_entry\n");
+    
+    // env_print_frame(frame);
+    debug_end("/env_add_entry\n");
     return Success;
 }
 
 void env_print_frame(EnvFrame_t frame) {
-    debug(1, "\n===\nEnvironment:\n");
+    debug_start("\n===\nEnvironment:\n");
     size_t count = 0;
     while (frame != NULL) {
-        debug(0, "\n  Frame #%d:\n", count);
+        debug("\n  Frame #%d:\n", count);
 
         for (size_t i = 0; i < frame->entry_count; i++) {
             expr_print(frame->mapping[i].name);
@@ -170,7 +181,7 @@ void env_print_frame(EnvFrame_t frame) {
         frame = frame->parent;
         count++;
     }
-    debug(-1, "End of environment\n===\n\n");
+    debug_end("End of environment\n===\n\n");
 }
 
 EnvFrame_t env_make_empty_frame(EnvFrame_t parent) {
@@ -180,6 +191,7 @@ EnvFrame_t env_make_empty_frame(EnvFrame_t parent) {
         new_frame->entry_count = 0;
         new_frame->mapping = NULL;
         new_frame->parent = parent;
+        new_frame->stack = stack_make_empty();
     }
     return new_frame;
 }
@@ -189,15 +201,17 @@ void env_free_frame(EnvFrame_t* frame_ptr) {
     if (frame != NULL) {
         // Free the individual mappings
         for (size_t i = 0; i < frame->entry_count; i++) {
-            debug(0, "env_free_frame/mapping/entry\n");
+            debug("env_free_frame/mapping/entry\n");
             env_free_entry(frame->mapping[i]);
         }
         // Free the mapping list
-        debug(0, "env_free_frame/mapping\n");
+        debug("env_free_frame/mapping\n");
         free_mem("env_free_frame/mapping", frame->mapping);
         // Free the dict
-        debug(0, "env_free_frame/frame\n");
+        debug("env_free_frame/frame\n");
         free_mem("env_free_frame/frame", frame);
+        // Free the stack
+        stack_free(&(frame->stack));
     }
     *frame_ptr = NULL;
 }
@@ -205,4 +219,8 @@ void env_free_frame(EnvFrame_t* frame_ptr) {
 void env_free_entry(struct Entry e) {
     expr_free(&(e.name));
     term_free(&(e.value));
+}
+
+Stack_t env_get_stack(EnvFrame_t frame) {
+    return frame->stack;
 }

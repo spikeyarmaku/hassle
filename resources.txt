@@ -1,0 +1,8 @@
+How to do IO:
+https://courses.cs.washington.edu/courses/cse505/01au/functional/functional-io.pdf
+https://www.owenstephens.co.uk/assets/static/research/masters_report.pdf
+https://stackoverflow.com/questions/2158050/what-are-the-alternative-of-monads-to-use-io-in-pure-functional-programming
+
+Shallow bindings in Lisp: https://sci-hub.se/https://doi.org/10.1145/359545.359566
+What are stack frames: https://www.cs.princeton.edu/courses/archive/spr03/cs320/notes/7-1.pdf
+SML NJ compiler paper: https://assets.cambridge.org/97805210/33114/excerpt/9780521033114_excerpt.pdf

@@ -16,7 +16,7 @@ enum TokenType {Eos, OpenParen, CloseParen, Symbol};
 
 typedef struct Parser* Parser_t;
 
-Expr_t          parse_from_file     (ErrorCode_t*, char*);
-Expr_t          parse_from_str      (ErrorCode_t*, char*);
+Expr_t  parse_from_file (char*);
+Expr_t  parse_from_str  (char*);
 
 #endif

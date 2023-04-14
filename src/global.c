@@ -13,20 +13,41 @@ void error(const char* s, ...) {
     #endif
 }
 
-void debug(int8_t level, const char* s, ...) {
+void debug_print(const char* s, va_list args) {
     #ifdef DEBUG_PRINTS
     // printf("%llu ", debug_level);
-    debug_level += level;
     if (debug_level <= DEBUG_LEVEL) {
-        va_list args;
-        va_start(args, s);
         for (uint64_t i = 0; i < debug_level; i++) {
-            printf("  ");
+            printf("    ");
         }
         vprintf(s, args);
-        va_end(args);
     }
     #endif
+}
+
+void debug(const char* s, ...) {
+    va_list args;
+    va_start(args, s);
+    debug_print(s, args);
+    va_end(args);
+}
+
+void debug_start(const char* s, ...) {
+    va_list args;
+    va_start(args, s);
+    debug_print(s, args);
+    va_end(args);
+
+    debug_level++;
+}
+
+void debug_end(const char* s, ...) {
+    debug_level--;
+    
+    va_list args;
+    va_start(args, s);
+    debug_print(s, args);
+    va_end(args);
 }
 
 INDEX bytes_to_index(uint8_t* bytes, uint8_t count) {

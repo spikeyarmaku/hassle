@@ -1,1 +1,1 @@
-drmemory.exe bin\rsc.exe test\test.rsc
+drmemory.exe bin\real.exe test\test.real

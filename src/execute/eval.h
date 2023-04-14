@@ -8,8 +8,9 @@
 #include "parse\expr.h"
 #include "execute\env.h"
 
-Term_t  eval_expr         (EnvFrame_t, Expr_t);
-Term_t  eval_combination  (EnvFrame_t, Expr_t);
-Term_t  apply             (EnvFrame_t, Term_t, Expr_t);
+enum EvalState {EvalFinished, EvalRunning};
+
+Term_t          eval        (EnvFrame_t, Expr_t);
+enum EvalState  eval_step   (EnvFrame_t);
 
 #endif

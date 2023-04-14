@@ -83,7 +83,7 @@ Term_t term_make_abs(Apply_t apply, void* closure_data, size_t closure_size,
         ClosureFree_t *closure_free) {
     Term_t t = (Term_t)allocate_mem("term_make_abs", NULL,
         sizeof(struct Term));
-    debug(0, "term_make_abs - %llu %llu\n", (size_t)closure_data, (size_t)closure_free);
+    debug("term_make_abs - %llu %llu\n", (size_t)closure_data, (size_t)closure_free);
     t->type = AbsTerm;
     t->abs.apply = apply;
     t->abs.closure.data = closure_data;
@@ -92,35 +92,30 @@ Term_t term_make_abs(Apply_t apply, void* closure_data, size_t closure_size,
     return t;
 }
 
-ErrorCode_t term_get_type(Term_t term, enum TermType* result) {
-    if (term == NULL) return Error;
-
-    *result = term->type;
-    return Success;
+enum TermType term_get_type(Term_t term) {
+    assert(term != NULL);
+    return term->type;
 }
 
-ErrorCode_t term_get_value(Term_t term, struct Value* result) {
-    if (term == NULL) return Error;
-    if (term->type != ValTerm) return Error;
+struct Value term_get_value(Term_t term) {
+    assert(term != NULL);
+    assert(term->type == ValTerm);
 
-    *result = term->value;
-    return Success;
+    return term->value;
 }
 
-ErrorCode_t term_get_expr(Term_t term, Expr_t* result) {
-    if (term == NULL) return Error;
-    if (term->type != ExprTerm) return Error;
+Expr_t term_get_expr(Term_t term) {
+    assert(term != NULL);
+    assert(term->type == ExprTerm);
 
-    *result = term->expr;
-    return Success;
+    return term->expr;
 }
 
-ErrorCode_t term_get_abs(Term_t term, struct Abstraction* result) {
-    if (term == NULL) return Error;
-    if (term->type != AbsTerm) return Error;
+struct Abstraction term_get_abs(Term_t term) {
+    assert(term != NULL);
+    assert(term->type == AbsTerm);
 
-    *result = term->abs;
-    return Success;
+    return term->abs;
 }
 
 // ErrorCode_t term_get_err(Term_t term, char** result) {
@@ -139,17 +134,17 @@ void term_free(Term_t* term_ptr) {
 
     switch (term->type) {
         case AbsTerm : {
-            debug(0, "term_free/abstraction - %llu, %llu, %llu\n",
-                (size_t)term, (size_t)term->abs.closure.closure_free,
-                (size_t)term->abs.closure.data);
-            // debug(0, "term_free/abstraction - %llu, %llu\n",
+            // debug("term_free/abstraction - %llu, %llu, %llu\n",
+                // (size_t)term, (size_t)term->abs.closure.closure_free,
+                // (size_t)term->abs.closure.data);
+            // debug("term_free/abstraction - %llu, %llu\n",
             //     (size_t)term, (size_t)term->abs.closure.closure_free);
-            // term->abs.closure.closure_free(term->abs.closure.data);
-            free_mem("free_term/closure", term->abs.closure.data);
+            term->abs.closure.closure_free(term->abs.closure.data);
+            // free_mem("free_term/closure", term->abs.closure.data);
             break;
         }
         case ValTerm: {
-            debug(0, "term_free/value\n");
+            // debug("term_free/value\n");
             if (term->value.type == RationalVal) {
                 rational_free(term->value.rational);
                 term->value.rational = NULL;
@@ -160,7 +155,8 @@ void term_free(Term_t* term_ptr) {
             break;
         }
         case ExprTerm: {
-            debug(0, "term_free/expression\n");
+            // debug("term_free/expression\n");
+            // expr_print(term->expr);
             expr_free(&(term->expr));
             break;
         }
@@ -170,7 +166,7 @@ void term_free(Term_t* term_ptr) {
 }
 
 Term_t term_copy(Term_t term) {
-    debug(1, "term_copy\n");
+    debug_start("term_copy\n");
     Term_t result = (Term_t)allocate_mem("term_copy", NULL,
         sizeof(struct Term));
 
@@ -205,16 +201,12 @@ Term_t term_copy(Term_t term) {
             }
             break;
         }
-        // case ErrTerm: {
-        //     result->err = str_cpy(term->err);
-        //     break;
-        // }
         default: {
             break;
         }
     }
 
-    debug(-1, "/term_copy\n");
+    debug_end("/term_copy\n");
     return result;
 }
 
@@ -259,10 +251,3 @@ void term_print(Term_t t) {
     free_mem("term_print", str);
 }
 
-// struct Closure closure_copy(struct Closure closure) {
-//     struct Closure result;
-//     result.size = closure.size;
-//     result.data = allocate_mem("closure_copy", NULL, closure.size);
-//     memcpy(result.data, closure.data, closure.size);
-//     return result;
-// }

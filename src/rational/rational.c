@@ -90,15 +90,15 @@ Rational_t string_to_rational(char* string) {
 }
 
 void rational_free(Rational_t r) {
-    debug(0, "Rational to free (%llu / %llu):\n", r->numerator, r->denominator);
-        // rational_print(r); debug(0, "\n");
+    // debug("Rational to free (%llu / %llu):\n", r->numerator, r->denominator);
+        // rational_print(r); debug("\n");
     alnat_free(r->numerator);
     alnat_free(r->denominator);
     free_mem("rational_free", r);
 }
 
 void rational_simplify(Rational_t r) {
-    debug(1, "rational_simplify\n");
+    // debug_start("rational_simplify\n");
     if (alnat_is_null(r->numerator)) {
         alnat_free(r->denominator);
         r->denominator = alnat_make_single_digit(1);
@@ -118,7 +118,7 @@ void rational_simplify(Rational_t r) {
     if (gcd[0] == 1) {
         // Relative primes, cannot rational_simplify
         alnat_free(gcd);
-        debug(-1, "/rational_simplify\n");
+        // debug_end("/rational_simplify\n");
         return;
     } else {
         // Simplify both by gcd
@@ -132,7 +132,7 @@ void rational_simplify(Rational_t r) {
         r->sign = sign;
     }
     alnat_free(gcd);
-    debug(-1, "/rational_simplify\n");
+    // debug_end("/rational_simplify\n");
 }
 
 void rational_reciprocate(Rational_t r) {
@@ -164,7 +164,7 @@ char* rational_to_string(Rational_t r) {
 }
 
 Rational_t rational_copy(Rational_t r) {
-    debug(1, "rational_copy - %llu\n", r);
+    // debug_start("rational_copy - %llu\n", r);
     if (r == NULL) return NULL;
     
     Rational_t result = (Rational_t)allocate_mem("rational_copy", NULL,
@@ -172,7 +172,7 @@ Rational_t rational_copy(Rational_t r) {
     result->sign = r->sign;
     result->denominator = alnat_copy(r->denominator);
     result->numerator = alnat_copy(r->numerator);
-    debug(-1, "/rational_copy\n");
+    // debug_end("/rational_copy\n");
     return result;
 }
 

@@ -7,6 +7,7 @@ TODO
 - Check if the input expression is well-formed (all parens match)
 - when freeing an object, overwrite the memory with random data
   (SECURE_DESTRUCTION)
+- avoid realloc, instead use linked lists (or think of a better solution)
 */
 
 #include "main.h"
@@ -34,7 +35,7 @@ enum ErrorCode repl() {
     // int go_on = 1;
     // EnvFrame_t env = make_default_frame();
     // while (go_on) {
-    //     printf("RSC> ");
+    //     printf("REAL> ");
 
     //     if (!fgets(buffer, STRING_BUFFER_SIZE, stdin)) {
     //         printf("Error while reading from stdin.\n");
@@ -64,32 +65,32 @@ ErrorCode_t interpret_file(char* file_name) {
     printf("%s\n", file_name);
     ErrorCode_t error_code = Success;
     
-    debug(0, "\n\n------PARSE------\n\n");
+    debug("\n\n------PARSE------\n\n");
 
-    Expr_t expr = parse_from_file(&error_code, file_name);
-    if (error_code != Success) return error_code;
+    Expr_t expr = parse_from_file(file_name);
+    // expr_print(expr);
 
-    debug(0, "\n\n------DEFAULT ENV------\n\n");
+    debug("\n\n------DEFAULT ENV------\n\n");
 
     EnvFrame_t env = env_make_default();
 
-    debug(0, "\n\n------EVAL------\n\n");
+    debug("\n\n------EVAL------\n\n");
 
-    Term_t result = eval_expr(env, expr);
+    Term_t result = eval(env, expr);
 
     if (result != NULL) {
         printf("RESULT:\n");
         term_print(result);
         printf("\n");
     }
-    debug(0, "\n\n------FREE ENV------\n\n");
+    debug("\n\n------FREE ENV------\n\n");
     env_free_frame(&env);
 
-    debug(0, "\n\n------FREE RESULT------\n\n");
+    debug("\n\n------FREE RESULT------\n\n");
 
     term_free(&result);
 
-    debug(0, "\n\n------FREE EXPR------\n\n");
+    debug("\n\n------FREE EXPR------\n\n");
 
     expr_free(&expr);
 
@@ -113,6 +114,7 @@ int main(int argc, char *argv[]) {
     
     if (argc > 1) {
         // There is at least one parameter
+        
         ErrorCode_t error_code = interpret_file(argv[1]);
         if (error_code != Success) return 1;
 

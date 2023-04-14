@@ -28,22 +28,23 @@ void    _add_entry          (char*, size_t, void*);
 void    _del_entry          (char*, void*);
 
 void* allocate_mem(char* comment, void* ptr, size_t size) {
+    void* result = NULL;
     if (ptr == NULL) {
-        void* ptr = malloc(size);
+        result = malloc(size);
         #ifdef MEMORY_DIAGNOSTIC
-        _add_entry(comment, size, ptr);
+        _add_entry(comment, size, result);
         #endif
-        return ptr;
     } else {
         #ifdef MEMORY_DIAGNOSTIC
         _del_entry(comment, ptr);
         #endif
-        void* new_ptr = realloc(ptr, size);
+        result = realloc(ptr, size);
         #ifdef MEMORY_DIAGNOSTIC
-        _add_entry(comment, size, new_ptr);
+        _add_entry(comment, size, result);
         #endif
-        return new_ptr;
     }
+    assert(result != NULL);
+    return result;
 }
 
 void free_mem(char* comment, void* ptr) {
@@ -58,7 +59,7 @@ void free_mem(char* comment, void* ptr) {
 
 void _add_entry(char* comment, size_t size, void* ptr) {
     if (ptr == NULL) {
-        debug(0, "New ptr is NULL\n");
+        debug("New ptr is NULL\n");
         return;
     }
     // Create new entry
@@ -77,7 +78,7 @@ void _add_entry(char* comment, size_t size, void* ptr) {
             entry = entry->next;
         }
         if (entry->ptr == ptr) {
-            debug(0,
+            debug(
                 "=== PANIC! Adding an already existing elem: %llu (%s)===\n",
                 ptr, comment);
         } else {
@@ -94,7 +95,7 @@ void _add_entry(char* comment, size_t size, void* ptr) {
         _logger.peak = _logger.current;
     }
     
-    debug(0,
+    debug(
         "curr: %llu | peak: %llu | total: %llu | count: %d"
         " | Allocating %llu bytes at %llu (%s)\n",
         _logger.current, _logger.peak, _logger.total, _logger.entry_count, size,
@@ -103,12 +104,12 @@ void _add_entry(char* comment, size_t size, void* ptr) {
 
 void _del_entry(char* comment, void* ptr) {
     if (ptr == NULL) {
-        debug(0, "Ptr to delete is NULL\n");
+        debug("Ptr to delete is NULL\n");
         return;
     }
     // March through the list until we find the elem
     if (_logger.entries == NULL) {
-        debug(0, "=== PANIC! Deleting from empty list: %llu (%s)===\n", ptr,
+        debug("=== PANIC! Deleting from empty list: %llu (%s)===\n", ptr,
             comment);
         return;
     }
@@ -117,7 +118,7 @@ void _del_entry(char* comment, void* ptr) {
     if (entry->ptr == ptr) {
         _logger.entry_count--;
         _logger.current -= entry->size;
-        debug(0,
+        debug(
             "curr: %llu | peak: %llu | total: %llu | count: %d"
             " | Deleting %llu bytes at %llu (%s)\n",
             _logger.current, _logger.peak, _logger.total, _logger.entry_count,
@@ -136,7 +137,7 @@ void _del_entry(char* comment, void* ptr) {
     }
 
     if (entry->next == NULL) {
-        debug(0, "=== PANIC! Deleting non-existing elem: %llu (%s)===\n", ptr,
+        debug("=== PANIC! Deleting non-existing elem: %llu (%s)===\n", ptr,
             comment);
     }
     
@@ -145,7 +146,7 @@ void _del_entry(char* comment, void* ptr) {
     _logger.entry_count--;
     _logger.current -= to_delete->size;
     entry->next = entry->next->next;
-    debug(0,
+    debug(
         "curr: %llu | peak: %llu | total: %llu | count: %d"
         " | Deleting %llu bytes at %llu (%s)\n",
         _logger.current, _logger.peak, _logger.total, _logger.entry_count,
@@ -154,11 +155,11 @@ void _del_entry(char* comment, void* ptr) {
 }
 
 void show_logger_entries() {
-    debug(0, "Allocated memory:\n---------------\n");
+    debug("Allocated memory:\n---------------\n");
     struct _LoggerEntry* e = _logger.entries;
     size_t i = 0;
     while (e != NULL) {
-        debug(0, "%llu. %llu bytes at %llu\n", i, e->size, (size_t)e->ptr);
+        debug("%llu. %llu bytes at %llu\n", i, e->size, (size_t)e->ptr);
         e = e->next;
         i++;
     }

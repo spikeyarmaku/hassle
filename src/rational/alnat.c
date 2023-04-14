@@ -75,12 +75,12 @@ enum ErrorCode _alnat_expand(struct AlnatBuilder* b) {
 
 // Add a new digit to alnat
 enum ErrorCode _alnat_add_digit(uint8_t digit, struct AlnatBuilder* b) {
-    debug(1, "_alnat_add_digit\n");
+    // debug_start("_alnat_add_digit\n");
     // Check if the new digit is smaller than ALNAT_MAX
     if (digit >= ALNAT_MAX) {
         error("add_byte_to_alnat: digit %d exceeds the maximum (%d)\n", digit,
             ALNAT_MAX - 1);
-        debug(-1, "/_alnat_add_digit!\n");
+        // debug_end("/_alnat_add_digit!\n");
         return Error;
     }
 
@@ -93,30 +93,30 @@ enum ErrorCode _alnat_add_digit(uint8_t digit, struct AlnatBuilder* b) {
     if (b->next == b->size) {
         if(_alnat_expand(b)) {
             error("add_byte_to_alnat: Error while expanding alnat.\n");
-            debug(-1, "/_alnat_add_digit!\n");
+            // debug_end("/_alnat_add_digit!\n");
             return Error;
         }
     }
     b->ptr[b->next] = digit;
     b->next++;
-    debug(-1, "/_alnat_add_digit\n");
+    // debug_end("/_alnat_add_digit\n");
     return Success;
 }
 
 // Free up unused memory and set last byte to 0
 enum ErrorCode _alnat_finalize(struct AlnatBuilder* b) {
-    debug(1, "_alnat_finalize\n");
+    // debug_start("_alnat_finalize\n");
     if (b->ptr != NULL) {
         Alnat_t new_ptr = allocate_mem("_alnat_finalize", b->ptr, sizeof(uint8_t) * b->next);
         if (new_ptr == NULL) {
             error("_alnat_finalize: Error while reallocating.\n");
-            debug(-1, "/_alnat_finalize\n");
+            // debug_end("/_alnat_finalize\n");
             return Error;
         }
         b->ptr = new_ptr;
         b->size = b->next;
     }
-    debug(-1, "/_alnat_finalize\n");
+    // debug_end("/_alnat_finalize\n");
     return Success;
 }
 
@@ -208,7 +208,7 @@ void _alnat_unsafe_mark_digit(size_t n, BOOL is_msd, Alnat_t a) {
 //   377
 //   121
 Alnat_t string_to_alnat(char* string) {
-    debug(1, "string_to_alnat - %s\n", string);
+    // debug_start("string_to_alnat - %s\n", string);
     struct AlnatBuilder b = _alnat_make_builder();
     uint16_t intermediate = 0;
     char *current_char_ptr = string;
@@ -248,7 +248,7 @@ Alnat_t string_to_alnat(char* string) {
         if (_alnat_add_digit(intermediate, &b)) {
             error("string_to_alnat: couldn't add %d to alnat\n", intermediate);
             alnat_free(b.ptr);
-            debug(-1, "/string_to_alnat\n");
+            // debug_end("/string_to_alnat\n");
             return NULL;
         }
         *next_pass_cursor = 0;
@@ -260,11 +260,11 @@ Alnat_t string_to_alnat(char* string) {
     if (_alnat_finalize(&b)) {
         error("string_to_alnat: couldn't finalize alnat\n");
         alnat_free(b.ptr);
-        debug(-1, "/string_to_alnat\n");
+        // debug_end("/string_to_alnat\n");
         return NULL;
     }
 
-    debug(-1, "/string_to_alnat\n");
+    // debug_end("/string_to_alnat\n");
     return b.ptr;
 }
 
@@ -469,28 +469,28 @@ size_t _alnat_get_marcher_counter(struct AlnatMarcher m) {
 }
 
 Alnat_t alnat_copy(Alnat_t alnat) {
-    debug(1, "alnat_copy - %llu\n", alnat);
+    // debug_start("alnat_copy - %llu\n", alnat);
     if (alnat == NULL) {
-        debug(-1, "/alnat_copy\n");
+        // debug_end("/alnat_copy\n");
         return NULL;
     }
 
     if (*alnat < ALNAT_MAX) {
-        debug(0, "alnat_copy/single_digit\n");
+        // debug("alnat_copy/single_digit\n");
         Alnat_t result = alnat_make_single_digit(*alnat);
-         debug(-1, "/alnat_copy\n");
+        //  debug_end("/alnat_copy\n");
         return result;
     }
 
-    debug(0, "alnat_copy/digit_count\n");
+    // debug("alnat_copy/digit_count\n");
     struct AlnatMarcher marcher = _alnat_make_marcher(alnat);
     _alnat_fast_forward_marcher(&marcher);
     size_t count = _alnat_get_marcher_counter(marcher);
     if (count == 0) {
-        debug(-1, "/alnat_copy\n");
+        // debug_end("/alnat_copy\n");
         return NULL;
     }
-    debug(0, "alnat_copy/digit_count_done\n");
+    // debug("alnat_copy/digit_count_done\n");
     
     Alnat_t result =
         (Alnat_t)allocate_mem("alnat_copy", NULL, sizeof(uint8_t) * count);
@@ -501,12 +501,12 @@ Alnat_t alnat_copy(Alnat_t alnat) {
         _alnat_unsafe_mark_digit(count, FALSE, result);
     } while (_alnat_move_forward(&marcher));
     _alnat_unsafe_mark_digit(_alnat_get_marcher_counter(marcher), TRUE, result);
-    debug(-1, "/alnat_copy\n");
+    // debug_end("/alnat_copy\n");
     return result;
 }
 
 Alnat_t alnat_add(Alnat_t a1, Alnat_t a2) {
-    debug(1, "alnat_add\n");
+    // debug_start("alnat_add\n");
 
     struct AlnatBuilder b = _alnat_make_builder();
     struct AlnatMarcher m1 = _alnat_make_marcher(a1);
@@ -531,7 +531,7 @@ Alnat_t alnat_add(Alnat_t a1, Alnat_t a2) {
         if (_alnat_add_digit(next_byte, &b)) {
             error("alnat_add: couldn't add %d to alnat\n", next_byte);
             alnat_free(b.ptr);
-            debug(-1, "/alnat_add!\n");
+            // debug_end("/alnat_add!\n");
             return NULL;
         }
         
@@ -544,27 +544,27 @@ Alnat_t alnat_add(Alnat_t a1, Alnat_t a2) {
         if (_alnat_add_digit(carry, &b)) {
             error("alnat_add: couldn't add %d to alnat\n", carry);
             alnat_free(b.ptr);
-            debug(-1, "/alnat_add!\n");
+            // debug_end("/alnat_add!\n");
             return NULL;
         }
     }
     if (_alnat_finalize(&b)) {
         error("Error while finalizing alnat\n");
         alnat_free(b.ptr);
-        debug(-1, "/alnat_add!\n");
+        // debug_end("/alnat_add!\n");
         return NULL;
     }
 
-    debug(-1, "/alnat_add\n");
+    // debug_end("/alnat_add\n");
     return b.ptr;
 }
 
 Alnat_t alnat_sub (Alnat_t a1, Alnat_t a2, int8_t* sign) {
-    debug(1, "_alnat_sub\n");
+    // debug_start("_alnat_sub\n");
     
     int8_t a1_gt_a2 = _alnat_compare(a1, a2);
     if (a1_gt_a2 == 0) {
-        debug(-1, "/_alnat_sub\n");
+        // debug_end("/_alnat_sub\n");
         return alnat_make_single_digit(0);
     } else {
         a1_gt_a2 = a1_gt_a2 > 0 ? 1 : 0;
@@ -578,7 +578,7 @@ Alnat_t alnat_sub (Alnat_t a1, Alnat_t a2, int8_t* sign) {
         if (sign != NULL) {
             *sign = a1_gt_a2 ? 1 : -1;
         }
-        debug(-1, "/_alnat_sub\n");
+        // debug_end("/_alnat_sub\n");
         return result;
     }
 }
@@ -680,7 +680,7 @@ Alnat_t alnat_mul(Alnat_t multiplicand, Alnat_t multiplier) {
 // The quotient's digit count will be the difference between the divisor's digit
 // count and the dividend's digit count, plus one.
 AlnatDiv_t alnat_div(Alnat_t dividend, Alnat_t divisor) {
-    debug(1, "alnat_div\n");
+    // debug_start("alnat_div\n");
 
     AlnatDiv_t result;
 
@@ -688,7 +688,7 @@ AlnatDiv_t alnat_div(Alnat_t dividend, Alnat_t divisor) {
     if (alnat_is_null(divisor)) {
         result.quot = NULL;
         result.rem = NULL;
-        debug(1, "/alnat_div/div_by_zero\n");
+        // debug_start("/alnat_div/div_by_zero\n");
         return result;
     }
 
@@ -779,19 +779,19 @@ AlnatDiv_t alnat_div(Alnat_t dividend, Alnat_t divisor) {
     result.quot = quot;
     result.rem = dividend_part;
 
-    debug(1, "/alnat_div\n");
+    // debug_start("/alnat_div\n");
     return result;
 }
 
 Alnat_t _alnat_make_complement(Alnat_t alnat) {
-    debug(1, "_alnat_make_complement\n");
+    // debug_start("_alnat_make_complement\n");
     // Count the number of digits in the original alnat
     size_t size = 1;
     while (!_alnat_unsafe_is_last_digit(size - 1, alnat)) {
         size++;
     }
 
-    // debug(0, "digits: %d\n", size);
+    // debug("digits: %d\n", size);
 
     // Make an alnat of the same length
     Alnat_t result = (Alnat_t)allocate_mem("_alnat_make_complement", NULL,
@@ -802,24 +802,24 @@ Alnat_t _alnat_make_complement(Alnat_t alnat) {
         // ^ is bitwise XOR, ~ALNAT_MAX is 01111111
         // Basically it switches all bits except for the first one
         result[i] = alnat[i] ^ ~ALNAT_MAX;
-        // debug(0, "complementing %d to %d\n", alnat[i], result[i]);
+        // debug("complementing %d to %d\n", alnat[i], result[i]);
     }
 
     // Add 1
     Alnat_t one = alnat_make_single_digit(1);
     Alnat_t new_result = alnat_add(result, one);
     
-    // debug(0, "new result: ");
+    // debug("new result: ");
     // for (size_t i = 0; i < size; i++) {
-    //     debug(0, "%d ", new_result[i]);
+    //     debug("%d ", new_result[i]);
     // }
-    // debug(0, "\n");
+    // debug("\n");
     
     alnat_free(result);
     result = new_result;
     alnat_free(one);
 
-    debug(-1, "/_alnat_make_complement\n");
+    // debug_end("/_alnat_make_complement\n");
     return result;
 }
 
@@ -853,7 +853,7 @@ void _alnat_strip(Alnat_t* alnat) {
 
 // Return 1 if first alnat is greater, -1 if second is greater, 0 if equal
 int8_t _alnat_compare(Alnat_t a1, Alnat_t a2) {
-    debug(1, "_alnat_compare\n");
+    // debug_start("_alnat_compare\n");
     int8_t a1_gt_a2 = 0;
     size_t pointer = 0;
     int8_t a1null = 1;
@@ -864,10 +864,10 @@ int8_t _alnat_compare(Alnat_t a1, Alnat_t a2) {
         // If either pointer is null, whichever is not null is the bigger one
         if (a1null * a2null == 0) {
             if (a1null + a2null == 0) {
-                debug(-1, "/_alnat_compare\n");
+                // debug_end("/_alnat_compare\n");
                 return a1_gt_a2;
             } else {
-                debug(-1, "/_alnat_compare\n");
+                // debug_end("/_alnat_compare\n");
                 return a1null + a2null;
             }
         }
@@ -884,17 +884,17 @@ int8_t _alnat_compare(Alnat_t a1, Alnat_t a2) {
         // Else advance the pointers
         pointer++;
     } while (a1null || a2null);
-    debug(-1, "/_alnat_compare\n");
+    // debug_end("/_alnat_compare\n");
     return a1_gt_a2;
 }
 
 // Reduce by the GCD of two alnats using the Euclidean method
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 Alnat_t alnat_gcd(Alnat_t a1, Alnat_t a2) {
-    debug(1, "alnat_gcd\n");
+    // debug_start("alnat_gcd\n");
 
     if (alnat_is_null(a1) || alnat_is_null(a2)) {
-        debug(1, "/alnat_gcd\n");
+        // debug_start("/alnat_gcd\n");
         return alnat_make_single_digit(0);
     }
     
@@ -919,7 +919,7 @@ Alnat_t alnat_gcd(Alnat_t a1, Alnat_t a2) {
 
     // If we allow the return value to share memory address with either of the
     // inputs, there is a danger of double deleting
-    debug(-1, "/alnat_gcd\n");
+    // debug_end("/alnat_gcd\n");
     return greater;
 }
 

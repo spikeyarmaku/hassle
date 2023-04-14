@@ -1,6 +1,6 @@
 #include "test.h"
 
-void assert(int* sum, char* assertion, int x) {
+void test_assert(int* sum, char* assertion, int x) {
     printf("Testing assertion \"%s\"...", assertion);
     if (!x) {
         printf("FAILED\n");
@@ -23,12 +23,12 @@ uint8_t string_compare(char* str1, char* str2) {
 
 //     sprintf(buf, "1");
 //     Alnat_t alnat0 = string_to_alnat(buf);
-//     assert(&sum, "alnat0", alnat0[0] == 1);
+//     test_assert(&sum, "alnat0", alnat0[0] == 1);
 //     alnat_free(alnat0);
 
 //     sprintf(buf, "283,756,238,567");
 //     Alnat_t alnat1 = string_to_alnat(buf);
-//     assert(&sum, "alnat1",
+//     test_assert(&sum, "alnat1",
 //         string_compare(debug_print_alnat(alnat1), "283756238567") == 0);
 //     alnat_free(alnat1);
 
@@ -37,7 +37,7 @@ uint8_t string_compare(char* str1, char* str2) {
 //     sprintf(buf, "9581958");
 //     Alnat_t alnat_sub_2 = string_to_alnat(buf);
 //     Alnat_t diff = alnat_sub(alnat_sub_1, alnat_sub_2, NULL);
-//     assert(&sum, "diff",
+//     test_assert(&sum, "diff",
 //         string_compare(debug_print_alnat(diff), "10000000") == 0);
 //     alnat_free(alnat_sub_1);
 //     alnat_free(alnat_sub_2);
@@ -48,7 +48,7 @@ uint8_t string_compare(char* str1, char* str2) {
 //     sprintf(buf, "350108375");
 //     Alnat_t alnat3 = string_to_alnat(buf);
 //     Alnat_t gcd = alnat_gcd(alnat2, alnat3); // should give 4765
-//     assert(&sum, "gcd", string_compare(debug_print_alnat(gcd), "4765") == 0);
+//     test_assert(&sum, "gcd", string_compare(debug_print_alnat(gcd), "4765") == 0);
 //     alnat_free(alnat2);
 //     alnat_free(alnat3);
 //     alnat_free(gcd);
@@ -61,24 +61,24 @@ uint8_t string_compare(char* str1, char* str2) {
 //     Rational_t r4 = rational_sub(r1, r2);
 //     Rational_t r5 = rational_mul(r1, r2);
 //     Rational_t r6 = rational_div(r1, r2);
-//     assert(&sum, "r1 numer", r1->numerator[0] == 4);
-//     assert(&sum, "r1 denom", r1->denominator[0] == 1);
-//     assert(&sum, "r1 sign",  r1->sign == 1);
-//     assert(&sum, "r2 numer", r2->numerator[0] == 3);
-//     assert(&sum, "r2 denom", r2->denominator[0] == 1);
-//     assert(&sum, "r2 sign",  r2->sign == 1);
-//     assert(&sum, "r3 numer", r3->numerator[0] == 7);
-//     assert(&sum, "r3 denom", r3->denominator[0] == 1);
-//     assert(&sum, "r3 sign",  r3->sign == 1);
-//     assert(&sum, "r4 numer", r4->numerator[0] == 1);
-//     assert(&sum, "r4 denom", r4->denominator[0] == 1);
-//     assert(&sum, "r4 sign",  r4->sign == 1);
-//     assert(&sum, "r5 numer", r5->numerator[0] == 12);
-//     assert(&sum, "r5 denom", r5->denominator[0] == 1);
-//     assert(&sum, "r5 sign",  r5->sign == 1);
-//     assert(&sum, "r6 numer", r6->numerator[0] == 4);
-//     assert(&sum, "r6 denom", r6->denominator[0] == 3);
-//     assert(&sum, "r6 sign",  r6->sign == 1);
+//     test_assert(&sum, "r1 numer", r1->numerator[0] == 4);
+//     test_assert(&sum, "r1 denom", r1->denominator[0] == 1);
+//     test_assert(&sum, "r1 sign",  r1->sign == 1);
+//     test_assert(&sum, "r2 numer", r2->numerator[0] == 3);
+//     test_assert(&sum, "r2 denom", r2->denominator[0] == 1);
+//     test_assert(&sum, "r2 sign",  r2->sign == 1);
+//     test_assert(&sum, "r3 numer", r3->numerator[0] == 7);
+//     test_assert(&sum, "r3 denom", r3->denominator[0] == 1);
+//     test_assert(&sum, "r3 sign",  r3->sign == 1);
+//     test_assert(&sum, "r4 numer", r4->numerator[0] == 1);
+//     test_assert(&sum, "r4 denom", r4->denominator[0] == 1);
+//     test_assert(&sum, "r4 sign",  r4->sign == 1);
+//     test_assert(&sum, "r5 numer", r5->numerator[0] == 12);
+//     test_assert(&sum, "r5 denom", r5->denominator[0] == 1);
+//     test_assert(&sum, "r5 sign",  r5->sign == 1);
+//     test_assert(&sum, "r6 numer", r6->numerator[0] == 4);
+//     test_assert(&sum, "r6 denom", r6->denominator[0] == 3);
+//     test_assert(&sum, "r6 sign",  r6->sign == 1);
 //     rational_free(r1); rational_free(r2); rational_free(r3);
 //     rational_free(r4); rational_free(r5); rational_free(r6);
 
@@ -94,7 +94,7 @@ uint8_t run_expr_tests() {
     // Empty list
     uint8_t expr_buf[] = {OpenParen, CloseParen, Eos};
     Expr_t empty_list = (Expr_t)expr_buf;
-    assert(&sum, "Check if an expr is a list",
+    test_assert(&sum, "Check if an expr is a list",
         expr_is_list(empty_list) == 1);
     
     // Parse and compare exprs
@@ -107,9 +107,9 @@ uint8_t run_expr_tests() {
         return Error_code;
     }
     char* msg = expr_to_string(expr);
-    assert(&sum, "Parse an expression", strcmp(buf, msg) == 0);
+    test_assert(&sum, "Parse an expression", strcmp(buf, msg) == 0);
     free_mem("run_expr_tests", msg);
-    assert(&sum, "Compare two expressions", expr_is_equal(expr, expr) == TRUE);
+    test_assert(&sum, "Compare two expressions", expr_is_equal(expr, expr) == TRUE);
     expr_free(&expr);
     
     // Find longest match
@@ -128,9 +128,9 @@ uint8_t run_expr_tests() {
     char* msg2 = expr_to_string(expr2); printf("expr2: %s\n", msg2);
     char* msg3 = expr_to_string(expr3); printf("expr3: %s\n", msg3);
     free_mem("run_expr_tests", msg2); free_mem("run_expr_tests", msg3);
-    assert(&sum, "Compare two different subexpressions",
+    test_assert(&sum, "Compare two different subexpressions",
         expr_is_equal(expr2, expr3) == TRUE);
-    // assert(&sum, "Find longest match", match_size(expr2, expr3) == 2);
+    // test_assert(&sum, "Find longest match", match_size(expr2, expr3) == 2);
     printf("%d tests failed.\n\n", sum);
     expr_free(&expr2); expr_free(&expr3);
     

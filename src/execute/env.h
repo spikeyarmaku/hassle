@@ -9,6 +9,7 @@
 
 #include "parse\expr.h"
 #include "execute\term.h"
+#include "execute\stack.h"
 
 /*
 Env usage:
@@ -30,11 +31,6 @@ struct Entry {
     Term_t value;
 };
 
-struct EnvFrame {
-    size_t entry_count;
-    struct Entry* mapping;
-    struct EnvFrame* parent;
-};
 typedef struct EnvFrame* EnvFrame_t;
 
 EnvFrame_t  env_make_empty_frame    (EnvFrame_t);
@@ -54,5 +50,7 @@ void        env_print_frame         (EnvFrame_t);
 // Extend
 ErrorCode_t env_add_entry           (EnvFrame_t, Expr_t, Term_t);
 void        env_free_entry          (struct Entry);
+
+Stack_t     env_get_stack           (EnvFrame_t);
 
 #endif

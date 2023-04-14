@@ -1,0 +1,7 @@
+(let x 1 (let f (lambda y x) (let x 2 (f 0))))
+
+(let make-closure (lambda value value)
+    (let doughnut (make-closure 1)
+        (let bagel (make-closure 2)
+            (+ doughnut bagel))))
+

@@ -14,7 +14,7 @@
 #include "memory.h"
 #include "test.h"
 
-void assert(int*, char*, int);
+void test_assert(int*, char*, int);
 uint8_t string_compare(char*, char*);
 uint8_t run_alnat_tests();
 uint8_t run_expr_tests();

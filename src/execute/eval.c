@@ -1,167 +1,128 @@
+/*
+a stack is a part of a frame, containing values
+
+- put the expression to be evaluated on the stack as an expr value
+- call eval
+
+eval pops the top of the stack, and if it is a value, it calls apply. But if it
+is an expression instead, it evaluates it. If it is a symbol, it looks up its
+value, and if it is a combination, it puts the constituents onto the stack in
+reverse order (so the first subexpr is on top).
+
+when there is nothing to apply the topmost element to (because there is no other
+element), the calculation has finished.
+*/
+
 #include "eval.h"
 
-Term_t eval_expr(EnvFrame_t frame, Expr_t expr) {
-    // DEBUG
-    debug(1, "eval_expr\n"); // expr_print(expr); debug(0, "\n");
+void            eval_expr           (EnvFrame_t, Expr_t);
+enum EvalState  apply               (EnvFrame_t, Term_t);
+
+// Keep calling eval_step until the evaluation finishes
+Term_t eval(EnvFrame_t frame, Expr_t expr) {
+    debug_start("eval - expr ptr: %llu\n", (size_t)expr);
+    //expr_print(expr); debug("\n");
+
+    Term_t expr_term = term_make_expr(expr);
+    stack_push(env_get_stack(frame), expr_term);
+    enum EvalState eval_state = eval_step(frame);
+    while (eval_state != EvalFinished) {
+        eval_state = eval_step(frame);
+    }
     
-    // Read the value of this expression in the env
-    Term_t term = env_lookup_term(frame, expr);
+    Term_t result = stack_pop(env_get_stack(frame));
+    debug_end("/eval\n");
+    return result;
+}
+
+// Perform one step of evaluation, calling apply if necessary
+enum EvalState eval_step(EnvFrame_t frame) {
+    debug_start("eval_step\n");
+    // Pop the top of the stack
+    Term_t term = stack_pop(env_get_stack(frame));
     if (term == NULL) {
-        debug(-1, "/eval_expr\n");
-        return NULL;
+        debug_end("/eval_step\n");
+        return EvalFinished;
     }
 
-    enum TermType term_type;
-    ErrorCode_t error_code = term_get_type(term, &term_type);
-    if (error_code != Success) {
-        debug(-1, "/eval_expr\n");
-        return NULL;
-    }
-    switch (term_type) {
-        case AbsTerm: {
-            debug(0, "[Abs]\n");
-            debug(-1, "/eval_expr\n");
-            return term;
-        }
-        case ValTerm: {
-            debug(0, "[Val]\n");
-            debug(-1, "/eval_expr\n");
-            return term;
-        }
-        case ExprTerm: {
-            debug(0, "[Expr]\n");
-            Expr_t term_expr;
-            error_code = term_get_expr(term, &term_expr);
-            if (error_code != Success) {
-                debug(-1, "/eval_expr\n");
-                return NULL;
-            }
-            // If expr is a single symbol or an empty list, return it
-            if (!expr_is_list(term_expr) || expr_is_empty_list(term_expr)) {
-                debug(-1, "/eval_expr/symbol_or_empty_list\n");
-                return term;
-            }
-
-            #ifdef MEMOIZE_SUB_EXPRS
-            // TODO
-            #endif
-            // term_expr = expr_copy(term_expr);
-            Term_t result = eval_combination(frame, term_expr);
-            term_free(&term);
-            debug(-1, "/eval_expr\n");
-            return result;
-        }
-        // Control shouldn't reach this point
-        default: {
-            return NULL;
-        }
-    }
-}
-
-// Evaluate a combination (a list containing at least one element)
-// Here, `expr` does not contain the opening parenthesis
-Term_t eval_combination(EnvFrame_t frame, Expr_t expr) {
-    debug(1, "eval_combination\n");
-    // expr_print(expr); printf("\n");
-    
-    // At this point, there will be no exact match, the longest matching
-    // subexpression will be at least one element shorter than the expression
-    // given as parameter.
-    // TODO fix (currently it doesnt report a match if the first element is
-    // there in the env, but as a single symbol, such as `lambda`)
-    struct Term* match = env_find_longest_match(frame, expr, NULL);
-    if (match == NULL) {
-        // No match, evaluate expression from left to right. The fact that not
-        // even the first element matches is not a problem, since it could be an
-        // uncached list. Therefore we still need to try to evaluate it.
-        Expr_t new_expr = expr_get_list(expr);
-
-        Term_t new_result = eval_expr(frame, new_expr);
-        if (new_result == NULL) {
-            debug(-1, "/eval_combination\n");
-            return NULL;
-        }
-
-        new_expr = expr_get_next(new_expr);
-        while (new_expr != NULL) {
-            Term_t temp_result = apply(frame, new_result, new_expr);
-            if (temp_result == NULL) {
-                debug(-1, "/eval_combination/error\n");
-                return NULL;
-            }
-            term_free(&new_result);
-            new_result = temp_result;
-            new_expr = expr_get_next(new_expr);
-        }
-        debug(-1, "/eval_combination/end\n");
-        return new_result;
+    // If it is a value or abstraction, call apply. Otherwise, check the expr.
+    enum TermType type = term_get_type(term);
+    enum EvalState result;
+    if (type == ExprTerm) {
+        // If it is a simple expression, look up its value. Otherwise,
+        // break it into its constituents and place them onto the stack.
+        Expr_t expr = term_get_expr(term);
+        eval_expr(frame, expr);
+        result = EvalRunning;
     } else {
-        // There is a match, take its value and continue evaluating the rest of
-        // the expression from left to right
-        Term_t result = apply(frame, match, expr);
-        term_free(&match);
-        debug(-1, "/eval_combination\n");
-        return result;
+        // Otherwise just apply it to the next element in the stack
+        result = apply(frame, term);
     }
+    term_free(&term);
+    debug_end("/eval_step\n");
+    return result;
 }
 
-// Given a term and an expression, apply the term to the expression
-Term_t apply(EnvFrame_t frame, Term_t term, Expr_t expr) {
-    debug(1, "apply\n");
-    
-    // Get the term's type
-    enum TermType term_type;
-    ErrorCode_t error_code = term_get_type(term, &term_type);
-    if (error_code != Success) {
-        debug(-1, "/apply\n");
-        return NULL;
+// Look up the value of an expression, or break down a compound expression, and
+// put its constituents on the stack in reverse order
+// TODO Can it cache expressions?
+void eval_expr(EnvFrame_t frame, Expr_t expr) {
+    debug_start("eval_expr\n");
+    if (expr_is_list(expr)) {
+        debug("Expression is list\n");
+        // Put the constituents onto the stack in reverse order
+        size_t child_count = expr_get_child_count(expr);
+        for (size_t i = child_count; i > 0; i--) {
+            stack_push(env_get_stack(frame),
+                term_make_expr(expr_get_child(expr, i - 1)));
+        }
+    } else {
+        debug("Expression is atom\n");
+        // If it is an atom, look up its value and place it on the stack
+        Term_t term = env_lookup_term(frame, expr);
+        stack_push(env_get_stack(frame), term);
     }
+    debug_end("/eval_expr\n");
+}
 
-    // If the term is a value, return an error
-    switch (term_type) {
-        case ValTerm: {
-            debug(-1, "/apply\n");
-            return NULL;
-        }
-        case AbsTerm: {
-            debug(0, "AbsTerm\n");
-            struct Abstraction term_abs;
-            ErrorCode_t error_code = term_get_abs(term, &term_abs);
-            if (error_code != Success) {
-                debug(-1, "/apply\n");
-                return NULL;
-            }
-            Term_t result = term_abs.apply(frame, expr, term_abs.closure);
-            debug(-1, "/apply\n");
-            return result;
-        }
-        case ExprTerm: {
-            debug(0, "ExprTerm\n");
-            Expr_t prev_expr = NULL;
-            Expr_t curr_expr = NULL;
-            Term_t evaled;
-            while (term_type == ExprTerm) {
-                ErrorCode_t error_code = term_get_expr(term, &curr_expr);
-                if (error_code != Success) {
-                    debug(-1, "/apply\n");
-                    return NULL;
-                }
-                evaled = eval_expr(frame, curr_expr);
-                error_code = term_get_type(evaled, &term_type);
-                if (error_code != Success) {
-                    debug(-1, "/apply\n");
-                    return NULL;
-                }
-                if (expr_is_equal(prev_expr, curr_expr)) return NULL;
-                
-                prev_expr = curr_expr;
-            }
-            Term_t result = apply(frame, evaled, expr);
-            term_free(&evaled);
-            return result;
-        }
-        default: {
-            return NULL;
-        }
+// Pop a term from the stack and apply it to the term. If the stack is empty,
+// signal the end of the evaluation instead.
+enum EvalState apply(EnvFrame_t frame, Term_t term) {
+    debug_start("apply\n");
+
+    // If the stack is empty, push the term on the stack and signal the end of
+    // the evaluation
+    if (stack_is_empty(env_get_stack(frame))) {
+        stack_push(env_get_stack(frame), term);
+        debug_end("/apply\n");
+        return EvalFinished;
     }
+    
+    // Otherwise, check if the term is an abstraction
+    enum TermType type = term_get_type(term);
+    // If it is not an abstraction, signal an error
+    assert(type == AbsTerm);
+    
+    // Pop the top element off the stack
+    Term_t arg = stack_pop(env_get_stack(frame));
+    assert(arg != NULL);
+
+    // Check its type
+    type = term_get_type(arg);
+    // If it is not an expression, signal an error
+    assert(type == ExprTerm);
+    Expr_t arg_expr = term_get_expr(arg);
+
+    // get the abstraction of the term
+    struct Abstraction abs = term_get_abs(term);
+
+    // Apply the abstraction to the popped of term's expression
+    Term_t result = abs.apply(frame, arg_expr, abs.closure);
+
+    // Push it on the stack
+    stack_push(env_get_stack(frame), result);
+    // term_free(&term);
+    term_free(&arg);
+    debug_end("/apply\n");
+    return EvalRunning;
 }

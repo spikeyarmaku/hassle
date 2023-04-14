@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <assert.h>
 
 #include "memory.h"
 #include "config.h"
@@ -24,7 +25,9 @@ enum ErrorCode {Success, Error};
 typedef enum ErrorCode ErrorCode_t;
 
 void error(const char* s, ...);
-void debug(int8_t, const char* s, ...);
+void debug(const char* s, ...);
+void debug_start(const char* s, ...);
+void debug_end(const char* s, ...);
 
 INDEX bytes_to_index(uint8_t*, uint8_t);
 void index_to_bytes(INDEX, uint8_t*, uint8_t);

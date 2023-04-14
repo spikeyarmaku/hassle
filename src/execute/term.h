@@ -10,7 +10,6 @@
 #include "global.h"
 #include "memory.h"
 
-struct Term;
 struct EnvFrame; // Forward declaration
 
 typedef struct Term* Term_t;
@@ -39,24 +38,23 @@ struct Abstraction {
     struct Closure closure;
 };
 
-BOOL        term_is_equal       (Term_t, Term_t);
+BOOL                term_is_equal       (Term_t, Term_t);
 
-Term_t      term_make_number    (Rational_t);
-Term_t      term_make_string    (char*);
-Term_t      term_make_expr      (Expr_t);
-Term_t      term_make_abs       (Apply_t, void*, size_t, ClosureFree_t);
+Term_t              term_make_number    (Rational_t);
+Term_t              term_make_string    (char*);
+Term_t              term_make_expr      (Expr_t);
+Term_t              term_make_abs       (Apply_t, void*, size_t, ClosureFree_t);
 
-ErrorCode_t term_get_type       (Term_t, enum TermType*);
-ErrorCode_t term_get_value      (Term_t, struct Value*);
-ErrorCode_t term_get_expr       (Term_t, Expr_t*);
-ErrorCode_t term_get_abs        (Term_t, struct Abstraction*);
-// ErrorCode_t term_get_err        (Term_t, char**);
+enum TermType       term_get_type       (Term_t);
+struct Value        term_get_value      (Term_t);
+Expr_t              term_get_expr       (Term_t);
+struct Abstraction  term_get_abs        (Term_t);
 
-void        term_free           (Term_t*);
-Term_t      term_copy           (Term_t);
+void                term_free           (Term_t*);
+Term_t              term_copy           (Term_t);
 
-char*       term_to_string      (Term_t);
-void        term_print          (Term_t);
+char*               term_to_string      (Term_t);
+void                term_print          (Term_t);
 
 // struct Closure  closure_copy    (struct Closure);
 
