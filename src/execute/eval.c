@@ -25,11 +25,12 @@ Term_t eval(EnvFrame_t frame, Expr_t expr) {
 
     Term_t expr_term = term_make_expr(expr);
     stack_push(env_get_stack(frame), expr_term);
-    enum EvalState eval_state = eval_step(frame);
-    while (eval_state != EvalFinished) {
+    term_free(&expr_term);
+    enum EvalState eval_state;
+    do {
         eval_state = eval_step(frame);
-    }
-    
+    } while (eval_state != EvalFinished);
+
     Term_t result = stack_pop(env_get_stack(frame));
     debug_end("/eval\n");
     return result;
@@ -40,10 +41,7 @@ enum EvalState eval_step(EnvFrame_t frame) {
     debug_start("eval_step\n");
     // Pop the top of the stack
     Term_t term = stack_pop(env_get_stack(frame));
-    if (term == NULL) {
-        debug_end("/eval_step\n");
-        return EvalFinished;
-    }
+    assert(term != NULL);
 
     // If it is a value or abstraction, call apply. Otherwise, check the expr.
     enum TermType type = term_get_type(term);
@@ -73,14 +71,16 @@ void eval_expr(EnvFrame_t frame, Expr_t expr) {
         // Put the constituents onto the stack in reverse order
         size_t child_count = expr_get_child_count(expr);
         for (size_t i = child_count; i > 0; i--) {
-            stack_push(env_get_stack(frame),
-                term_make_expr(expr_get_child(expr, i - 1)));
+            Term_t temp = term_make_expr(expr_get_child(expr, i - 1));
+            stack_push(env_get_stack(frame), temp);
+            term_free(&temp);
         }
     } else {
         debug("Expression is atom\n");
         // If it is an atom, look up its value and place it on the stack
         Term_t term = env_lookup_term(frame, expr);
         stack_push(env_get_stack(frame), term);
+        term_free(&term);
     }
     debug_end("/eval_expr\n");
 }
@@ -121,7 +121,8 @@ enum EvalState apply(EnvFrame_t frame, Term_t term) {
 
     // Push it on the stack
     stack_push(env_get_stack(frame), result);
-    // term_free(&term);
+    
+    term_free(&result);
     term_free(&arg);
     debug_end("/apply\n");
     return EvalRunning;

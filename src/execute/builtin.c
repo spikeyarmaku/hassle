@@ -1,5 +1,28 @@
 #include "builtin.h"
 
+enum BinOp {ADD, SUB, MUL, DIV};
+
+// lambda
+struct LambdaClosure {
+    EnvFrame_t static_env;
+    Expr_t name;
+    Expr_t body;
+    Expr_t value;
+};
+
+struct MathBinopClosure {
+    enum BinOp binop;
+    Expr_t operand1;
+};
+
+// lambda
+Term_t      make_lambda         ();
+Term_t      make_let            ();
+Term_t      make_binop          (enum BinOp);
+
+// Create the ground environment
+ErrorCode_t add_builtin         (EnvFrame_t, char*, Term_t);
+
 Apply_t lambda_helper1;
 Apply_t lambda_helper2;
 Apply_t lambda_helper3;
@@ -45,11 +68,11 @@ Term_t lambda_helper2(EnvFrame_t env, Expr_t body, struct Closure closure) {
     struct LambdaClosure* lambda_closure =
         (struct LambdaClosure*)allocate_mem("lambda_helper2", NULL,
         closure.size);
-    // memcpy(lambda_closure, closure.data, closure.size);
     lambda_closure->name =
         expr_copy(((struct LambdaClosure*)closure.data)->name);
     lambda_closure->body = expr_copy(body);
     lambda_closure->static_env = env;
+    expr_free(&(((struct LambdaClosure*)closure.data)->name));
     Term_t result = term_make_abs(lambda_helper3, lambda_closure, closure.size,
         lambda_free);
     debug_end("/lambda_helper2\n");
@@ -69,6 +92,8 @@ Term_t lambda_helper3(EnvFrame_t env, Expr_t value, struct Closure closure) {
     lambda_closure->static_env =
         ((struct LambdaClosure*)closure.data)->static_env;
     lambda_closure->value = expr_copy(value);
+    expr_free(&(((struct LambdaClosure*)closure.data)->name));
+    expr_free(&(((struct LambdaClosure*)closure.data)->body));
     Term_t result = execute_lambda(env, lambda_closure);
     expr_free(&(lambda_closure->value));
     free_mem("lambda_helper3/end", lambda_closure);
@@ -89,6 +114,7 @@ Term_t execute_lambda(EnvFrame_t env, void* closure_data) {
 
     ErrorCode_t error_code =
         env_add_entry(new_frame, lambda_closure->name, result);
+    term_free(&result);
     if (error_code != Success) {
         debug_end("/execute_lambda\n");
         return NULL;
@@ -100,6 +126,9 @@ Term_t execute_lambda(EnvFrame_t env, void* closure_data) {
         return NULL;
     }
 
+    expr_free(&(((struct LambdaClosure*)closure_data)->name));
+    expr_free(&(((struct LambdaClosure*)closure_data)->value));
+    expr_free(&(((struct LambdaClosure*)closure_data)->body));
     // env_free_frame(&new_frame);
     debug_end("/execute_lambda\n");
     return result;
@@ -152,6 +181,7 @@ Term_t let_helper2(EnvFrame_t env, Expr_t value, struct Closure closure) {
         expr_copy(((struct LambdaClosure*)closure.data)->name);
     lambda_closure->value = expr_copy(value);
     lambda_closure->static_env = env;
+    expr_free(&(((struct LambdaClosure*)closure.data)->name));
     Term_t result = term_make_abs(let_helper3, lambda_closure, closure.size,
         lambda_free);
     debug_end("/let_helper2\n");
@@ -170,6 +200,8 @@ Term_t let_helper3(EnvFrame_t env, Expr_t body, struct Closure closure) {
     lambda_closure->static_env =
         ((struct LambdaClosure*)closure.data)->static_env;
     lambda_closure->body = expr_copy(body);
+    expr_free(&(((struct LambdaClosure*)closure.data)->name));
+    expr_free(&(((struct LambdaClosure*)closure.data)->value));
     Term_t result = execute_lambda(env, lambda_closure);
     free_mem("let_helper3/end", lambda_closure);
     debug_end("/let_helper3\n");

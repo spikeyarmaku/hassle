@@ -31,10 +31,13 @@ void stack_push(Stack_t stack, Term_t term) {
 }
 
 Term_t stack_pop(Stack_t stack) {
+    debug_start("stack_pop - %llu\n", (size_t)stack);
     if (stack->pointer == 0) {
+        debug_end("/stack_push\n");
         return NULL;
     }
     stack->pointer--;
+    debug_end("/stack_pop\n");
     return stack->terms[stack->pointer];
 }
 
@@ -43,11 +46,11 @@ void stack_free(Stack_t* stack_ptr) {
     struct Stack* stack = *stack_ptr;
 
     // destroy all elements
-    Term_t temp = stack_pop(stack);
-    while (temp != NULL) {
-        term_free(&temp);
+    Term_t temp;
+    do {
         temp = stack_pop(stack);
-    }
+        term_free(&temp);
+    } while (temp != NULL);
 
     // destroy the list
     free_mem("stack_free/terms", stack->terms);
