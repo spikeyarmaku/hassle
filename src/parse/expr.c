@@ -45,7 +45,7 @@ void expr_add_to_list(Expr_t list_expr, Expr_t child) {
         list_expr->capacity += EXPR_BUFFER_SIZE;
     }
 
-    list_expr->children[list_expr->child_count] = expr_copy(child);
+    list_expr->children[list_expr->child_count] = child;
     list_expr->child_count++;
     debug_end("/expr_add_to_list\n");
 }
@@ -99,10 +99,9 @@ char* expr_get_symbol(Expr_t expr) {
 
 // Check if two expressions are equal. Return TRUE if equal, FALSE if not.
 BOOL expr_is_equal(Expr_t e1, Expr_t e2) {
-    if (e1 == NULL || e2 == NULL) {
-        debug("PANIC!!!! e1: %llu e2: %llu\n", (size_t)e1, (size_t)e2);
-        return e1 == e2 ? TRUE : FALSE;
-    }
+    assert(e1 != NULL);
+    assert(e2 != NULL);
+    
     // If they have different types, return false
     if (e1->type != e2->type) return FALSE;
 
@@ -151,35 +150,28 @@ size_t expr_match_size(Expr_t expr1, Expr_t expr2) {
 
 char* expr_to_string(Expr_t expr) {
     // debug_start("expr_to_string\n");
-    if (expr == NULL) {
-        // debug_end("/expr_to_string\n");
-        return NULL;
-    }
+    assert(expr != NULL);
+    
     if (expr->type == ExprAtom) {
-        // debug("expr_to_string - Atom\n");
+        // debug("expr_to_string - Atom: %s\n", expr->symbol);
         char* result = str_cpy(expr->symbol);
         // debug_end("/expr_to_string - Atom\n");
         return result;
     } else {
         // debug("expr_to_string - List\n");
         
-        // Store the children's strings
+        // Store the children's strings and count the sum of the length of their
+        // string representations
         char** child_strings =
             (char**)allocate_mem("expr_to_string/list/children", NULL,
             sizeof(char*) * expr->child_count);
-        size_t counter = 0;
-        Expr_t child = expr_get_child(expr, 0);
-        while (child != NULL) {
-            child_strings[counter] = expr_to_string(child);
-            counter++;
-            child = expr_get_child(expr, counter);
-        }
-
-        // Calculate the total length
+        assert(child_strings != NULL);
         size_t length = 0;
         for (size_t i = 0; i < expr->child_count; i++) {
+            child_strings[i] = expr_to_string(expr->children[i]);
             length += strlen(child_strings[i]);
         }
+
         // Leave enough space for the parens (2), the spaces between the
         // children (child_count - 1) and for the terminating null (1)
         length += 2 + (expr->child_count - 1) + 1;
@@ -210,7 +202,9 @@ char* expr_to_string(Expr_t expr) {
 }
 
 void expr_print(Expr_t expr) {
+    debug_off();
     char* str = expr_to_string(expr);
+    debug_on();
     printf("%s", str);
     free_mem("expr_print", str);
 }
@@ -243,6 +237,8 @@ void expr_free(Expr_t* expr_ptr) {
 
 Expr_t expr_copy(Expr_t expr) {
     debug_start("expr_copy - %llu\n", (size_t)expr); // expr_print(expr); debug("\n");
+    // Expr can be null when copying, e.g. if a closure hasn't been fully
+    // completed yet, like with lambda_helper2
     if (expr == NULL) {
         debug_end("/expr_copy\n");
         return NULL;
@@ -258,7 +254,7 @@ Expr_t expr_copy(Expr_t expr) {
         result = expr_make_empty_list();
         assert(result != NULL);
         for (size_t i = 0; i < expr->child_count; i++) {
-            expr_add_to_list(result, expr_get_child(expr, i));
+            expr_add_to_list(result, expr_copy(expr_get_child(expr, i)));
         }
         debug_end("/expr_copy\n");
         return result;

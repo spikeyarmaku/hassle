@@ -19,9 +19,6 @@
 
 // --- KNOBS ---
 
-// The amount of debug prints, if DEBUG_PRINTS is defined
-#define DEBUG_LEVEL 200
-
 // How many bytes are allocated if a string needs to be expanded
 #define STRING_BUFFER_SIZE 1024
 

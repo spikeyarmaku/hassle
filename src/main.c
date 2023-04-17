@@ -76,7 +76,7 @@ ErrorCode_t interpret_file(char* file_name) {
 
     debug("\n\n------EVAL------\n\n");
 
-    Term_t result = eval(env, expr);
+    Term_t result = eval(env, expr_copy(expr));
 
     if (result != NULL) {
         printf("RESULT:\n");
@@ -110,6 +110,7 @@ struct Test char_test(char* msg) {
 // If called with a file, run it, else start a REPL
 int main(int argc, char *argv[]) {
     printf("----------\nRealScript\n----------\n\n");
+    setvbuf(stdout, (char *) NULL, _IONBF, 0); /* make stdout line-buffered */
     init_logger();
     
     if (argc > 1) {

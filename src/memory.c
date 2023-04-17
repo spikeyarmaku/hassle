@@ -59,7 +59,7 @@ void free_mem(char* comment, void* ptr) {
 
 void _add_entry(char* comment, size_t size, void* ptr) {
     if (ptr == NULL) {
-        debug("New ptr is NULL\n");
+        debug("New ptr is NULL - requested size: %llu\n", size);
         return;
     }
     // Create new entry
@@ -139,6 +139,7 @@ void _del_entry(char* comment, void* ptr) {
     if (entry->next == NULL) {
         debug("=== PANIC! Deleting non-existing elem: %llu (%s)===\n", ptr,
             comment);
+        return;
     }
     
     // Free elem

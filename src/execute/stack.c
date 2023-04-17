@@ -25,7 +25,7 @@ void stack_push(Stack_t stack, Term_t term) {
         stack->capacity += STACK_BUFFER_SIZE;
         debug("capacity check done\n");
     }
-    stack->terms[stack->pointer] = term_copy(term);
+    stack->terms[stack->pointer] = term;
     stack->pointer++;
     debug_end("/stack_push\n");
 }
@@ -36,9 +36,12 @@ Term_t stack_pop(Stack_t stack) {
         debug_end("/stack_push\n");
         return NULL;
     }
+    // term_free(&(stack->terms[stack->pointer]));
     stack->pointer--;
+    Term_t result = stack->terms[stack->pointer];
+    stack->terms[stack->pointer] = NULL;
     debug_end("/stack_pop\n");
-    return stack->terms[stack->pointer];
+    return result;
 }
 
 void stack_free(Stack_t* stack_ptr) {
@@ -49,7 +52,9 @@ void stack_free(Stack_t* stack_ptr) {
     Term_t temp;
     do {
         temp = stack_pop(stack);
-        term_free(&temp);
+        if (temp != NULL) {
+            term_free(&temp);
+        }
     } while (temp != NULL);
 
     // destroy the list
@@ -62,4 +67,14 @@ void stack_free(Stack_t* stack_ptr) {
 
 BOOL stack_is_empty(Stack_t stack) {
     return stack->pointer == 0;
+}
+
+void stack_print(Stack_t stack) {
+    debug_start("stack_print - %llu elems\n", stack->pointer);
+    for (size_t i = stack->pointer; i > 0; i--) {
+        debug("%llu. elem: ", i - 1);
+        term_print(stack->terms[i - 1]);
+        debug("\n");
+    }
+    debug_end("/stack_print\n");
 }

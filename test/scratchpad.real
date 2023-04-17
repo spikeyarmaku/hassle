@@ -5,3 +5,8 @@
         (let bagel (make-closure 2)
             (+ doughnut bagel))))
 
+(
+    (let x 1)
+    (let y 2)
+    (+ x y)
+)

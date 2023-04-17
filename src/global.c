@@ -2,6 +2,7 @@
 
 #ifdef DEBUG_PRINTS
 uint64_t debug_level = 0;
+BOOL is_debug = TRUE;
 #endif
 
 void error(const char* s, ...) {
@@ -16,7 +17,7 @@ void error(const char* s, ...) {
 void debug_print(const char* s, va_list args) {
     #ifdef DEBUG_PRINTS
     // printf("%llu ", debug_level);
-    if (debug_level <= DEBUG_LEVEL) {
+    if (is_debug) {
         for (uint64_t i = 0; i < debug_level; i++) {
             printf("    ");
         }
@@ -48,6 +49,14 @@ void debug_end(const char* s, ...) {
     va_start(args, s);
     debug_print(s, args);
     va_end(args);
+}
+
+void debug_on() {
+    is_debug = TRUE;
+}
+
+void debug_off() {
+    is_debug = FALSE;
 }
 
 INDEX bytes_to_index(uint8_t* bytes, uint8_t count) {

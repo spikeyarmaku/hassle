@@ -28,6 +28,7 @@ Apply_t lambda_helper2;
 Apply_t lambda_helper3;
 Term_t  execute_lambda(EnvFrame_t, void*);
 ClosureFree_t lambda_free;
+ClosureCopy_t lambda_copy;
 
 // let
 Apply_t let_helper1;
@@ -40,25 +41,31 @@ Apply_t binop_helper1_sub;
 Apply_t binop_helper1_mul;
 Apply_t binop_helper1_div;
 Term_t binop_helper1(enum BinOp, EnvFrame_t, Expr_t, struct Closure);
-Term_t binop_helper2(EnvFrame_t, Expr_t, struct Closure);
+Term_t execute_binop(EnvFrame_t, Expr_t, struct Closure);
 ClosureFree_t binop_free;
+ClosureCopy_t binop_copy;
+
+// Term_t make_lambda() {
+//     return term_make_abs(lambda_helper1, NULL, 0, lambda_free);
+// }
 
 Term_t make_lambda() {
-    return term_make_abs(lambda_helper1, NULL, 0, lambda_free);
+    return term_make_abs(lambda_helper1, NULL, 0, lambda_free, lambda_copy);
 }
 
 Term_t lambda_helper1(EnvFrame_t env, Expr_t name, struct Closure closure) {
     (void)closure;
-    
-    debug_start("lambda_helper1 - %llu\n", (size_t)closure.closure_free);
+
+    debug_start("lambda_helper1\n");
     struct LambdaClosure* lambda_closure =
         (struct LambdaClosure*)allocate_mem("lambda_helper1", NULL,
         sizeof(struct LambdaClosure));
-    lambda_closure->name = expr_copy(name);
+    lambda_closure->name = name;
     lambda_closure->body = NULL;
     lambda_closure->value = NULL;
+    lambda_closure->static_env = NULL;
     Term_t result = term_make_abs(lambda_helper2, lambda_closure,
-        sizeof(struct LambdaClosure), lambda_free);
+        sizeof(struct LambdaClosure), lambda_free, lambda_copy);
     debug_end("/lambda_helper1\n");
     return result;
 }
@@ -68,35 +75,22 @@ Term_t lambda_helper2(EnvFrame_t env, Expr_t body, struct Closure closure) {
     struct LambdaClosure* lambda_closure =
         (struct LambdaClosure*)allocate_mem("lambda_helper2", NULL,
         closure.size);
-    lambda_closure->name =
-        expr_copy(((struct LambdaClosure*)closure.data)->name);
-    lambda_closure->body = expr_copy(body);
+    lambda_closure->name =((struct LambdaClosure*)closure.data)->name;
+    ((struct LambdaClosure*)closure.data)->name = NULL;
+    lambda_closure->body = body;
+    lambda_closure->value = NULL;
     lambda_closure->static_env = env;
-    expr_free(&(((struct LambdaClosure*)closure.data)->name));
     Term_t result = term_make_abs(lambda_helper3, lambda_closure, closure.size,
-        lambda_free);
+        lambda_free, lambda_copy);
     debug_end("/lambda_helper2\n");
     return result;
 }
 
 Term_t lambda_helper3(EnvFrame_t env, Expr_t value, struct Closure closure) {
     debug_start("lambda_helper3\n");
-    struct LambdaClosure* lambda_closure =
-        (struct LambdaClosure*)allocate_mem("lambda_helper3", NULL,
-        closure.size);
-    // memcpy(lambda_closure, closure.data, closure.size);
-    lambda_closure->name =
-        expr_copy(((struct LambdaClosure*)closure.data)->name);
-    lambda_closure->body =
-        expr_copy(((struct LambdaClosure*)closure.data)->body);
-    lambda_closure->static_env =
-        ((struct LambdaClosure*)closure.data)->static_env;
-    lambda_closure->value = expr_copy(value);
-    expr_free(&(((struct LambdaClosure*)closure.data)->name));
-    expr_free(&(((struct LambdaClosure*)closure.data)->body));
+    struct LambdaClosure* lambda_closure = (struct LambdaClosure*)closure.data;
+    lambda_closure->value = value;
     Term_t result = execute_lambda(env, lambda_closure);
-    expr_free(&(lambda_closure->value));
-    free_mem("lambda_helper3/end", lambda_closure);
     debug_end("/lambda_helper3\n");
     return result;
 }
@@ -104,32 +98,31 @@ Term_t lambda_helper3(EnvFrame_t env, Expr_t value, struct Closure closure) {
 Term_t execute_lambda(EnvFrame_t env, void* closure_data) {
     debug_start("execute_lambda\n");
     struct LambdaClosure* lambda_closure = (struct LambdaClosure*)closure_data;
-    EnvFrame_t new_frame = env_make_empty_frame(lambda_closure->static_env);
-    
+
     Term_t result = eval(env, lambda_closure->value);
     if (result == NULL) {
         debug_end("/execute_lambda\n");
         return NULL;
     }
+    lambda_closure->value = NULL;
 
+    EnvFrame_t new_frame = env_make_empty_frame(lambda_closure->static_env);
     ErrorCode_t error_code =
         env_add_entry(new_frame, lambda_closure->name, result);
-    term_free(&result);
     if (error_code != Success) {
         debug_end("/execute_lambda\n");
         return NULL;
     }
+    lambda_closure->name = NULL;
 
     result = eval(new_frame, lambda_closure->body);
     if (result == NULL) {
         debug_end("/execute_lambda\n");
         return NULL;
     }
+    lambda_closure->body = NULL;
 
-    expr_free(&(((struct LambdaClosure*)closure_data)->name));
-    expr_free(&(((struct LambdaClosure*)closure_data)->value));
-    expr_free(&(((struct LambdaClosure*)closure_data)->body));
-    // env_free_frame(&new_frame);
+    env_free_frame(&new_frame);
     debug_end("/execute_lambda\n");
     return result;
 }
@@ -143,19 +136,35 @@ void lambda_free(void* data) {
 
     struct LambdaClosure* lambda_closure = (struct LambdaClosure*)data;
     debug("lambda_free/name - %llu\n", (size_t)lambda_closure->name);
-    expr_print(lambda_closure->name);
-    // expr_free(&(lambda_closure->name));
+    expr_free(&(lambda_closure->name));
     debug("lambda_free/body - %llu\n", (size_t)lambda_closure->body);
-    // expr_free(&(lambda_closure->body));
+    expr_free(&(lambda_closure->body));
     debug("lambda_free/value - %llu\n", (size_t)lambda_closure->value);
-    // expr_free(&(lambda_closure->value));
+    expr_free(&(lambda_closure->value));
 
     free_mem("lambda_free", data);
     debug_end("/lambda_free\n");
 }
 
+void* lambda_copy(void* data) {
+    debug_start("lambda_copy\n");
+    struct LambdaClosure* lambda_closure = (struct LambdaClosure*)data;
+    struct LambdaClosure* result =
+        (struct LambdaClosure*)allocate_mem("lambda_copy", NULL,
+            sizeof(struct LambdaClosure));
+    assert(result != NULL);
+
+    result->name = expr_copy(lambda_closure->name);
+    result->body = expr_copy(lambda_closure->body);
+    result->value = expr_copy(lambda_closure->value);
+    result->static_env = lambda_closure->static_env;
+
+    debug_end("/lambda_copy\n");
+    return result;
+}
+
 Term_t make_let() {
-    return term_make_abs(let_helper1, NULL, 0, lambda_free);
+    return term_make_abs(let_helper1, NULL, 0, lambda_free, lambda_copy);
 }
 
 Term_t let_helper1(EnvFrame_t env, Expr_t name, struct Closure closure) {
@@ -163,11 +172,12 @@ Term_t let_helper1(EnvFrame_t env, Expr_t name, struct Closure closure) {
     struct LambdaClosure* lambda_closure =
         (struct LambdaClosure*)allocate_mem("let_helper1", NULL,
         sizeof(struct LambdaClosure));
-    lambda_closure->name = expr_copy(name);
+    lambda_closure->name = name;
     lambda_closure->body = NULL;
     lambda_closure->value = NULL;
+    lambda_closure->static_env = NULL;
     Term_t result = term_make_abs(let_helper2, lambda_closure,
-        sizeof(struct LambdaClosure), lambda_free);
+        sizeof(struct LambdaClosure), lambda_free, lambda_copy);
     debug_end("/let_helper1\n");
     return result;
 }
@@ -177,33 +187,22 @@ Term_t let_helper2(EnvFrame_t env, Expr_t value, struct Closure closure) {
     struct LambdaClosure* lambda_closure =
         (struct LambdaClosure*)allocate_mem("let_helper2", NULL,
         closure.size);
-    lambda_closure->name =
-        expr_copy(((struct LambdaClosure*)closure.data)->name);
-    lambda_closure->value = expr_copy(value);
+    lambda_closure->name = ((struct LambdaClosure*)closure.data)->name;
+    ((struct LambdaClosure*)closure.data)->name = NULL;
+    lambda_closure->body = NULL;
+    lambda_closure->value = value;
     lambda_closure->static_env = env;
-    expr_free(&(((struct LambdaClosure*)closure.data)->name));
     Term_t result = term_make_abs(let_helper3, lambda_closure, closure.size,
-        lambda_free);
+        lambda_free, lambda_copy);
     debug_end("/let_helper2\n");
     return result;
 }
 
 Term_t let_helper3(EnvFrame_t env, Expr_t body, struct Closure closure) {
     debug_start("let_helper3\n");
-    struct LambdaClosure* lambda_closure =
-        (struct LambdaClosure*)allocate_mem("let_helper3", NULL,
-        closure.size);
-    lambda_closure->name =
-        expr_copy(((struct LambdaClosure*)closure.data)->name);
-    lambda_closure->value =
-        expr_copy(((struct LambdaClosure*)closure.data)->value);
-    lambda_closure->static_env =
-        ((struct LambdaClosure*)closure.data)->static_env;
-    lambda_closure->body = expr_copy(body);
-    expr_free(&(((struct LambdaClosure*)closure.data)->name));
-    expr_free(&(((struct LambdaClosure*)closure.data)->value));
+    struct LambdaClosure* lambda_closure = (struct LambdaClosure*)closure.data;
+    lambda_closure->body = body;
     Term_t result = execute_lambda(env, lambda_closure);
-    free_mem("let_helper3/end", lambda_closure);
     debug_end("/let_helper3\n");
     return result;
 }
@@ -232,7 +231,7 @@ Term_t make_binop(enum BinOp binop) {
             break;
         }
     }
-    return term_make_abs(binop_helper, NULL, 0, binop_free);
+    return term_make_abs(binop_helper, NULL, 0, binop_free, binop_copy);
 }
 
 Term_t binop_helper1_add(EnvFrame_t env, Expr_t op1,
@@ -263,36 +262,37 @@ Term_t binop_helper1(enum BinOp binop, EnvFrame_t env, Expr_t op1,
             sizeof(struct MathBinopClosure));
     size_t closure_size = sizeof(struct MathBinopClosure);
     closure_data->binop = binop;
-    closure_data->operand1 = expr_copy(op1);
-    Term_t result = term_make_abs(binop_helper2, closure_data, closure_size,
-        binop_free);
+    closure_data->operand1 = op1;
+    Term_t result = term_make_abs(execute_binop, closure_data, closure_size,
+        binop_free, binop_copy);
     debug_end("/binop_helper1\n");
     return result;
 }
 
-Term_t binop_helper2(EnvFrame_t env, Expr_t op2, struct Closure closure)
-{
-    debug_start("binop_helper2\n");
+Term_t execute_binop(EnvFrame_t env, Expr_t op2, struct Closure closure) {
+    debug_start("execute_binop\n");
     struct MathBinopClosure* math_binop_closure =
         (struct MathBinopClosure*)closure.data;
-    Expr_t op1 = math_binop_closure->operand1;
     enum BinOp binop = math_binop_closure->binop;
 
-    Term_t t1 = eval(env, op1);
+    Term_t t1 = eval(env, math_binop_closure->operand1);
     if (t1 == NULL) {
-        debug_end("/binop_helper2\n");
+        debug_end("/execute_binop\n");
         return NULL;
     }
+    math_binop_closure->operand1 = NULL;
+
     Term_t t2 = eval(env, op2);
     if (t2 == NULL) {
-        debug_end("/binop_helper2\n");
+        debug_end("/execute_binop\n");
         return NULL;
     }
+    op2 = NULL;
 
     // Check if the operands are numbers
     if (t1 == NULL || t2 == NULL) {
-        debug("binop_helper2: at least one operand is not evaluable\n");
-        debug_end("/binop_helper2\n");
+        debug("execute_binop: at least one operand is not evaluable\n");
+        debug_end("/execute_binop\n");
         return NULL;
     }
     enum TermType t1type = term_get_type(t1);
@@ -323,24 +323,45 @@ Term_t binop_helper2(EnvFrame_t env, Expr_t op2, struct Closure closure)
         }
     }
     Term_t result = term_make_number(binop_result);
+    binop_result = NULL;
     term_free(&t1); term_free(&t2);
-    debug_end("/binop_helper2\n");
+    debug_end("/execute_binop\n");
     return result;
 }
 
 void binop_free(void* data) {
-    if (data == NULL) return;
+    debug_start("binop_free\n");
+    // Data can be null if the abstraction has never been used, as it is
+    // initialized with a NULL data
+    if (data == NULL) {
+        debug_end("/binop_free\n");
+        return;
+    }
 
     struct MathBinopClosure* binop_closure = (struct MathBinopClosure*)data;
-    if (binop_closure->operand1 != NULL) expr_free(&(binop_closure->operand1));
+    if (binop_closure->operand1 != NULL) {
+        expr_free(&(binop_closure->operand1));
+    }
     free_mem("binop_free", data);
+    debug_end("/binop_free\n");
+}
+
+void* binop_copy(void*data) {
+    struct MathBinopClosure* binop_closure = (struct MathBinopClosure*)data;
+    struct MathBinopClosure* result =
+        (struct MathBinopClosure*)allocate_mem("binop_copy", NULL,
+            sizeof(struct MathBinopClosure));
+    assert(result != NULL);
+
+    result->binop = binop_closure->binop;
+    result->operand1 = expr_copy(binop_closure->operand1);
+
+    return result;
 }
 
 ErrorCode_t add_builtin(EnvFrame_t frame, char* name, Term_t term) {
     Expr_t expr = parse_from_str(name);
     env_add_entry(frame, expr, term);
-    term_free(&term);
-    expr_free(&expr);
     return Success;
 }
 

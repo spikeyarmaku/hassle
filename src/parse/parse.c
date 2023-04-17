@@ -320,10 +320,10 @@ Expr_t parse(Parser_t parser) {
             Expr_t child = parse(parser);
             while (child != NULL) {
                 expr_add_to_list(list, child);
-                expr_free(&child);
                 child = parse(parser);
             }
             result = list;
+            break;
         }
         default: {
             break;

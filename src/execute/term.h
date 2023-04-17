@@ -25,11 +25,13 @@ struct Value {
     };
 };
 
+typedef void* ClosureCopy_t(void*);
 typedef void ClosureFree_t(void*);
 struct Closure {
-    size_t size;
+    size_t size; // Size is necessary to be able to copy closures
     void* data;
     ClosureFree_t *closure_free;
+    ClosureCopy_t *closure_copy;
 };
 
 typedef Term_t Apply_t(struct EnvFrame*, Expr_t, struct Closure);
@@ -43,7 +45,9 @@ BOOL                term_is_equal       (Term_t, Term_t);
 Term_t              term_make_number    (Rational_t);
 Term_t              term_make_string    (char*);
 Term_t              term_make_expr      (Expr_t);
-Term_t              term_make_abs       (Apply_t, void*, size_t, ClosureFree_t);
+Term_t              term_make_abs
+    (Apply_t, void*, size_t, ClosureFree_t, ClosureCopy_t);
+// Term_t              term_make_abs       (Apply_t, void*, size_t);
 
 enum TermType       term_get_type       (Term_t);
 struct Value        term_get_value      (Term_t);

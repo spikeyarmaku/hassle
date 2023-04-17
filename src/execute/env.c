@@ -9,10 +9,18 @@ struct EnvFrame {
     Stack_t stack;
 };
 
+struct Entry {
+    Expr_t name;
+    Term_t value;
+};
+
+void    env_free_entry  (struct Entry);
+
 Term_t env_default_rules(Expr_t expr) {
     debug_start("env_default_rules\n");
+    assert(expr != NULL);
     if (expr_is_list(expr)) {
-        Term_t result = term_make_expr(expr);
+        Term_t result = term_make_expr(expr_copy(expr));
         debug_end("/env_default_rules\n");
         return result;
     }
@@ -31,7 +39,6 @@ Term_t env_default_rules(Expr_t expr) {
     if (is_number) {
         Rational_t r = string_to_rational(expr_get_symbol(expr));
         Term_t term = term_make_number(r);
-        rational_free(r);
         debug_end("/env_default_rules\n");
         return term;
     }
@@ -51,13 +58,13 @@ Term_t env_default_rules(Expr_t expr) {
     }
 
     // If it is neither, return the symbol as an Expr_t
-    Term_t result = term_make_expr(expr);
+    Term_t result = term_make_expr(expr_copy(expr));
     debug_end("/env_default_rules\n");
     return result;
 }
 
-// Retrieve a copy of the value of an expr from an env, or return a newly
-// created value
+// Retrieve a copy of the value assigned to an expr from an env, or return a
+// newly created value
 Term_t env_lookup_term(EnvFrame_t frame, Expr_t expr) {
     debug_start("env_lookup_term\n");
     // First we check if there is an entry for the expr in the mappings in the
@@ -142,7 +149,7 @@ ErrorCode_t env_add_entry(EnvFrame_t frame, Expr_t expr, struct Term* term) {
         }
     }
     if (found) {
-        current_frame->mapping[index].value = term_copy(term);
+        current_frame->mapping[index].value = term;
     } else {
         // Allocate space for the new entry
         struct Entry* new_mapping =
@@ -153,10 +160,8 @@ ErrorCode_t env_add_entry(EnvFrame_t frame, Expr_t expr, struct Term* term) {
             return Error;
         }
         current_frame->mapping = new_mapping;
-        current_frame->mapping[current_frame->entry_count].name =
-            expr_copy(expr);
-        current_frame->mapping[current_frame->entry_count].value =
-            term_copy(term);
+        current_frame->mapping[current_frame->entry_count].name = expr;
+        current_frame->mapping[current_frame->entry_count].value = term;
         current_frame->entry_count++;
     }
     
@@ -166,22 +171,17 @@ ErrorCode_t env_add_entry(EnvFrame_t frame, Expr_t expr, struct Term* term) {
 }
 
 void env_print_frame(EnvFrame_t frame) {
-    debug_start("\n===\nEnvironment:\n");
-    size_t count = 0;
-    while (frame != NULL) {
-        debug("\n  Frame #%d:\n", count);
-
-        for (size_t i = 0; i < frame->entry_count; i++) {
-            expr_print(frame->mapping[i].name);
-            printf(" - ");
-            term_print(frame->mapping[i].value);
-            printf("\n");
-        }
-
-        frame = frame->parent;
-        count++;
+    debug_start("env_print_frame - %llu elems\n", frame->entry_count);
+    for (size_t i = 0; i < frame->entry_count; i++) {
+        debug("%llu. elem: ", i);
+        assert(frame->mapping[i].name != NULL);
+        expr_print(frame->mapping[i].name);
+        debug(" - ");
+        assert(frame->mapping[i].value != NULL);
+        term_print(frame->mapping[i].value);
+        debug("\n");
     }
-    debug_end("End of environment\n===\n\n");
+    debug_end("/env_print_frame\n");
 }
 
 EnvFrame_t env_make_empty_frame(EnvFrame_t parent) {
@@ -198,21 +198,20 @@ EnvFrame_t env_make_empty_frame(EnvFrame_t parent) {
 
 void env_free_frame(EnvFrame_t* frame_ptr) {
     EnvFrame_t frame = *frame_ptr;
-    if (frame != NULL) {
-        // Free the individual mappings
-        for (size_t i = 0; i < frame->entry_count; i++) {
-            debug("env_free_frame/mapping/entry\n");
-            env_free_entry(frame->mapping[i]);
-        }
-        // Free the mapping list
-        debug("env_free_frame/mapping\n");
-        free_mem("env_free_frame/mapping", frame->mapping);
-        // Free the dict
-        debug("env_free_frame/frame\n");
-        free_mem("env_free_frame/frame", frame);
-        // Free the stack
-        stack_free(&(frame->stack));
+    assert(frame != NULL);
+    
+    // Free the individual mappings
+    for (size_t i = 0; i < frame->entry_count; i++) {
+        debug("Freeing "); expr_print(frame->mapping[i].name); debug("\n");
+        env_free_entry(frame->mapping[i]);
     }
+    // Free the mapping list
+    free_mem("env_free_frame/mapping", frame->mapping);
+    // Free the dict
+    free_mem("env_free_frame/frame", frame);
+    // Free the stack
+    stack_free(&(frame->stack));
+    
     *frame_ptr = NULL;
 }
 

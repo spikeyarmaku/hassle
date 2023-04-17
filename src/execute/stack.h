@@ -11,4 +11,6 @@ Term_t  stack_pop           (Stack_t);
 void    stack_free          (Stack_t*);
 BOOL    stack_is_empty      (Stack_t);
 
+void    stack_print         (Stack_t);
+
 #endif
