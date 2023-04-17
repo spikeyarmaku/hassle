@@ -202,7 +202,7 @@ void env_free_frame(EnvFrame_t* frame_ptr) {
     
     // Free the individual mappings
     for (size_t i = 0; i < frame->entry_count; i++) {
-        debug("Freeing "); expr_print(frame->mapping[i].name); debug("\n");
+        // debug("Freeing "); expr_print(frame->mapping[i].name); debug("\n");
         env_free_entry(frame->mapping[i]);
     }
     // Free the mapping list

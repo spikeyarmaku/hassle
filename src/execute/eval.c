@@ -23,7 +23,7 @@ Term_t eval(EnvFrame_t frame, Expr_t expr) {
     debug_start("eval - expr ptr: %llu\n", (size_t)expr);
     assert(expr != NULL);
 
-    env_print_frame(frame);
+    // env_print_frame(frame);
 
     Term_t expr_term = term_make_expr(expr);
     stack_push(env_get_stack(frame), expr_term);
@@ -43,7 +43,7 @@ Term_t eval(EnvFrame_t frame, Expr_t expr) {
 enum EvalState eval_step(EnvFrame_t frame) {
     debug_start("eval_step\n");
 
-    stack_print(env_get_stack(frame));
+    // stack_print(env_get_stack(frame));
 
     // Pop the top of the stack
     Term_t term = stack_pop(env_get_stack(frame));
@@ -74,8 +74,8 @@ enum EvalState eval_step(EnvFrame_t frame) {
 // put its constituents on the stack in reverse order
 // TODO Can it cache expressions?
 void eval_expr(EnvFrame_t frame, Expr_t expr) {
-    debug_start("eval_expr - ");
-    expr_print(expr); debug("\n");
+    debug_start("eval_expr\n");
+    // expr_print(expr); debug("\n");
     assert(expr != NULL);
     if (expr_is_list(expr)) {
         debug("Expression is list\n");

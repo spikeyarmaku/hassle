@@ -12,10 +12,10 @@
 #define REPL_ENABLED
 
 // Comment this out to disable logging memory usage
-#define MEMORY_DIAGNOSTIC
+// #define MEMORY_DIAGNOSTIC
 
 // Comment this out to disable debug prints
-#define DEBUG_PRINTS
+// #define DEBUG_PRINTS
 
 // --- KNOBS ---
 
