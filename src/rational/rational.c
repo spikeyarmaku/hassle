@@ -184,6 +184,7 @@ void rational_print(Rational_t r) {
 
 // TODO don't just blindly multiply, perhaps calculating the LCM is better
 Rational_t rational_add(Rational_t r1, Rational_t r2) {
+    debug_start("rational_add\n");
     Rational_t r = _rational_make();
     Alnat_t n1 = alnat_mul(r1->numerator, r2->denominator);
     Alnat_t n2 = alnat_mul(r2->numerator, r1->denominator);
@@ -197,6 +198,7 @@ Rational_t rational_add(Rational_t r1, Rational_t r2) {
     rational_simplify(r);
     alnat_free(n1);
     alnat_free(n2);
+    debug_end("/rational_add\n");
     return r;
 }
 

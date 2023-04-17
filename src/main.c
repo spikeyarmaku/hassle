@@ -8,6 +8,7 @@ TODO
 - when freeing an object, overwrite the memory with random data
   (SECURE_DESTRUCTION)
 - avoid realloc, instead use linked lists (or think of a better solution)
+- change alnat representation to null-terminated bytes
 */
 
 #include "main.h"
@@ -118,6 +119,21 @@ int main(int argc, char *argv[]) {
         
         ErrorCode_t error_code = interpret_file(argv[1]);
         if (error_code != Success) return 1;
+
+        // char buf[100];
+        // sprintf(buf, "126");
+        // Alnat_t alnat1 = string_to_alnat(buf);
+        // Alnat_t alnat1copy = alnat_copy(alnat1);
+        // sprintf(buf, "2");
+        // Alnat_t alnat2 = string_to_alnat(buf);
+        // Alnat_t alnat2copy = alnat_copy(alnat2);
+        // Alnat_t sum = alnat_add(alnat1copy, alnat2copy);
+        // debug("\nResult's raw bytes:\n");
+        // alnat_print_raw_bytes(sum);
+
+        // Alnat_t sumcopy = alnat_copy(sum);
+        // debug("\nRESULT:\n\n");
+        // alnat_print(sumcopy);
 
         // run_tests();
     } else {

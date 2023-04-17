@@ -19,6 +19,7 @@ struct MathBinopClosure {
 Term_t      make_lambda         ();
 Term_t      make_let            ();
 Term_t      make_binop          (enum BinOp);
+Term_t      make_eq             ();
 
 // Create the ground environment
 ErrorCode_t add_builtin         (EnvFrame_t, char*, Term_t);
@@ -359,6 +360,10 @@ void* binop_copy(void*data) {
     return result;
 }
 
+// Term_t make_eq() {
+//     // return term_make_abs();
+// }
+
 ErrorCode_t add_builtin(EnvFrame_t frame, char* name, Term_t term) {
     Expr_t expr = parse_from_str(name);
     env_add_entry(frame, expr, term);
@@ -371,12 +376,13 @@ EnvFrame_t env_make_default() {
     debug_start("env_make_default\n");
     EnvFrame_t env = env_make_empty_frame(NULL);
     if (env != NULL) {
-        add_builtin(env, "lambda", make_lambda());
-        add_builtin(env, "let",    make_let());
-        add_builtin(env, "+",      make_binop(ADD));
-        add_builtin(env, "-",      make_binop(SUB));
-        add_builtin(env, "*",      make_binop(MUL));
-        add_builtin(env, "/",      make_binop(DIV));
+        add_builtin(env, "lambda",  make_lambda());
+        add_builtin(env, "let",     make_let());
+        // add_builtin(env, "eq?",     make_eq());
+        add_builtin(env, "+",       make_binop(ADD));
+        add_builtin(env, "-",       make_binop(SUB));
+        add_builtin(env, "*",       make_binop(MUL));
+        add_builtin(env, "/",       make_binop(DIV));
     }
     debug_end("/env_make_default\n");
     return env;

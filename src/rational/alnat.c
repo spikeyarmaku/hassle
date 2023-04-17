@@ -63,7 +63,8 @@ Alnat_t             _alnat_shifted              (Alnat_t, size_t, BOOL);
 enum ErrorCode _alnat_expand(struct AlnatBuilder* b) {
     size_t new_size = b->size + ALNAT_BUFFER_SIZE;
     Alnat_t new_ptr = NULL;
-    new_ptr = (Alnat_t)allocate_mem("_alnat_expand", b->ptr, sizeof(uint8_t) * new_size);
+    new_ptr = (Alnat_t)allocate_mem("_alnat_expand", b->ptr,
+        sizeof(uint8_t) * new_size);
     if (new_ptr == NULL) {
         error("_alnat_expand: Error while allocating.\n");
         return Error;
@@ -75,12 +76,12 @@ enum ErrorCode _alnat_expand(struct AlnatBuilder* b) {
 
 // Add a new digit to alnat
 enum ErrorCode _alnat_add_digit(uint8_t digit, struct AlnatBuilder* b) {
-    // debug_start("_alnat_add_digit\n");
+    debug_start("_alnat_add_digit\n");
     // Check if the new digit is smaller than ALNAT_MAX
     if (digit >= ALNAT_MAX) {
         error("add_byte_to_alnat: digit %d exceeds the maximum (%d)\n", digit,
             ALNAT_MAX - 1);
-        // debug_end("/_alnat_add_digit!\n");
+        debug_end("/_alnat_add_digit!\n");
         return Error;
     }
 
@@ -93,30 +94,33 @@ enum ErrorCode _alnat_add_digit(uint8_t digit, struct AlnatBuilder* b) {
     if (b->next == b->size) {
         if(_alnat_expand(b)) {
             error("add_byte_to_alnat: Error while expanding alnat.\n");
-            // debug_end("/_alnat_add_digit!\n");
+            debug_end("/_alnat_add_digit!\n");
             return Error;
         }
     }
+    if (b->next > 0) {
+        _alnat_unsafe_mark_digit(b->next - 1, FALSE, b->ptr);
+    }
     b->ptr[b->next] = digit;
+    _alnat_unsafe_mark_digit(b->next, TRUE, b->ptr);
     b->next++;
-    // debug_end("/_alnat_add_digit\n");
+    debug_end("/_alnat_add_digit\n");
     return Success;
 }
 
 // Free up unused memory and set last byte to 0
 enum ErrorCode _alnat_finalize(struct AlnatBuilder* b) {
-    // debug_start("_alnat_finalize\n");
-    if (b->ptr != NULL) {
-        Alnat_t new_ptr = allocate_mem("_alnat_finalize", b->ptr, sizeof(uint8_t) * b->next);
-        if (new_ptr == NULL) {
-            error("_alnat_finalize: Error while reallocating.\n");
-            // debug_end("/_alnat_finalize\n");
-            return Error;
-        }
-        b->ptr = new_ptr;
-        b->size = b->next;
-    }
-    // debug_end("/_alnat_finalize\n");
+    debug_start("_alnat_finalize - %llu\n", b->next);
+    assert(b->ptr != NULL);
+
+    Alnat_t new_ptr = allocate_mem("_alnat_finalize", b->ptr,
+        sizeof(uint8_t) * b->next);
+    assert(new_ptr != NULL);
+    
+    b->ptr = new_ptr;
+    b->size = b->next;
+    
+    debug_end("/_alnat_finalize\n");
     return Success;
 }
 
@@ -187,11 +191,13 @@ BOOL _alnat_unsafe_is_last_digit(size_t n, Alnat_t a) {
 }
 
 void _alnat_unsafe_mark_digit(size_t n, BOOL is_msd, Alnat_t a) {
+    debug_start("_alnat_unsafe_mark_digit - %llu %d\n", n, is_msd);
     if (is_msd) {
         a[n] &= ~ALNAT_MAX;
     } else {
         a[n] |= ALNAT_MAX;
     }
+    debug_end("/_alnat_unsafe_mark_digit\n");
 }
 
 // TODO Support bases other than 10 (2, 8 and 16 would be nice)
@@ -339,6 +345,8 @@ void _alnat_str_add(char* num1_str, char* num2_str) {
 }
 
 char* alnat_to_string(Alnat_t alnat) {
+    // debug_on();
+
     // The number of digits of a number N in base B can be calculated like this:
     // log(B, N) + 1
     // In this case, it is log(10, N) + 1.
@@ -354,14 +362,13 @@ char* alnat_to_string(Alnat_t alnat) {
     do {
         digit_base_128_count++;
     } while (_alnat_move_forward(&m));
-    
     size_t digit_base_10_count = ceil(2.2 * digit_base_128_count) + 2;
     char* result = (char*)allocate_mem("alnat_to_string/result", NULL,
         sizeof(char) * digit_base_10_count);
-    if (result == NULL) return result;
+    assert(result != NULL);
 
-    // printf("%llu digits in base 128, allocated %llu digits\n",
-    //     digit_base_128_count, digit_base_10_count);
+    debug("%llu digits in base 128, allocated %llu digits\n",
+        digit_base_128_count, digit_base_10_count);
 
     // Zero out the buffer
     memset(result, 0, digit_base_10_count);
@@ -414,7 +421,6 @@ char* alnat_to_string(Alnat_t alnat) {
         }
     }
     // printf("REALLOC %llu bytes\n", length);
-
     result = (char*)allocate_mem("alnat_to_string/result/realloc", result,
         sizeof(char) * length);
     if (result == NULL) return result;
@@ -469,28 +475,19 @@ size_t _alnat_get_marcher_counter(struct AlnatMarcher m) {
 }
 
 Alnat_t alnat_copy(Alnat_t alnat) {
-    // debug_start("alnat_copy - %llu\n", alnat);
-    if (alnat == NULL) {
-        // debug_end("/alnat_copy\n");
-        return NULL;
-    }
+    debug_start("alnat_copy - %llu\n", alnat);
+    assert(alnat != NULL);
 
     if (*alnat < ALNAT_MAX) {
-        // debug("alnat_copy/single_digit\n");
         Alnat_t result = alnat_make_single_digit(*alnat);
-        //  debug_end("/alnat_copy\n");
+         debug_end("/alnat_copy\n");
         return result;
     }
 
-    // debug("alnat_copy/digit_count\n");
     struct AlnatMarcher marcher = _alnat_make_marcher(alnat);
     _alnat_fast_forward_marcher(&marcher);
-    size_t count = _alnat_get_marcher_counter(marcher);
-    if (count == 0) {
-        // debug_end("/alnat_copy\n");
-        return NULL;
-    }
-    // debug("alnat_copy/digit_count_done\n");
+    size_t count = _alnat_get_marcher_counter(marcher) + 1;
+    assert(count != 0);
     
     Alnat_t result =
         (Alnat_t)allocate_mem("alnat_copy", NULL, sizeof(uint8_t) * count);
@@ -498,15 +495,16 @@ Alnat_t alnat_copy(Alnat_t alnat) {
     do {
         result[_alnat_get_marcher_counter(marcher)] =
             _alnat_get_curr_digit(marcher);
-        _alnat_unsafe_mark_digit(count, FALSE, result);
+        _alnat_unsafe_mark_digit(_alnat_get_marcher_counter(marcher), FALSE,
+            result);
     } while (_alnat_move_forward(&marcher));
     _alnat_unsafe_mark_digit(_alnat_get_marcher_counter(marcher), TRUE, result);
-    // debug_end("/alnat_copy\n");
+    debug_end("/alnat_copy\n");
     return result;
 }
 
 Alnat_t alnat_add(Alnat_t a1, Alnat_t a2) {
-    // debug_start("alnat_add\n");
+    debug_start("alnat_add\n");
 
     struct AlnatBuilder b = _alnat_make_builder();
     struct AlnatMarcher m1 = _alnat_make_marcher(a1);
@@ -527,11 +525,11 @@ Alnat_t alnat_add(Alnat_t a1, Alnat_t a2) {
         carry = next_byte < ALNAT_MAX ? 0 : 1;
         next_byte = next_byte < ALNAT_MAX ? next_byte : next_byte - ALNAT_MAX;
         
-        // printf("digit: %d + %d + %d = %d\n", a1digit, a2digit, carry, next_byte);
+        // printf("digit: %d + %d = %d + %d\n", a1digit, a2digit, carry, next_byte);
         if (_alnat_add_digit(next_byte, &b)) {
             error("alnat_add: couldn't add %d to alnat\n", next_byte);
             alnat_free(b.ptr);
-            // debug_end("/alnat_add!\n");
+            debug_end("/alnat_add!\n");
             return NULL;
         }
         
@@ -544,18 +542,18 @@ Alnat_t alnat_add(Alnat_t a1, Alnat_t a2) {
         if (_alnat_add_digit(carry, &b)) {
             error("alnat_add: couldn't add %d to alnat\n", carry);
             alnat_free(b.ptr);
-            // debug_end("/alnat_add!\n");
+            debug_end("/alnat_add!\n");
             return NULL;
         }
     }
     if (_alnat_finalize(&b)) {
         error("Error while finalizing alnat\n");
         alnat_free(b.ptr);
-        // debug_end("/alnat_add!\n");
+        debug_end("/alnat_add!\n");
         return NULL;
     }
 
-    // debug_end("/alnat_add\n");
+    debug_end("/alnat_add\n");
     return b.ptr;
 }
 
