@@ -1,3 +1,8 @@
+- Rewrite execution code to support resuming evaluation
+
+---
+- Major refactor
+
 Since 88000e3c4c21f441969bc447bf277d4857f8a3e2
 - Rewrite environment handling
 

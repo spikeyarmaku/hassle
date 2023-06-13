@@ -2,12 +2,12 @@
 
 struct Rational {
     int8_t sign;
-    Alnat_t numerator;
-    Alnat_t denominator; // If it is NULL, treat it as 1
+    Alnat_t* numerator;
+    Alnat_t* denominator; // If it is NULL, treat it as 1
 };
 
-Rational_t _rational_make() {
-    Rational_t r = (Rational_t)allocate_mem("_rational_make", NULL,
+Rational_t* _rational_make() {
+    Rational_t* r = (Rational_t*)allocate_mem("_rational_make", NULL,
         sizeof(struct Rational));
     r->numerator = NULL;
     r->denominator = NULL;
@@ -16,11 +16,11 @@ Rational_t _rational_make() {
 }
 
 // A 0/0 is an invalid rational, and signifies an Error
-BOOL rational_is_valid(Rational_t r) {
+BOOL rational_is_valid(Rational_t* r) {
     return !(alnat_is_null(r->denominator) && alnat_is_null(r->numerator));
 }
 
-BOOL rational_is_equal(Rational_t r1, Rational_t r2) {
+BOOL rational_is_equal(Rational_t* r1, Rational_t* r2) {
     return
         alnat_is_equal(r1->numerator, r2->numerator) &&
         alnat_is_equal(r1->denominator, r2->denominator) &&
@@ -28,14 +28,14 @@ BOOL rational_is_equal(Rational_t r1, Rational_t r2) {
 }
 
 // Read a rational number from a string
-Rational_t string_to_rational(char* string) {
+Rational_t* string_to_rational(char* string) {
     // Copy the string
     char* buf =
         strcpy(allocate_mem("string_to_rational", NULL,
             sizeof(char) * (strlen(string) + 1)), string);
 
     char* start = buf;
-    Rational_t r = _rational_make();
+    Rational_t* r = _rational_make();
     if (*buf == '-') {
         r->sign = -1;
     } else {
@@ -89,7 +89,7 @@ Rational_t string_to_rational(char* string) {
     return r;
 }
 
-void rational_free(Rational_t r) {
+void rational_free(Rational_t* r) {
     // debug("Rational to free (%llu / %llu):\n", r->numerator, r->denominator);
         // rational_print(r); debug("\n");
     alnat_free(r->numerator);
@@ -97,7 +97,7 @@ void rational_free(Rational_t r) {
     free_mem("rational_free", r);
 }
 
-void rational_simplify(Rational_t r) {
+void rational_simplify(Rational_t* r) {
     // debug_start("rational_simplify\n");
     if (alnat_is_null(r->numerator)) {
         alnat_free(r->denominator);
@@ -111,7 +111,7 @@ void rational_simplify(Rational_t r) {
 
     // Find the greatest common divisor
     // printf("<<< Simplify "); debug_print_rational(*r);
-    Alnat_t gcd = alnat_gcd(r->numerator, r->denominator);
+    Alnat_t* gcd = alnat_gcd(r->numerator, r->denominator);
     // printf("Rational simplified. >>>\n");
     
     // Construct a rational from these two integers
@@ -135,13 +135,13 @@ void rational_simplify(Rational_t r) {
     // debug_end("/rational_simplify\n");
 }
 
-void rational_reciprocate(Rational_t r) {
-    Alnat_t temp = r->numerator;
+void rational_reciprocate(Rational_t* r) {
+    Alnat_t* temp = r->numerator;
     r->numerator = r->denominator;
     r->denominator = temp;
 }
 
-char* rational_to_string(Rational_t r) {
+char* rational_to_string(Rational_t* r) {
     char* alnat1_str = alnat_to_string(r->numerator);
     char* alnat2_str = alnat_to_string(r->denominator);
     // negative sign + first number + space + / + space + second number +
@@ -163,11 +163,11 @@ char* rational_to_string(Rational_t r) {
     return rational_str;
 }
 
-Rational_t rational_copy(Rational_t r) {
+Rational_t* rational_copy(Rational_t* r) {
     // debug_start("rational_copy - %llu\n", r);
     if (r == NULL) return NULL;
     
-    Rational_t result = (Rational_t)allocate_mem("rational_copy", NULL,
+    Rational_t* result = (Rational_t*)allocate_mem("rational_copy", NULL,
         sizeof(struct Rational));
     result->sign = r->sign;
     result->denominator = alnat_copy(r->denominator);
@@ -176,18 +176,18 @@ Rational_t rational_copy(Rational_t r) {
     return result;
 }
 
-void rational_print(Rational_t r) {
+void rational_print(Rational_t* r) {
     char* str = rational_to_string(r);
     printf("%s", str);
     free_mem("rational_print", str);
 }
 
 // TODO don't just blindly multiply, perhaps calculating the LCM is better
-Rational_t rational_add(Rational_t r1, Rational_t r2) {
+Rational_t* rational_add(Rational_t* r1, Rational_t* r2) {
     debug_start("rational_add\n");
-    Rational_t r = _rational_make();
-    Alnat_t n1 = alnat_mul(r1->numerator, r2->denominator);
-    Alnat_t n2 = alnat_mul(r2->numerator, r1->denominator);
+    Rational_t* r = _rational_make();
+    Alnat_t* n1 = alnat_mul(r1->numerator, r2->denominator);
+    Alnat_t* n2 = alnat_mul(r2->numerator, r1->denominator);
     if (r1->sign == r2->sign) {
         r->numerator = alnat_add(n1, n2);
         r->sign = r1->sign;
@@ -202,10 +202,10 @@ Rational_t rational_add(Rational_t r1, Rational_t r2) {
     return r;
 }
 
-Rational_t rational_sub(Rational_t r1, Rational_t r2) {
-    Rational_t r = _rational_make();
-    Alnat_t n1 = alnat_mul(r1->numerator, r2->denominator);
-    Alnat_t n2 = alnat_mul(r2->numerator, r1->denominator);
+Rational_t* rational_sub(Rational_t* r1, Rational_t* r2) {
+    Rational_t* r = _rational_make();
+    Alnat_t* n1 = alnat_mul(r1->numerator, r2->denominator);
+    Alnat_t* n2 = alnat_mul(r2->numerator, r1->denominator);
     if (r1->sign == r2->sign) {
         r->numerator = alnat_sub(n1, n2, &(r->sign));
     } else {
@@ -219,8 +219,8 @@ Rational_t rational_sub(Rational_t r1, Rational_t r2) {
     return r;
 }
 
-Rational_t rational_mul(Rational_t multiplicand, Rational_t multiplier) {
-    Rational_t r = _rational_make();
+Rational_t* rational_mul(Rational_t* multiplicand, Rational_t* multiplier) {
+    Rational_t* r = _rational_make();
     r->numerator = alnat_mul(multiplicand->numerator, multiplier->numerator);
     r->denominator =
         alnat_mul(multiplicand->denominator, multiplier->denominator);
@@ -229,9 +229,9 @@ Rational_t rational_mul(Rational_t multiplicand, Rational_t multiplier) {
     return r;
 }
 
-Rational_t rational_div(Rational_t dividend, Rational_t divisor) {
+Rational_t* rational_div(Rational_t* dividend, Rational_t* divisor) {
     rational_reciprocate(divisor);
-    Rational_t r = rational_mul(dividend, divisor);
+    Rational_t* r = rational_mul(dividend, divisor);
     rational_reciprocate(divisor);
     return r;
 }

@@ -14,9 +14,9 @@ Either call `parse_from_file` or `parse_from_str`, which returns an Expr_t.
 */
 enum TokenType {Eos, OpenParen, CloseParen, Symbol};
 
-typedef struct Parser* Parser_t;
+typedef struct Parser Parser_t;
 
-Expr_t  parse_from_file (char*);
-Expr_t  parse_from_str  (char*);
+Expr_t* parse_from_file (char*);
+Expr_t* parse_from_str  (char*);
 
 #endif

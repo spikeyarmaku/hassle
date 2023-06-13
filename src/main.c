@@ -2,18 +2,24 @@
 TODO
 - add Unicode support
 - check memory allocations for leaks
-- when a failure happens, do a cleanup
-  (check every code block with `if (error_code != Success)`)
 - Check if the input expression is well-formed (all parens match)
-- when freeing an object, overwrite the memory with random data
-  (SECURE_DESTRUCTION)
-- avoid realloc, instead use linked lists (or think of a better solution)
-- change alnat representation to null-terminated bytes
+
+- letrec
+- side-effects
+- syntax
+*/
+
+/*
+Coding convenctions:
+
+- each function is responsible for cleaning up the arguments they receive
+  (callee-frees)
 */
 
 #include "main.h"
+#include "vm/vm.h"
 
-// enum ErrorCode interpret(EnvFrame_t env, Expr_t expr) {
+// enum ErrorCode interpret(Frame_t env, Expr_t expr) {
 //     struct Term result;
 //     enum ErrorCode Error_code = eval_expr(env, expr, &result);
 //     if (Error_code != Success) {
@@ -34,7 +40,7 @@ enum ErrorCode repl() {
     // char buffer[STRING_BUFFER_SIZE];
 
     // int go_on = 1;
-    // EnvFrame_t env = make_default_frame();
+    // Frame_t env = make_default_frame();
     // while (go_on) {
     //     printf("REAL> ");
 
@@ -62,41 +68,37 @@ enum ErrorCode repl() {
 }
 #endif
 
-ErrorCode_t interpret_file(char* file_name) {
+void interpret_file(char* file_name) {
     printf("%s\n", file_name);
-    ErrorCode_t error_code = Success;
     
     debug("\n\n------PARSE------\n\n");
 
-    Expr_t expr = parse_from_file(file_name);
-    // expr_print(expr);
+    Expr_t* expr = parse_from_file(file_name);
 
-    debug("\n\n------DEFAULT ENV------\n\n");
+    // DEBUG
+    // term_print(term_from_expr(expr));
+    // printf("%llu", sizeof(size_t)); // 8
+    // /DEBUG
 
-    EnvFrame_t env = env_make_default();
+    VM_t* vm = vm_init(expr);
 
-    debug("\n\n------EVAL------\n\n");
+    // debug("\n\n------EVAL------\n\n");
 
-    Term_t result = eval(env, expr_copy(expr));
+    // Term_t result = vm_run(vm);
 
-    if (result != NULL) {
-        printf("RESULT:\n");
-        term_print(result);
-        printf("\n");
-    }
-    debug("\n\n------FREE ENV------\n\n");
-    env_free_frame(&env);
+    // if (result != NULL) {
+    //     printf("RESULT:\n");
+    //     term_print(result);
+    //     printf("\n");
+    // }
 
-    debug("\n\n------FREE RESULT------\n\n");
+    vm_free(vm);
 
-    term_free(&result);
+    // debug("\n\n------FREE RESULT------\n\n");
 
-    debug("\n\n------FREE EXPR------\n\n");
-
-    expr_free(&expr);
+    // term_free(&result);
 
     show_logger_entries();
-    return error_code;
 }
 
 struct Test{
@@ -117,9 +119,8 @@ int main(int argc, char *argv[]) {
     if (argc > 1) {
         // There is at least one parameter
         
-        ErrorCode_t error_code = interpret_file(argv[1]);
-        if (error_code != Success) return 1;
-
+        interpret_file(argv[1]);
+        
         // char buf[100];
         // sprintf(buf, "126");
         // Alnat_t alnat1 = string_to_alnat(buf);

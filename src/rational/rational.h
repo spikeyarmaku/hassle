@@ -19,21 +19,21 @@ Destruction:
   Call `rational_free`.
 */
 
-typedef struct Rational* Rational_t;
+typedef struct Rational Rational_t;
 
-Rational_t      string_to_rational      (char*);
-void            rational_free           (Rational_t);
-BOOL            rational_is_valid       (Rational_t);
-BOOL            rational_is_equal       (Rational_t, Rational_t);
-void            rational_simplify       (Rational_t);
-void            rational_reciprocate    (Rational_t);
-char*           rational_to_string      (Rational_t);
-Rational_t      rational_copy           (Rational_t);
-void            rational_print          (Rational_t);
+Rational_t*     string_to_rational      (char*);
+void            rational_free           (Rational_t*);
+BOOL            rational_is_valid       (Rational_t*);
+BOOL            rational_is_equal       (Rational_t*, Rational_t*);
+void            rational_simplify       (Rational_t*);
+void            rational_reciprocate    (Rational_t*);
+char*           rational_to_string      (Rational_t*);
+Rational_t*     rational_copy           (Rational_t*);
+void            rational_print          (Rational_t*);
 
-Rational_t      rational_add            (Rational_t, Rational_t);
-Rational_t      rational_sub            (Rational_t, Rational_t);
-Rational_t      rational_mul            (Rational_t, Rational_t);
-Rational_t      rational_div            (Rational_t, Rational_t);
+Rational_t*     rational_add            (Rational_t*, Rational_t*);
+Rational_t*     rational_sub            (Rational_t*, Rational_t*);
+Rational_t*     rational_mul            (Rational_t*, Rational_t*);
+Rational_t*     rational_div            (Rational_t*, Rational_t*);
 
 #endif

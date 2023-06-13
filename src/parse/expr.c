@@ -6,41 +6,41 @@ struct Expr {
     struct {
         size_t child_count;
         size_t capacity;
-        Expr_t* children;
+        Expr_t** children;
     };
     char* symbol;
   };
 };
 
-Expr_t  expr_make_empty        ();
-void    expr_set_as_atom       (Expr_t, char*);
-void    expr_set_as_list       (Expr_t);
+Expr_t* expr_make_empty        ();
+void    expr_set_as_atom       (Expr_t*, char*);
+void    expr_set_as_list       (Expr_t*);
 
-Expr_t expr_make_empty() {
+Expr_t* expr_make_empty() {
     return allocate_mem("expr_make_empty", NULL, sizeof(struct Expr));
 }
 
-void expr_set_as_atom(Expr_t expr, char* symbol) {
+void expr_set_as_atom(Expr_t* expr, char* symbol) {
     expr->type = ExprAtom;
     expr->symbol = str_cpy(symbol);
 }
 
-void expr_set_as_list(Expr_t expr) {
+void expr_set_as_list(Expr_t* expr) {
     expr->type = ExprList;
     expr->children = NULL;
     expr->child_count = 0;
     expr->capacity = 0;
 }
 
-void expr_add_to_list(Expr_t list_expr, Expr_t child) {
+void expr_add_to_list(Expr_t* list_expr, Expr_t* child) {
     debug_start("expr_add_to_list\n");
     assert(list_expr->type == ExprList);
     
     if (list_expr->capacity == list_expr->child_count) {
         // Allocate memory
-        list_expr->children = (Expr_t*)allocate_mem("expr_add_to_list",
+        list_expr->children = (Expr_t**)allocate_mem("expr_add_to_list",
             list_expr->children,
-            sizeof(Expr_t) * (list_expr->capacity + EXPR_BUFFER_SIZE));
+            sizeof(Expr_t*) * (list_expr->capacity + EXPR_BUFFER_SIZE));
         assert(list_expr->children != NULL);
         list_expr->capacity += EXPR_BUFFER_SIZE;
     }
@@ -50,36 +50,36 @@ void expr_add_to_list(Expr_t list_expr, Expr_t child) {
     debug_end("/expr_add_to_list\n");
 }
 
-Expr_t expr_make_atom(char* symbol) {
-    Expr_t result = expr_make_empty();
+Expr_t* expr_make_atom(char* symbol) {
+    Expr_t* result = expr_make_empty();
     assert(result != NULL);
     expr_set_as_atom(result, symbol);
     return result;
 }
 
-Expr_t expr_make_empty_list() {
-    Expr_t result = expr_make_empty();
+Expr_t* expr_make_empty_list() {
+    Expr_t* result = expr_make_empty();
     assert(result != NULL);
     expr_set_as_list(result);
     return result;
 }
 
-Expr_t expr_get_child(Expr_t expr, size_t index) {
+Expr_t* expr_get_child(Expr_t* expr, size_t index) {
     if (expr == NULL) return NULL;
     if (index >= expr->child_count) return NULL;
     return expr->children[index];
 }
 
-size_t expr_get_child_count(Expr_t expr) {
+size_t expr_get_child_count(Expr_t* expr) {
     return expr->child_count;
 }
 
-BOOL expr_is_list(Expr_t expr) {
+BOOL expr_is_list(Expr_t* expr) {
     if (expr == NULL) return FALSE;
     return expr->type == ExprList ? TRUE : FALSE;
 }
 
-BOOL expr_is_empty_list(Expr_t expr) {
+BOOL expr_is_empty_list(Expr_t* expr) {
     if (expr_is_list(expr)) {
         return expr->child_count == 0;
     } else {
@@ -87,18 +87,18 @@ BOOL expr_is_empty_list(Expr_t expr) {
     }
 }
 
-Expr_t* expr_get_list(Expr_t expr) {
+Expr_t** expr_get_list(Expr_t* expr) {
     if (expr == NULL) return NULL;
     return expr->children;
 }
 
-char* expr_get_symbol(Expr_t expr) {
+char* expr_get_symbol(Expr_t* expr) {
     if (expr == NULL) return NULL;
     return expr->symbol;
 }
 
 // Check if two expressions are equal. Return TRUE if equal, FALSE if not.
-BOOL expr_is_equal(Expr_t e1, Expr_t e2) {
+BOOL expr_is_equal(Expr_t* e1, Expr_t* e2) {
     assert(e1 != NULL);
     assert(e2 != NULL);
     
@@ -112,7 +112,7 @@ BOOL expr_is_equal(Expr_t e1, Expr_t e2) {
         // If they are both lists, march through the elements
         size_t i = 0;
         
-        Expr_t c1, c2;
+        Expr_t* c1, * c2;
         do {
             c1 = expr_get_child(e1, i);
             c2 = expr_get_child(e2, i);
@@ -128,7 +128,7 @@ BOOL expr_is_equal(Expr_t e1, Expr_t e2) {
 // Return the number of the longest series of sub-expressions, starting from the
 // start, that both expressions share. E.g. (a b (c d) e) and (a b (c f) e)
 // would yield 2
-size_t expr_match_size(Expr_t expr1, Expr_t expr2) {
+size_t expr_match_size(Expr_t* expr1, Expr_t* expr2) {
     if (expr_is_list(expr1) != expr_is_list(expr2)) {
         return 0;
     }
@@ -138,7 +138,7 @@ size_t expr_match_size(Expr_t expr1, Expr_t expr2) {
     }
 
     size_t counter = 0;
-    Expr_t c1, c2;
+    Expr_t* c1, * c2;
     do {
         c1 = expr_get_child(expr1, counter);
         c2 = expr_get_child(expr2, counter);
@@ -148,7 +148,7 @@ size_t expr_match_size(Expr_t expr1, Expr_t expr2) {
     return counter;
 }
 
-char* expr_to_string(Expr_t expr) {
+char* expr_to_string(Expr_t* expr) {
     // debug_start("expr_to_string\n");
     assert(expr != NULL);
     
@@ -201,7 +201,7 @@ char* expr_to_string(Expr_t expr) {
     }
 }
 
-void expr_print(Expr_t expr) {
+void expr_print(Expr_t* expr) {
     debug_off();
     char* str = expr_to_string(expr);
     debug_on();
@@ -209,13 +209,8 @@ void expr_print(Expr_t expr) {
     free_mem("expr_print", str);
 }
 
-void expr_free(Expr_t* expr_ptr) {
+void expr_free(Expr_t* expr) {
     debug_start("expr_free\n");
-    if (expr_ptr == NULL) {
-        debug_end("/expr_free\n");
-        return;
-    }
-    Expr_t expr = *expr_ptr;
     if (expr == NULL) {
         debug_end("/expr_free\n");
         return;
@@ -223,19 +218,18 @@ void expr_free(Expr_t* expr_ptr) {
     // expr_print(expr);
     if (expr->type == ExprAtom) {
         free_mem("expr_free/symbol", expr->symbol);
-        *expr_ptr = NULL;
     } else {
         for (size_t i = 0; i < expr->child_count; i++) {
-            expr_free(&(expr->children[i]));
+            expr_free(expr->children[i]);
+            expr->children[i] = NULL;
         }
         free_mem("expr_free/children", expr->children);
     }
     free_mem("expr_free/expr", expr);
-    *expr_ptr = NULL;
     debug_end("/expr_free\n");
 }
 
-Expr_t expr_copy(Expr_t expr) {
+Expr_t* expr_copy(Expr_t* expr) {
     debug_start("expr_copy - %llu\n", (size_t)expr); // expr_print(expr); debug("\n");
     // Expr can be null when copying, e.g. if a closure hasn't been fully
     // completed yet, like with lambda_helper2
@@ -244,7 +238,7 @@ Expr_t expr_copy(Expr_t expr) {
         return NULL;
     }
 
-    Expr_t result;
+    Expr_t* result;
     if (expr->type == ExprAtom) {
         result = expr_make_atom(expr->symbol);
         assert(result != NULL);

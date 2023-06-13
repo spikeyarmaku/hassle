@@ -19,6 +19,8 @@
 
 // --- KNOBS ---
 
+// TODO rewrite memory allocations to multiply instead of keep adding memory
+
 // How many bytes are allocated if a string needs to be expanded
 #define STRING_BUFFER_SIZE 1024
 
@@ -33,5 +35,7 @@
 
 // If a stack has to be grown, enough space is allocated for this many elements
 #define STACK_BUFFER_SIZE 8
+
+#define BUFFER_SIZE_MULTIPLY_FACTOR 2
 
 #endif

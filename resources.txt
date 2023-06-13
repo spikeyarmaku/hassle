@@ -3,9 +3,79 @@ https://courses.cs.washington.edu/courses/cse505/01au/functional/functional-io.p
 https://www.owenstephens.co.uk/assets/static/research/masters_report.pdf
 https://stackoverflow.com/questions/2158050/what-are-the-alternative-of-monads-to-use-io-in-pure-functional-programming
 https://stackoverflow.com/questions/3850368/how-do-functional-languages-model-side-effects
+https://copyprogramming.com/howto/what-are-the-alternative-of-monads-to-use-io-in-pure-functional-programming
+https://crypto.stanford.edu/~blynn/haskell/io.html
 
 Shallow bindings in Lisp: https://sci-hub.se/https://doi.org/10.1145/359545.359566
 What are stack frames: https://www.cs.princeton.edu/courses/archive/spr03/cs320/notes/7-1.pdf
 SML NJ compiler paper: https://assets.cambridge.org/97805210/33114/excerpt/9780521033114_excerpt.pdf
 Three Implementation Models for Scheme: https://legacy.cs.indiana.edu/~dyb/pubs/3imp.pdf
 Abstract machines: https://www.inf.ed.ac.uk/teaching/courses/lsi/diehl_abstract_machines.pdf
+The Design of an Experimental Programming Language and its Translator:
+    https://upcommons.upc.edu/bitstream/handle/2117/173437/CampobadalForesErik_Thesis.pdf
+Shared Environment Call-by-need: https://digitalrepository.unm.edu/cgi/viewcontent.cgi?article=1099&context=cs_etds
+Verifiably Lazy - Verified Compilation of Call-by-Need - https://www.cs.unm.edu/~darko/public/uploads/verifiably-lazy-verified-compilation-of-call-by-need.pdf
+Cactus Environment Machine - Shared Environment Call-by-Need - https://www.osti.gov/servlets/purl/1464683
+Revisiting Fexpr's; avoiding some problems: http://dillingers.com/blog/2013/06/03/revisiting-fexprs-avoiding-some-problems/
+
+Unicode: https://www.linuxdoc.org/HOWTO/Unicode-HOWTO-6.html
+
+A simpler lambda calculus: https://sci-hub.se/https://doi.org/10.1145/3294032.3294085
+Some code related to closure calculus: https://github.com/advancedresearch/avalog/blob/master/source/closure_calculus.txt
+Closure calculus is better than pure lambda-calculus: https://blog.chewxy.com/wp-content/uploads/personal/dissertation31482.pdf
+An implementation of closure calculus: https://github.com/LightAndLight/closure
+
+Language Implementation Patterns: https://theswissbay.ch/pdf/Gentoomen%20Library/Programming/Pragmatic%20Programmers/Language%20Implementation%20Patterns.pdf
+The Structure and Performance of Efficient Interpreters - https://jilp.org/vol5/v5paper12.pdf
+The Implementation of Functional Programming Languages - https://raw.githubusercontent.com/pushcx/hpffp-resources/master/Chapter%207/The%20Implementation%20of%20Functional%20Programming%20Languages.pdf
+
+Features of a dream programming language, 3rd draft: https://magnemg.eu/features-of-a-dream-programming-language-3rd-draft
+Functional programming languages, Part I: interpreters and operational semantics - https://xavierleroy.org/mpri/2-4/semantics.pdf
+Comparison of application virtualization software - https://en.wikipedia.org/wiki/Comparison_of_application_virtualization_software
+Two Decades of Smalltalk VM Development: Live VM Development through Simulation Tools - https://www.researchgate.net/publication/328509577_Two_Decades_of_Smalltalk_VM_Development_Live_VM_Development_through_Simulation_Tools
+The Implementation of Lua 5.0 - https://web.tecgraf.puc-rio.br/~lhf/ftp/doc/jucs05.pdf
+
+Formal Verifications of Call-by-Need and Call-by-Name Evaluations with Mutual Recursion - https://sci-hub.se/10.1007/978-3-030-34175-6_10
+    Note for the Cactus Environment Machine:
+    Stelle and Stefanovic [30] developed a formally verified compiler for a
+    non-strict language. They adopt call-by-name semantics for the target
+    language, while their actual implementation is call-by-need, and thus their
+    formalization includes the correspondence between call-by-need and
+    call-by-name evaluations. However, their target language does not contain
+    explicit recursion. Although recursion can be encoded by fixed-point
+    combinators such as Curry’s Y, such representation destroys sharing. For
+    instance, in the evaluation of Y (λx. I (λy. x)) I I where I is λx. x, the
+    subterm I (λy. x) is reduced twice, in contrast to the evaluation of
+    let x = I (λy. x) in x I I.
+Programming in the λ-Calculus: From Church to Scott and Back: https://sci-hub.se/10.1007/978-3-642-40355-2_12
+    (gives a way to use recursion without the fixed-point combinator - need to check whether it also destroys sharing)
+
+IMPLEMENTATION OF THE FUNCTIONAL ARCHITECTURE - TIM - https://prism.ucalgary.ca/items/49f679e4-cd04-451d-b9a3-32996e8549c0
+Explicit Evaluation ("Structural Insight" blogpost) - http://fexpr.blogspot.com/2013/07/explicit-evaluation.html
+Revisiting fexprs; avoiding some problems. - http://dillingers.com/blog/2013/06/03/revisiting-fexprs-avoiding-some-problems/
+Directly Reflective Meta-Programming - http://homepage.divms.uiowa.edu/~astump/papers/archon.pdf
+λ-calculus with reflection - https://cs.stackexchange.com/questions/2707/lambda-calculus-with-reflection
+
+A Survey of Metaprogramming Languages - https://sci-hub.se/https://doi.org/10.1145/3354584
+Collapsing Towers of Interpreters - https://sci-hub.se/https://doi.org/10.1145/3158140
+Efficient self-interpretation in lambda calculus - https://sci-hub.se/https://doi.org/10.1017/S0956796800000423
+    (relevant site: https://crypto.stanford.edu/~blynn/lambda/)
+Linear-Time Self-Interpretation of the Pure Lambda Calculus - https://sci-hub.se/https://doi.org/10.1023/A:1010058213619
+An abstract framework for environment machines: https://sci-hub.se/https://doi.org/10.1016/0304-3975(91)90230-Y
+    (this is Curien's calculus of closures)
+Church Encoding of Data Types Considered Harmful for Implementations - https://ifl2014.github.io/submissions/ifl2014_submission_13.pdf
+Lecture 2: Self-interpretation in the Lambda-calculus - https://cs.ioc.ee/ewscs/2016/geuvers/geuvers-slides-lecture2.pdf
+
+The Theory of Fexprs is Trivial - https://sci-hub.se/https://doi.org/10.1023/A:1007720632734
+Fexprs as the basis of Lisp function application; or, $vau: the ultimate abstraction - https://web.wpi.edu/Pubs/ETD/Available/etd-090110-124904/unrestricted/jshutt.pdf
+    Note: "If the denotational mapping is to be described by a term-rewriting
+    calculus, the term set of the calculus must be a proper superset of the term
+    set of the object language (the “syntax”)"
+
+Convert between CL and lambda - https://github.com/lorepozo/lambda-CL
+A combinatory account of internal structure - https://www.researchgate.net/publication/220315256_A_combinatory_account_of_internal_structure
+    corresponding LtU thread: http://lambda-the-ultimate.org/node/3993
+    corresponding SE thread: https://cstheory.stackexchange.com/questions/624/why-can-lambda-calculus-not-represent-some-combinators
+    relevant SE thread: https://cstheory.stackexchange.com/questions/42735/is-combinatory-logic-cl-still-relevant-for-programming-language-theory
+Control Flow Analysis for SF Combinator Calculus - https://arxiv.org/pdf/1512.03861.pdf
+Efficient Combinator Code - https://sci-hub.se/https://doi.org/10.1016/0096-0551(85)90017-7

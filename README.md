@@ -1,19 +1,10 @@
 # RealScript
 
-AST-walking interpreter
+An interpreter based on the Cactus Environment Machine
 
-Dependency graph:
-```
-[execute/eval] ───► [execute/env] ──────────┐
-    │    │             │      │             │
-    │    │             ▼      │             │
-    │    │  [execute/stack]   │             │
-    │    │             │      │             │
-    │    │             ▼      ▼             ▼
-    │    └───────► [execute/term] ───► [rational/rational] ───► [rational/alnat]
-    │                         │
-    │          [parse/parse]  │
-    │                    │    │
-    │                    ▼    ▼
-    └───────────────► [parse/expr] ───► [parse/dict]
-```
+Inspirations:
+Scheme                      - for its syntax and homoiconicity
+John Shutt's Kernel         - for uniting macros, special forms and functions
+Haskell                     - for its pure nature, lazy evaluation, currying,
+                              left-associativity, and IO handling
+Cactus Environment Machine  - for its simplicity as an abstract machine
