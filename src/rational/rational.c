@@ -28,10 +28,10 @@ BOOL rational_is_equal(Rational_t* r1, Rational_t* r2) {
 }
 
 // Read a rational number from a string
-Rational_t* string_to_rational(char* string) {
+Rational_t* rational_from_string(char* string) {
     // Copy the string
     char* buf =
-        strcpy(allocate_mem("string_to_rational", NULL,
+        strcpy(allocate_mem("rational_from_string", NULL,
             sizeof(char) * (strlen(string) + 1)), string);
 
     char* start = buf;
@@ -83,7 +83,7 @@ Rational_t* string_to_rational(char* string) {
         r->denominator = alnat_make_single_digit(1);
     }
 
-    free_mem("string_to_rational", buf);
+    free_mem("rational_from_string", buf);
     rational_simplify(r);
 
     return r;

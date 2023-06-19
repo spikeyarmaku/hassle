@@ -51,9 +51,6 @@ void free_mem(char* comment, void* ptr) {
     #ifdef MEMORY_DIAGNOSTIC
     _del_entry(comment, ptr);
     #endif
-    #ifdef SECURE_DESTRUCTION
-    // TODO figure out how to find out the size of the block to be overwritten
-    #endif
     free(ptr);
 }
 

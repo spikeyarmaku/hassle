@@ -1,12 +1,9 @@
 /*
 TODO
 - add Unicode support
+- add locale support (decimal separators, etc.)
 - check memory allocations for leaks
 - Check if the input expression is well-formed (all parens match)
-
-- letrec
-- side-effects
-- syntax
 */
 
 /*
@@ -75,28 +72,21 @@ void interpret_file(char* file_name) {
 
     Expr_t* expr = parse_from_file(file_name);
 
-    // DEBUG
-    // term_print(term_from_expr(expr));
-    // printf("%llu", sizeof(size_t)); // 8
-    // /DEBUG
-
     VM_t* vm = vm_init(expr);
 
-    // debug("\n\n------EVAL------\n\n");
+    debug("\n\n------EVAL------\n\n");
 
-    // Term_t result = vm_run(vm);
+    Term_t* result = vm_run(vm);
 
-    // if (result != NULL) {
-    //     printf("RESULT:\n");
-    //     term_print(result);
-    //     printf("\n");
-    // }
+    if (result != NULL) {
+        printf("RESULT:\n");
+        term_print(result);
+        printf("\n");
+    }
+
+    debug("\n\n------FREE VM------\n\n");
 
     vm_free(vm);
-
-    // debug("\n\n------FREE RESULT------\n\n");
-
-    // term_free(&result);
 
     show_logger_entries();
 }

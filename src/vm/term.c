@@ -24,17 +24,88 @@ struct Term {
     };
 };
 
+Term_t* _term_read_rational (char*);
+Term_t* _term_read_string   (char*);
+Term_t* _term_read_symbol   (char*);
+
+// Try to parse the string as a rational. If unsuccessful, return NULL
+// TODO Make it work with hex
+Term_t* _term_read_rational(char* str) {
+    // valid numbers: (# - any number of digits, ? - sign, . - dec separator)
+    // # .# #. #.# ?# ?.# ?#. ?#.#
+    // starts with #: # #. #.#
+    // starts with .: .#
+    // starts with ?: ?# ?.# ?#. ?#.#
+
+    size_t first_char_index = 0;
+    // If the first character is a sign, it's ok, don't count it as the first
+    if (str[0] == '+' || str[0] == '-') {
+        first_char_index = 1;
+    }
+
+    size_t span = strspn(str + first_char_index, "0123456789.,_");
+    size_t len = strlen(str + first_char_index);
+
+    if (span == len && span != 0) {
+        return
+            term_make_primval(primval_make_rational(rational_from_string(str)));
+    } else {
+        return NULL;
+    }
+}
+
+// Check if the string is a valid string (beings and ends with "). If
+// unsuccessful, return NULL
+Term_t* _term_read_string(char* str) {
+    if (str[0] != '\"') {
+        return NULL;
+    }
+
+    size_t i = 0;
+    while (str[i] != 0) {
+        i++;
+    }
+    if (str[i - 1] != '\"') {
+        return NULL;
+    }
+
+    char* str_content = (char*)allocate_mem("_term_read_string", NULL,
+        sizeof(char) * (i - 2));
+    strncpy(str_content, str + 1, i - 2);
+    str_content[i - 2] = 0;
+
+    free_mem("_term_read_string", str);
+
+    return term_make_primval(primval_make_string(str_content));
+}
+
+// Read the string as a symbol
+Term_t* _term_read_symbol(char* str) {
+    return term_make_primval(primval_make_symbol(str));
+}
+
 // TODO While converting a term to expr, collect variable names into a list,
 // replace the variables in the resulting term with their index in the list,
 // and return the list along with the term
 //
 // Turn an expression into symbols and lazy apps
+//
+// TODO Rewrite it, so that it turns an expression into a scott-encoded list
+// expression
+// http://fexpr.blogspot.com/2013/07/explicit-evaluation.html
 Term_t* term_from_expr(Expr_t* expr) {
     if (!expr_is_list(expr)) {
         // expr is an atom
         char* symbol = str_cpy(expr_get_symbol(expr));
-        PrimVal_t* symbol_val = primval_make_symbol(symbol);
-        return term_make_primval(symbol_val);
+        // Check if it is a literal (rational or string)
+        Term_t* term = _term_read_rational(symbol);
+        if (term == NULL) {
+            term = _term_read_string(symbol);
+            if (term == NULL) {
+                term = _term_read_symbol(symbol);
+            }
+        }
+        return term;
     } else {
         // expr is a list
 
@@ -82,14 +153,14 @@ Term_t* term_make_abs(char* var_name, Term_t* body) {
     return term;
 }
 
-Term_t* term_make_syntax(char* var_name, Term_t* body) {
-    Term_t* term = (Term_t*)allocate_mem("term_make_abs", NULL,
-        sizeof(struct Term));
-    term->type = AbsTerm;
-    term->abs.var = var_name;
-    term->abs.app_body = body;
-    return term;
-}
+// Term_t* term_make_syntax(char* var_name, Term_t* body) {
+//     Term_t* term = (Term_t*)allocate_mem("term_make_abs", NULL,
+//         sizeof(struct Term));
+//     term->type = AbsTerm;
+//     term->abs.var = var_name;
+//     term->abs.app_body = body;
+//     return term;
+// }
 
 Term_t* term_make_lazy_app(Term_t* term1, Term_t* term2) {
     Term_t* term = (Term_t*)allocate_mem("term_make_lazy_app", NULL,
@@ -109,6 +180,14 @@ Term_t* term_make_strict_app(Term_t* term1, Term_t* term2) {
     return term;
 }
 
+Term_t* term_make_op(enum PrimOp op) {
+    Term_t* term = (Term_t*)allocate_mem("term_make_op", NULL,
+        sizeof(Term_t));
+    term->type = OpTerm;
+    term->op = op;
+    return term;
+}
+
 enum TermType term_get_type(Term_t* term) {
     return term->type;
 }
@@ -119,14 +198,14 @@ PrimVal_t* term_get_primval(Term_t* term) {
 }
 
 char* term_get_abs_var(Term_t* term) {
-    assert(term_get_type(term) == AbsTerm ||
-        term_get_type(term) == SyntaxTerm);
+    assert(term_get_type(term) == AbsTerm);
+        // term_get_type(term) == SyntaxTerm);
     return term->abs.var;
 }
 
 Term_t* term_get_abs_body(Term_t* term) {
-    assert(term_get_type(term) == AbsTerm ||
-        term_get_type(term) == SyntaxTerm);
+    assert(term_get_type(term) == AbsTerm);
+        // term_get_type(term) == SyntaxTerm);
     return term->abs.app_body;
 }
 
@@ -142,6 +221,36 @@ Term_t* term_get_app_term2(Term_t* term) {
     return term->app.term2;
 }
 
+enum PrimOp term_get_op(Term_t* term) {
+    assert(term_get_type(term) == OpTerm);
+    return term->op;
+}
+
+Term_t* term_copy(Term_t* term) {
+    switch(term->type) {
+        case PrimvalTerm:
+            return term_make_primval(primval_copy(term->primval));
+        case AbsTerm:
+            return term_make_abs(
+                str_cpy(term->abs.var), term_copy(term->abs.app_body));
+        // case SyntaxTerm:
+        //     return term_make_syntax(
+        //         str_cpy(term->abs.var), term_copy(term->abs.app_body));
+        case LazyAppTerm:
+            return term_make_lazy_app(
+                term_copy(term->app.term1), term_copy(term->app.term2));
+        case StrictAppTerm:
+            return term_make_strict_app(
+                term_copy(term->app.term1), term_copy(term->app.term2));
+        case OpTerm:
+            return term_make_op(term->op);
+        case WorldTerm:
+            // TODO
+            return NULL;
+        default: assert(FALSE); return NULL;
+    }
+}
+
 void term_free(Term_t* term) {
     assert(term != NULL);
     switch (term->type) {
@@ -150,7 +259,7 @@ void term_free(Term_t* term) {
             break;
         }
         case AbsTerm:
-        case SyntaxTerm:
+        // case SyntaxTerm:
             free_mem("term_free/abs/var", term->abs.var);
             term_free(term->abs.app_body);
             break;
@@ -169,10 +278,17 @@ void term_free(Term_t* term) {
     free_mem("term_free", term);
 }
 
+// Free the toplevel term, without destroying the child elements
+// Useful for deconstructing terms from the VM's control register, and putting
+// back one of the constituents
+void term_free_toplevel(Term_t* term) {
+    free_mem("term_free_toplevel", term);
+}
+
 void term_print(Term_t* term) {
     switch (term->type) {
         case PrimvalTerm: {
-            printf("<Val ");
+            printf("<Primval ");
             primval_print(term->primval);
             printf(">");
             break;
@@ -183,12 +299,12 @@ void term_print(Term_t* term) {
             printf(">");
             break;
         }
-        case SyntaxTerm: {
-            printf("<Syntax %s ", term->abs.var);
-            term_print(term->abs.app_body);
-            printf(">");
-            break;
-        }
+        // case SyntaxTerm: {
+        //     printf("<Syntax %s ", term->abs.var);
+        //     term_print(term->abs.app_body);
+        //     printf(">");
+        //     break;
+        // }
         case LazyAppTerm: {
             printf("<LazyApp ");
             term_print(term->app.term1);
@@ -226,3 +342,120 @@ void term_print(Term_t* term) {
         }
     }
 }
+
+// Scott-encoded cons: \x. \xs. \n. \c. c x xs
+// (x = head, y = tail, n = what-to-do-if-nil, c = what-to-do-if-pair)
+Term_t* term_make_cons() {
+    char x [] = "x";
+    char xs[] = "xs";
+    char n [] = "n";
+    char c [] = "c";
+    return
+        term_make_abs(x,
+            term_make_abs(xs,
+                term_make_abs(n,
+                    term_make_abs(c,
+                        term_make_lazy_app(
+                            term_make_lazy_app(
+                                term_make_primval(primval_make_symbol(c)),
+                                term_make_primval(primval_make_symbol(x))),
+                            term_make_primval(primval_make_symbol(xs)))))));
+}
+
+// Scott-encoded nil: \n. \c. n, which is the same as `true` (\x. \y. x)
+Term_t* term_make_nil() {
+    return term_make_true();
+}
+
+// Scott-encoded head: \list. list undef (\x. \xs. x)
+Term_t* term_make_head() {
+    char list[] = "list";
+    char u [] = "u"; // "u" for "undef"
+    
+    return
+        term_make_abs(list,
+            term_make_lazy_app(
+                term_make_lazy_app(
+                    term_make_primval(primval_make_symbol(list)),
+                    term_make_primval(primval_make_symbol(u))),
+                term_make_true()));
+}
+
+// Scott-encoded tail: \list. list undef (\x. \xs. xs)
+Term_t* term_make_tail() {
+    char list[] = "list";
+    char u [] = "u"; // "u" for "undef"
+    
+    return
+        term_make_abs(list,
+            term_make_lazy_app(
+                term_make_lazy_app(
+                    term_make_primval(primval_make_symbol(list)),
+                    term_make_primval(primval_make_symbol(u))),
+                term_make_false()));
+}
+
+
+// true = first = \x. \y. x
+Term_t* term_make_true() {
+    char x[] = "x";
+    char y[] = "y";
+    return
+        term_make_abs(x,
+            term_make_abs(y,
+                term_make_primval(
+                    primval_make_symbol(x))));
+}
+
+// false = second = \x. \y. y
+Term_t* term_make_false() {
+    char x[] = "x";
+    char y[] = "y";
+    return
+        term_make_abs(x,
+            term_make_abs(y,
+                term_make_primval(
+                    primval_make_symbol(y))));
+}
+
+// Take a term, containing only lazy apps and primvals, and emit a list-encoded
+// term
+Term_t* term_encode_as_list(Term_t* term) {
+    assert(term != NULL);
+
+    if (term_get_type(term) == PrimvalTerm) {
+        return
+            term_make_lazy_app(
+                term_make_lazy_app(term_make_cons(), term),
+                term_make_nil());
+    } else {
+        // term must be lazy app
+        assert(term_get_type(term) == LazyAppTerm);
+        Term_t* result =
+            term_make_lazy_app(
+                term_make_lazy_app(
+                    term_make_cons(),
+                    term_encode_as_list(term_get_app_term1(term))),
+                term_encode_as_list(term_get_app_term2(term)));
+        term_free_toplevel(term);
+        return result;
+    }
+}
+
+// Take a term, treat it as a scott-encoded list, and construct a series of
+// primvals and lazy apps
+// Term_t* term_decode_from_list(Term_t* term) {
+//     // app(app(cons, term1), term2))
+//     assert(term_get_type(term) == LazyAppTerm);
+
+//     Term_t* inner_app = term_get_app_term1(term);
+//     Term_t* term2 = term_get_app_term2(term);
+//     term_free_toplevel(term); term = NULL;
+
+//     Term_t* term1 = term_get_app_term2(inner_app);
+//     term_free(term_get_app_term1(inner_app));
+//     term_free_toplevel(inner_app); inner_app = NULL;
+
+//     // todo
+
+// }

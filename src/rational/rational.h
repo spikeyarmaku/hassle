@@ -13,7 +13,7 @@ Rational_t usage:
 
 Construction:
   A Rational_t can be made from a base-10 string representation using
-  `string_to_rational`.
+  `rational_from_string`.
 
 Destruction:
   Call `rational_free`.
@@ -21,7 +21,7 @@ Destruction:
 
 typedef struct Rational Rational_t;
 
-Rational_t*     string_to_rational      (char*);
+Rational_t*     rational_from_string    (char*);
 void            rational_free           (Rational_t*);
 BOOL            rational_is_valid       (Rational_t*);
 BOOL            rational_is_equal       (Rational_t*, Rational_t*);

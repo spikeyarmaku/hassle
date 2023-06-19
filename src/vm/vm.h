@@ -16,5 +16,6 @@ Term_t*         vm_run                  (VM_t*);
 uint8_t*        vm_save                 (VM_t*);
 VM_t*           vm_load                 (uint8_t*);
 void            vm_free                 (VM_t*);
+void            vm_serialize            (VM_t*);
 
 #endif

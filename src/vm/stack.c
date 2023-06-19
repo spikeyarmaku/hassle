@@ -54,6 +54,10 @@ Closure_t* stack_pop(Stack_t* stack) {
 
 // Return a reference to the nth element counting from the top
 Closure_t* stack_peek(Stack_t* stack, size_t index) {
+    if (stack->next == 0) {
+        printf("EMPTY STACK!!!\n");
+        return NULL;
+    }
     return stack->elems[stack->next - 1 - index];
 }
 
@@ -66,3 +70,8 @@ void stack_free(Stack_t* stack) {
     free_mem("stack_free/elems", stack->elems);
     free_mem("stack_free", stack);
 }
+
+size_t stack_get_elem_count(Stack_t* stack) {
+    return stack->next;
+}
+

@@ -8,9 +8,11 @@ typedef struct Frame Frame_t;
 
 typedef struct Closure Closure_t;
 
-Closure_t*  closure_make        (Term_t*, Frame_t*);
-Term_t*     closure_get_term    (Closure_t*);
-Frame_t*    closure_get_frame   (Closure_t*);
-void        closure_free        (Closure_t*);
+Closure_t*  closure_make            (Term_t*, Frame_t*);
+Term_t*     closure_get_term        (Closure_t*);
+Frame_t*    closure_get_frame       (Closure_t*);
+Closure_t*  closure_copy            (Closure_t*);
+void        closure_free            (Closure_t*);
+void        closure_free_toplevel   (Closure_t*);
 
 #endif

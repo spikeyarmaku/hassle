@@ -51,6 +51,17 @@ char* primval_get_symbol(PrimVal_t* val) {
     return val->string;
 }
 
+PrimVal_t* primval_copy(PrimVal_t* primval) {
+    switch (primval->type) {
+        case RationalValue:
+            return primval_make_rational(rational_copy(primval->rational));
+        case StringValue:
+        case SymbolValue:
+            return primval_make_string(str_cpy(primval->string));
+        default: assert(FALSE); return NULL;
+    }
+}
+
 void primval_print(PrimVal_t* val) {
     switch (val->type) {
         case RationalValue: {
@@ -62,7 +73,7 @@ void primval_print(PrimVal_t* val) {
             break;
         }
         case SymbolValue: {
-            printf("%s", val->string);
+            printf("`%s`", val->string);
             break;
         }
         default: {

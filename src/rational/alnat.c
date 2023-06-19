@@ -200,7 +200,8 @@ void _alnat_unsafe_mark_digit(size_t n, BOOL is_msd, Alnat_t* a) {
     debug_end("/_alnat_unsafe_mark_digit\n");
 }
 
-// TODO Support bases other than 10 (2, 8 and 16 would be nice)
+// TODO Support bases other than 10 (2, 8 and 16 would be nice), or make the
+// base an argument
 
 // Construct an alnat from a string containing a base-10 representation of a
 // number, disregarding any non-digit characters in the process
