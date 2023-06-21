@@ -42,7 +42,7 @@ enum ErrorCode repl() {
     // int go_on = 1;
     // Frame_t env = make_default_frame();
     // while (go_on) {
-    //     printf("REAL> ");
+    //     printf("HASSLE> ");
 
     //     if (!fgets(buffer, STRING_BUFFER_SIZE, stdin)) {
     //         printf("Error while reading from stdin.\n");
@@ -106,7 +106,7 @@ struct Test char_test(char* msg) {
 
 // If called with a file, run it, else start a REPL
 int main(int argc, char *argv[]) {
-    printf("----------\nRealScript\n----------\n\n");
+    printf("----------\nHassle\n----------\n\n");
     setvbuf(stdout, (char *) NULL, _IONBF, 0); /* make stdout line-buffered */
     init_logger();
     
