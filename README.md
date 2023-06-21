@@ -7,5 +7,5 @@ Inspirations:
 **John Shutt's Kernel** - for uniting macros, special forms and functions    
 **Haskell** - for its pure nature, lazy evaluation, currying, left-associativity, and IO handling    
 **Cactus Environment Machine** - for its simplicity as an abstract machine and
-for its spaghetti-stack environment model
+for its spaghetti-stack environment model    
 **SICP chapter 4 footnote 33** - for the name of the language
