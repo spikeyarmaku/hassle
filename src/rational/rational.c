@@ -182,6 +182,28 @@ void rational_print(Rational_t* r) {
     free_mem("rational_print", str);
 }
 
+void rational_serialize(Serializer_t* serializer, Rational_t* rational) {
+    if (rational->sign < 0) {
+        serializer_write(serializer, 2);
+    } else {
+        serializer_write(serializer, rational->sign);
+    }
+
+    alnat_serialize(serializer, rational->numerator);
+    alnat_serialize(serializer, rational->denominator);
+}
+
+Rational_t* rational_deserialize(Serializer_t* serializer) {
+    Rational_t* rational = _rational_make();
+    rational->sign = serializer_read(serializer);
+    if (rational->sign == 2) {
+        rational->sign = -1;
+    }
+    rational->numerator = alnat_deserialize(serializer);
+    rational->denominator = alnat_deserialize(serializer);
+    return rational;
+}
+
 // TODO don't just blindly multiply, perhaps calculating the LCM is better
 Rational_t* rational_add(Rational_t* r1, Rational_t* r2) {
     debug_start("rational_add\n");

@@ -5,6 +5,7 @@
 #include "closure.h"
 #include "term.h"
 #include "primop.h"
+#include "serialize\serialize.h"
 
 struct VM {
     Closure_t*  control;
@@ -12,6 +13,7 @@ struct VM {
     Heap_t*     heap;
 };
 
+VM_t*   _vm_make        (Stack_t*, Heap_t*, Closure_t*);
 void    _vm_invoke_upd  (VM_t*);
 void    _vm_invoke_lam  (VM_t*, BOOL);
 void    _vm_invoke_app  (VM_t*, BOOL);
@@ -19,19 +21,20 @@ void    _vm_invoke_var  (VM_t*);
 void    _vm_invoke_int  (VM_t*);
 void    _vm_invoke_op   (VM_t*);
 
-VM_t* vm_init(Expr_t* expr) {
+VM_t* _vm_make(Stack_t* stack, Heap_t* heap, Closure_t* control) {
     VM_t* vm = (VM_t*)allocate_mem("vm_init", NULL, sizeof(struct VM));
-    
-    vm->stack = stack_make();
-    vm->heap = heap_make_default();
-    vm->control = NULL;
+
+    vm->stack = stack;
+    vm->heap = heap;
+    vm->control = control;
+
+    return vm;
+}
+
+VM_t* vm_init(Expr_t* expr) {
+    VM_t* vm = _vm_make(stack_make(), heap_make_default(), NULL);
 
     vm_set_control_to_expr(vm, expr); expr = NULL;
-    
-    assert(expr == NULL);
-
-    // DEBUG
-    vm_serialize(vm);
 
     return vm;
 }
@@ -56,7 +59,7 @@ enum EvalState vm_step(VM_t* vm) {
     // (Upd)  〈v, σ u, μ〉→CE〈v, σ, μ(u → v · l)〉 where c · l = μ(u)
     Closure_t* stack_top = stack_peek(vm->stack, 0);
     if (stack_top != NULL) {
-        if (closure_get_term(stack_top) == NULL) {
+        if (closure_is_update(stack_top) == TRUE) {
             _vm_invoke_upd(vm);
         }
     }
@@ -126,9 +129,6 @@ enum EvalState vm_step(VM_t* vm) {
         }
     }
 
-    // DEBUG
-    vm_serialize(vm);
-
     stack_top = stack_peek(vm->stack, 0);
     printf("CHECK: control: %d, stack_top: %llu\n",
         term_get_type(closure_get_term(vm->control)), (size_t)stack_top);
@@ -150,14 +150,57 @@ Term_t* vm_run(VM_t* vm) {
     return closure_get_term(vm->control);
 }
 
-uint8_t* vm_save(VM_t* vm) {
-    // TODO
-    return NULL;
+// Serialize the VM
+// Note that when Frames are serialized, the index of their parent needs to be
+// written instead of the actual pointer. However, we can't use the index in
+// the actual program, as looking up a name would then require a Heap instance
+// as well, to find the parent Frame.
+struct VMData vm_serialize(VM_t* vm, uint8_t word_size) {
+    assert(word_size <= sizeof(size_t));
+    Serializer_t* serializer = serializer_init(word_size);
+
+    // Save the heap
+    printf("Serializing the heap\n");
+    printf("vm: %llu\n", (size_t)vm);
+    heap_serialize(serializer, vm->heap);
+    
+    // Save the control
+    printf("Serializing the control\n");
+    closure_serialize(serializer, vm->heap, vm->control);
+    
+    // Save the stack
+    printf("Serializing the stack\n");
+    stack_serialize(serializer, vm->heap, vm->stack);
+    
+    struct VMData vm_data;
+    vm_data.data = serializer_get_data(serializer);
+    vm_data.data_size = serializer_get_data_size(serializer);
+
+    // if word_size is the same as the word size for this architecture, this
+    // condition will always be false
+    if (vm_data.data_size > (1 << word_size)) {
+        serializer_free(serializer); serializer = NULL;
+        vm_data.data = NULL;
+        vm_data.data_size = 0;
+    }
+
+    return vm_data;
 }
 
-VM_t* vm_load(uint8_t* bytes) {
-    // TODO
-    return NULL;
+// Deserialize the VM
+// Note that when Frames are deserialized, the pointer for their parent needs to
+// be read from the Heap, as the serialized version contains only the index for
+// their parent.
+VM_t* vm_deserialize(uint8_t* bytes) {
+    Serializer_t* serializer = serializer_from_data(bytes);
+    
+    printf("deserealizing the heap\n");
+    Heap_t* heap = heap_deserialize(serializer);
+    printf("deserealizing the control\n");
+    Closure_t* control = closure_deserialize(serializer, heap);
+    printf("deserealizing the stack\n");
+    Stack_t* stack = stack_deserialize(serializer, heap);
+    return _vm_make(stack, heap, control);
 }
 
 void vm_free(VM_t* vm) {
@@ -166,53 +209,6 @@ void vm_free(VM_t* vm) {
     stack_free(vm->stack);
     heap_free(vm->heap);
     free_mem("vm_free", vm);
-}
-
-// DEBUG ONLY
-// Convert the vm to a series of textual commands
-// Used for debugging purposes
-// Example output:
-// #<Val +> 0; <Val 1> 0 <Val 2> 0; 0 let <Val 1> 0 0 1 lambda <lambda> 0
-// #control; stack_elem_1 stack_elem_2 ...; heap_elem_0_index heap_elem_0_char
-// heap_elem_0_value heap_elem_0_env heap_elem_0_parent heap_elem_1_index ...
-void vm_serialize(VM_t* vm) {
-    // Dump the control
-    printf("#");
-    term_print(closure_get_term(vm->control));
-    printf(" %llu;", (size_t)closure_get_frame(vm->control));
-    
-    // Dump the stack
-    if (stack_get_elem_count(vm->stack) == 0) {
-        printf(";");
-    } else {
-        for (size_t i = 0; i < stack_get_elem_count(vm->stack); i++) {
-            Closure_t* stack_elem = stack_peek(vm->stack, i);
-            term_print(closure_get_term(stack_elem));
-            printf(" %llu", (size_t)closure_get_frame(stack_elem));
-            if (i != stack_get_elem_count(vm->stack) - 1) {
-                printf("|");
-            } else {
-                printf(";");
-            }
-        }
-    }
-    
-    // Dump the heap
-    for (size_t i = 0; i < heap_get_elem_count(vm->heap); i++) {
-        Frame_t* heap_elem = heap_get_elem(vm->heap, i);
-        Closure_t* closure = frame_get_value(heap_elem);
-        printf("%llu %s ", (size_t)heap_elem, frame_get_name(heap_elem));
-        term_print(closure_get_term(closure));
-        printf(" %llu %llu", (size_t)closure_get_frame(closure),
-            (size_t)frame_get_parent(heap_elem));
-        if (i != heap_get_elem_count(vm->heap) - 1) {
-            printf("|");
-        } else {
-            printf(";");
-        }
-    }
-
-    printf("\n");
 }
 
 // ------------------------- VM invocations ------------------------------------

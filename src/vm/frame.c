@@ -1,6 +1,7 @@
 #include "frame.h"
 
 #include "vm\closure.h"
+#include "heap.h"
 
 struct Frame {
     char* name;
@@ -37,6 +38,30 @@ Closure_t* frame_lookup(Frame_t* frame, char* var_name) {
     // Haven't found a value assigned to this variable, make a new symbol
     return closure_make(term_make_primval(primval_make_symbol(var_name)),
         frame);
+}
+
+void frame_serialize(Serializer_t* serializer, Heap_t* heap, Frame_t* frame) {
+    if (frame == NULL) {
+        // Don't serialize the ground frame
+        return;
+    }
+
+    serializer_write_string(serializer, frame->name);
+    closure_serialize(serializer, heap, frame->value);
+    size_t parent_index = heap_get_frame_index(heap, frame->parent);
+    printf("%s %llu", frame->name, parent_index);
+    serializer_write_word(serializer, parent_index);
+}
+
+Frame_t* frame_deserialize(Serializer_t* serializer, Heap_t* heap) {
+    char* name = serializer_read_string(serializer);
+    printf("%s ", name);
+    Closure_t* closure = closure_deserialize(serializer, heap);
+    size_t parent_index = serializer_read_word(serializer);
+
+    printf("%llu\n", parent_index);
+    return frame_make(name, closure,
+        heap_get_frame_by_index(heap, parent_index));
 }
 
 void frame_free(Frame_t* frame) {

@@ -4,6 +4,9 @@ TODO
 - add locale support (decimal separators, etc.)
 - check memory allocations for leaks
 - Check if the input expression is well-formed (all parens match)
+- add the ability to restrict the VM to a certain word size.
+    This is so a vm state can be loaded on a 16-bit machine, even though it was
+    saved on a 64-bit machine
 */
 
 /*
@@ -77,12 +80,13 @@ void interpret_file(char* file_name) {
     debug("\n\n------EVAL------\n\n");
 
     Term_t* result = vm_run(vm);
+    (void)result;
 
-    if (result != NULL) {
-        printf("RESULT:\n");
-        term_print(result);
-        printf("\n");
-    }
+    // if (result != NULL) {
+    //     printf("RESULT:\n");
+    //     term_print(result);
+    //     printf("\n");
+    // }
 
     debug("\n\n------FREE VM------\n\n");
 

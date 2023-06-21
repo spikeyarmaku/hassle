@@ -21,21 +21,24 @@
 
 // TODO rewrite memory allocations to multiply instead of keep adding memory
 
+#define BUFFER_SIZE 8
+#define BUFFER_SIZE_MULTIPLY_FACTOR 2
+
 // How many bytes are allocated if a string needs to be expanded
 #define STRING_BUFFER_SIZE 1024
 
 // How many bytes are allocated if an alnat needs to be expanded
-#define ALNAT_BUFFER_SIZE 8
+#define ALNAT_BUFFER_SIZE BUFFER_SIZE
 
 // How many bytes are allocated if an expr needs to be expanded
-#define EXPR_BUFFER_SIZE 8
+#define EXPR_BUFFER_SIZE BUFFER_SIZE
 
 // If a dict has to be grown, enough space is allocated for this many elements
-#define DICT_BUFFER_SIZE 8
+#define DICT_BUFFER_SIZE BUFFER_SIZE
 
 // If a stack has to be grown, enough space is allocated for this many elements
-#define STACK_BUFFER_SIZE 8
+#define STACK_BUFFER_SIZE BUFFER_SIZE
 
-#define BUFFER_SIZE_MULTIPLY_FACTOR 2
+
 
 #endif

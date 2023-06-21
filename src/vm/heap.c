@@ -31,6 +31,11 @@ Heap_t* heap_make() {
     heap->capacity = 0;
     heap->count = 0;
     heap->frames = NULL;
+
+    // Ground frame. This is necessary for the first frame to have something to
+    // reference as a parent. It is not serialized, but it is implied.
+    heap_add(heap, NULL);
+
     return heap;
 }
 
@@ -64,13 +69,55 @@ void heap_add(Heap_t* heap, Frame_t* frame) {
     heap->count++;
 }
 
-size_t heap_get_elem_count(Heap_t* heap) {
+void heap_serialize(Serializer_t* serializer, Heap_t* heap) {
+    printf("Serializing heap\n");
+    
+    // The first NULL frame must not be serialized, hence heap->count - 1 is
+    // given as argument
+    serializer_write_word(serializer, heap->count - 1);
+    
+    for (size_t i = 1; i < heap->count; i++) {
+        printf("  Serializing frame #%llu\n", i);
+        frame_serialize(serializer, heap, heap->frames[i]);
+    }
+}
+
+Heap_t* heap_deserialize(Serializer_t* serializer) {
+    Heap_t* heap = heap_make();
+    // heap_count is 1 less than the final heap count, due to the first NULL
+    // frame
+    size_t heap_count = serializer_read_word(serializer);
+    printf("Heap count: %llu\n", heap_count);
+    for (size_t i = 0; i < heap_count; i++) {
+        printf("  deserializing frame #%llu\n", i);
+        Frame_t* frame = frame_deserialize(serializer, heap);
+        heap_add(heap, frame);
+    }
+    heap->capacity = heap->count;
+    return heap;
+}
+
+size_t heap_get_frame_index(Heap_t* heap, Frame_t* frame) {
+    for (size_t i = 0; i < heap->count; i++) {
+        if (heap->frames[i] == frame) {
+            return i;
+        }
+    }
     return heap->count;
 }
 
-Frame_t* heap_get_elem(Heap_t* heap, size_t index) {
-    return heap->frames[index];
+Frame_t* heap_get_frame_by_index(Heap_t* heap, size_t frame_index) {
+    assert(frame_index < heap->count);
+    return heap->frames[frame_index];
 }
+
+// size_t heap_get_elem_count(Heap_t* heap) {
+//     return heap->count;
+// }
+
+// Frame_t* heap_get_elem(Heap_t* heap, size_t index) {
+//     return heap->frames[index];
+// }
 
 void heap_free(Heap_t* heap) {
     assert(heap != NULL);

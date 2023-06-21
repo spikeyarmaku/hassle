@@ -2,6 +2,7 @@
 #define _PRIMVAL_H_
 
 #include "rational\rational.h"
+#include "serialize\serialize.h"
 
 enum PrimValType {RationalValue, StringValue, SymbolValue};
 
@@ -15,7 +16,8 @@ Rational_t*         primval_get_rational    (PrimVal_t*);
 char*               primval_get_string      (PrimVal_t*);
 char*               primval_get_symbol      (PrimVal_t*);
 PrimVal_t*          primval_copy            (PrimVal_t*);
-void                primval_print           (PrimVal_t*);
+void                primval_serialize       (Serializer_t*, PrimVal_t*);
+PrimVal_t*          primval_deserialize     (Serializer_t*);
 void                primval_free            (PrimVal_t*);
 
 #endif

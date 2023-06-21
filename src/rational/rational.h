@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "rational\alnat.h"
+#include "serialize\serialize.h"
 
 /*
 Rational_t usage:
@@ -30,6 +31,8 @@ void            rational_reciprocate    (Rational_t*);
 char*           rational_to_string      (Rational_t*);
 Rational_t*     rational_copy           (Rational_t*);
 void            rational_print          (Rational_t*);
+void            rational_serialize      (Serializer_t*, Rational_t*);
+Rational_t*     rational_deserialize    (Serializer_t*);
 
 Rational_t*     rational_add            (Rational_t*, Rational_t*);
 Rational_t*     rational_sub            (Rational_t*, Rational_t*);

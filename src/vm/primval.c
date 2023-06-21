@@ -62,22 +62,41 @@ PrimVal_t* primval_copy(PrimVal_t* primval) {
     }
 }
 
-void primval_print(PrimVal_t* val) {
-    switch (val->type) {
-        case RationalValue: {
-            rational_print(val->rational);
+void primval_serialize(Serializer_t* serializer, PrimVal_t* primval) {
+    serializer_write(serializer, (uint8_t)primval->type);
+    switch (primval->type) {
+        case RationalValue:
+            printf("Serializing rational primval\n");
+            rational_serialize(serializer, primval->rational);
             break;
+        case StringValue:
+        case SymbolValue:
+            printf("Serializing string /symbol primval\n");
+            serializer_write_string(serializer, primval->string);
+            break;
+        default:
+            break;
+    }
+}
+
+PrimVal_t* primval_deserialize(Serializer_t* serializer) {
+    enum PrimValType type = (enum PrimValType)serializer_read(serializer);
+    switch (type) {
+        case RationalValue: {
+            Rational_t* rational = rational_deserialize(serializer);
+            return primval_make_rational(rational);
         }
         case StringValue: {
-            printf("\"%s\"", val->string);
-            break;
+            char* string = serializer_read_string(serializer);
+            return primval_make_string(string);
         }
         case SymbolValue: {
-            printf("`%s`", val->string);
-            break;
+            char* symbol = serializer_read_string(serializer);
+            return primval_make_symbol(symbol);
         }
         default: {
             assert(FALSE);
+            return NULL;
         }
     }
 }
@@ -85,17 +104,15 @@ void primval_print(PrimVal_t* val) {
 void primval_free(PrimVal_t* val) {
     assert(val != NULL);
     switch (val->type) {
-        case RationalValue: {
+        case RationalValue:
             rational_free(val->rational);
             break;
-        }
         case StringValue:
         case SymbolValue:
             free_mem("value_free/symbol", val->string);
             break;
-        default: {
+        default:
             assert(FALSE);
-        }
     }
 
     free_mem("primval_free", val);

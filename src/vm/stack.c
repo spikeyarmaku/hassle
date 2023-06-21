@@ -61,6 +61,27 @@ Closure_t* stack_peek(Stack_t* stack, size_t index) {
     return stack->elems[stack->next - 1 - index];
 }
 
+void stack_serialize(Serializer_t* serializer, Heap_t* heap, Stack_t* stack)
+{
+    serializer_write_word(serializer, stack->next);
+    printf("%llu stack elems\n", stack->next);
+    for (size_t i = 0; i < stack->next; i++) {
+        closure_serialize(serializer, heap, stack->elems[i]);
+    }
+}
+
+Stack_t* stack_deserialize(Serializer_t* serializer, Heap_t* heap)
+{
+    Stack_t* stack = stack_make();
+    size_t count = serializer_read_word(serializer);
+    printf("%llu stack elems\n", count);
+    for (size_t i = 0; i < count; i++) {
+        stack_add_closure(stack, closure_deserialize(serializer, heap));
+    }
+    stack->capacity = stack->next;
+    return stack;
+}
+
 void stack_free(Stack_t* stack) {
     assert(stack != NULL);
 

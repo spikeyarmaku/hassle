@@ -13,10 +13,9 @@ LSD - Least Significant Digit
 #include <math.h>
 #include <string.h>
 
-#include "config.h"
 #include "global.h"
 
-#include "memory.h"
+#include "serialize\serialize.h"
 
 // Arbitrary Length NATural, least significant digit first
 // Each byte contains a digit in base 128, and each byte has its highest bit set
@@ -48,5 +47,8 @@ void                alnat_print_bytes           (Alnat_t*);
 void                alnat_print_raw_bytes       (Alnat_t*);
 
 Alnat_t*            alnat_copy                  (Alnat_t*);
+
+void                alnat_serialize             (Serializer_t*, Alnat_t*);
+Alnat_t*            alnat_deserialize           (Serializer_t*);
 
 #endif

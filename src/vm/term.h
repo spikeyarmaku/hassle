@@ -6,6 +6,7 @@
 #include "parse\expr.h"
 #include "primval.h"
 #include "primop.h"
+#include "serialize\serialize.h"
 
 enum TermType   {PrimvalTerm, AbsTerm, LazyAppTerm, StrictAppTerm, OpTerm,
                 WorldTerm};
@@ -29,7 +30,8 @@ enum PrimOp     term_get_op             (Term_t*);
 Term_t*         term_copy               (Term_t*);
 void            term_free               (Term_t*);
 void            term_free_toplevel      (Term_t*);
-void            term_print              (Term_t*);
+void            term_serialize          (Serializer_t*, Term_t*);
+Term_t*         term_deserialize        (Serializer_t*);
 
 // Helper functions to make operator `eq` and primitive form `SyntaxTerm` work
 Term_t*         term_make_cons          ();

@@ -69,9 +69,9 @@ void debug_off() {
     #endif
 }
 
-INDEX bytes_to_index(uint8_t* bytes, uint8_t count) {
-    INDEX result = 0;
-    INDEX multiplier = 1;
+WORD bytes_to_word(uint8_t* bytes, uint8_t count) {
+    WORD result = 0;
+    WORD multiplier = 1;
     for (uint8_t i = 0; i < count; i++) {
         result += bytes[i] * multiplier;
         multiplier <<= 8;
@@ -79,10 +79,10 @@ INDEX bytes_to_index(uint8_t* bytes, uint8_t count) {
     return result;
 }
 
-void index_to_bytes(INDEX index, uint8_t* buffer, uint8_t count) {
-    INDEX temp = 255;
+void word_to_bytes(WORD word, uint8_t* buffer, uint8_t count) {
+    WORD temp = 255;
     for (uint8_t i = 0; i < count; i++) {
-        buffer[i] = (index & temp) >> (8 * i);
+        buffer[i] = (word & temp) >> (8 * i);
         temp <<= 8;
     }
 }

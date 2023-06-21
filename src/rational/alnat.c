@@ -1,5 +1,8 @@
 #include "alnat.h"
 
+#include "config.h"
+#include "memory.h"
+
 // Important: if the << operator is used, it must be put in parenthesis
 #define ALNAT_MAX 128
 
@@ -41,7 +44,7 @@ BOOL                _alnat_move_forward         (struct AlnatMarcher*);
 BOOL                _alnat_move_backward        (struct AlnatMarcher*);
 uint8_t             _alnat_get_next_digit       (struct AlnatMarcher*);
 uint8_t             _alnat_get_prev_digit       (struct AlnatMarcher*);
-size_t              _alnat_get_marcher_pos      (struct AlnatMarcher);
+// size_t              _alnat_get_marcher_pos      (struct AlnatMarcher);
 void                _alnat_rewind_marcher       (struct AlnatMarcher*);
 void                _alnat_fast_forward_marcher (struct AlnatMarcher*);
 size_t              _alnat_get_marcher_counter  (struct AlnatMarcher);
@@ -49,6 +52,7 @@ size_t              _alnat_get_marcher_counter  (struct AlnatMarcher);
 uint8_t             _alnat_unsafe_get_digit     (size_t, Alnat_t*);
 BOOL                _alnat_unsafe_is_last_digit (size_t, Alnat_t*);
 void                _alnat_unsafe_mark_digit    (size_t, BOOL, Alnat_t*);
+BOOL                _is_last_digit              (uint8_t d);
 
 void                _alnat_str_double           (char*);
 void                _alnat_str_add              (char*, char*);
@@ -174,9 +178,9 @@ BOOL _alnat_is_end(struct AlnatMarcher m) {
     return _alnat_unsafe_is_last_digit(m.counter, m.ptr);
 }
 
-size_t _alnat_get_marcher_pos(struct AlnatMarcher m) {
-    return m.counter;
-}
+// size_t _alnat_get_marcher_pos(struct AlnatMarcher m) {
+//     return m.counter;
+// }
 
 void _alnat_rewind_marcher(struct AlnatMarcher* m) {
     *m = _alnat_make_marcher(m->ptr);
@@ -187,7 +191,12 @@ uint8_t _alnat_unsafe_get_digit(size_t n, Alnat_t* a) {
 }
 
 BOOL _alnat_unsafe_is_last_digit(size_t n, Alnat_t* a) {
-    return (a[n] & ALNAT_MAX) == ALNAT_MAX ? FALSE : TRUE;
+    // return (a[n] & ALNAT_MAX) == ALNAT_MAX ? FALSE : TRUE;
+    return _is_last_digit(a[n]);
+}
+
+BOOL _is_last_digit(uint8_t d) {
+    return (d & ALNAT_MAX) == ALNAT_MAX ? FALSE : TRUE;
 }
 
 void _alnat_unsafe_mark_digit(size_t n, BOOL is_msd, Alnat_t* a) {
@@ -278,7 +287,7 @@ Alnat_t* string_to_alnat(char* string) {
 // Double the digits in a string, least significant digit first. E.g. "2678"
 // becomes "42571"
 void _alnat_str_double(char* num_str) {
-    INDEX index = 0;
+    WORD index = 0;
     uint8_t d;
     uint8_t carry = 0;
     BOOL go_on = TRUE;
@@ -309,7 +318,7 @@ void _alnat_str_double(char* num_str) {
 // Add the second number to the first one, least significant digit first, and
 // write it back into the first parameter. E.g. "456" and "28" becomes "637".
 void _alnat_str_add(char* num1_str, char* num2_str) {
-    INDEX index = 0;
+    WORD index = 0;
     BOOL go_on = TRUE;
     uint8_t d1;
     uint8_t d2;
@@ -406,8 +415,8 @@ char* alnat_to_string(Alnat_t* alnat) {
     // Strip the unused characters
     // Search for the first 0 byte
     char* current = result;
-    INDEX length = 0;
-    for (INDEX i = 0; i < digit_base_10_count; i++) {
+    WORD length = 0;
+    for (WORD i = 0; i < digit_base_10_count; i++) {
         if (current[i] == 0) {
             length = i;
             break;
@@ -415,7 +424,7 @@ char* alnat_to_string(Alnat_t* alnat) {
     }
     // printf("first zero: %llu\n", length);
     // go back until the first non-0 *digit*
-    for (INDEX i = length - 1; i > 0; i--) {
+    for (WORD i = length - 1; i > 0; i--) {
         if (current[i] != '0') {
             length = i + 2;
             break;
@@ -713,7 +722,7 @@ AlnatDiv_t alnat_div(Alnat_t* dividend, Alnat_t* divisor) {
     Alnat_t* dividend_part = (Alnat_t*)allocate_mem("alnat_div", NULL,
         sizeof(uint8_t) * (divisor_digit_count + 1));
 
-    for (INDEX i = divisor_digit_count; i > 0; i--) {
+    for (WORD i = divisor_digit_count; i > 0; i--) {
         dividend_part[i - 1] = _alnat_get_curr_digit(dividend_m);
         _alnat_move_backward(&dividend_m);
         _alnat_unsafe_mark_digit(i - 1, i == divisor_digit_count,
@@ -721,10 +730,10 @@ AlnatDiv_t alnat_div(Alnat_t* dividend, Alnat_t* divisor) {
     }
     // Start the loop
     uint8_t new_digit = 0;
-    INDEX digit_counter = 0;
+    WORD digit_counter = 0;
     do {
         // Add a new digit to the dividend
-        for (INDEX i = divisor_digit_count; i > 0; i--) {
+        for (WORD i = divisor_digit_count; i > 0; i--) {
             dividend_part[i] = dividend_part[i - 1];
         }
         dividend_part[0] = _alnat_get_curr_digit(dividend_m);
@@ -738,7 +747,7 @@ AlnatDiv_t alnat_div(Alnat_t* dividend, Alnat_t* divisor) {
             new_digit++;
 
             // Copy new_dividend_part back to dividend_part
-            INDEX idx = 0;
+            WORD idx = 0;
             do {
                 dividend_part[idx] = new_dividend_part[idx];
                 idx++;
@@ -763,7 +772,7 @@ AlnatDiv_t alnat_div(Alnat_t* dividend, Alnat_t* divisor) {
     } else {
         // Reverse digits
         uint8_t temp;
-        for (INDEX i = 0; i < digit_counter / 2; i++) {
+        for (WORD i = 0; i < digit_counter / 2; i++) {
             temp = quot[i];
             quot[i] = quot[digit_counter - i - 1];
             quot[digit_counter - i - 1] = temp;
@@ -830,13 +839,13 @@ void _alnat_strip(Alnat_t** alnat) {
     // Find the start of the useless zeroes
     do {
         if (_alnat_get_curr_digit(m) != 0) {
-            first_useless_zero = _alnat_get_marcher_pos(m) + 1;
+            first_useless_zero = _alnat_get_marcher_counter(m) + 1;
         }
     } while (_alnat_move_forward(&m));
 
     // Strip them
     if (first_useless_zero > 0 &&
-        first_useless_zero <= _alnat_get_marcher_pos(m)) {
+        first_useless_zero <= _alnat_get_marcher_counter(m)) {
         // printf("Resizing to %d\n", last_non_zero + 1);
         Alnat_t* new_alnat = (Alnat_t*)allocate_mem("_alnat_strip", *alnat,
             first_useless_zero);
@@ -980,4 +989,23 @@ Alnat_t* _alnat_shifted(Alnat_t* alnat, size_t amount, BOOL towards_msd) {
 
         return new_alnat;
     }
+}
+
+void alnat_serialize(Serializer_t* serializer, Alnat_t* alnat) {
+    struct AlnatMarcher marcher = _alnat_make_marcher(alnat);
+    do {
+        serializer_write(serializer, _alnat_get_curr_digit(marcher));
+    } while (_alnat_move_forward(&marcher) == TRUE);
+}
+
+Alnat_t* alnat_deserialize(Serializer_t* serializer) {
+    struct AlnatBuilder builder = _alnat_make_builder();
+    uint8_t digit = 0;
+    do {
+        digit = serializer_read(serializer);
+        _alnat_add_digit(digit, &builder);
+    } while (!_is_last_digit(digit));
+
+    _alnat_finalize(&builder);
+    return builder.ptr;
 }

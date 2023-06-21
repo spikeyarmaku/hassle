@@ -13,7 +13,7 @@
 #include <stdio.h>
 #endif
 
-#define INDEX size_t
+#define WORD size_t
 
 #define BOOL uint8_t
 #define FALSE 0
@@ -24,15 +24,15 @@
 enum ErrorCode {Success, Error};
 typedef enum ErrorCode ErrorCode_t;
 
-void error(const char* s, ...);
-void debug(const char* s, ...);
-void debug_start(const char* s, ...);
-void debug_end(const char* s, ...);
-void debug_on();
-void debug_off();
+void    error           (const char* s, ...);
+void    debug           (const char* s, ...);
+void    debug_start     (const char* s, ...);
+void    debug_end       (const char* s, ...);
+void    debug_on        ();
+void    debug_off       ();
 
-INDEX bytes_to_index(uint8_t*, uint8_t);
-void index_to_bytes(INDEX, uint8_t*, uint8_t);
-char* str_cpy(char*);
+WORD    bytes_to_word   (uint8_t*, uint8_t);
+void    word_to_bytes   (WORD, uint8_t*, uint8_t);
+char*   str_cpy         (char*);
 
 #endif
