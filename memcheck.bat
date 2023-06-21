@@ -1,1 +1,1 @@
-drmemory.exe bin\real.exe test\test.real
+drmemory.exe bin\hassle.exe test\test.hsl

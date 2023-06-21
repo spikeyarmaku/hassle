@@ -1,2 +1,2 @@
-.\bin\real.exe test\test.real
-@REM .\bin\real.exe
+.\bin\hassle.exe test\test.hsl
+@REM .\bin\hassle.exe

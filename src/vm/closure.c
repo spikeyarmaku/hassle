@@ -55,7 +55,7 @@ Closure_t* closure_deserialize(Serializer_t* serializer, Heap_t* heap)
     BOOL is_term_not_null = serializer_read(serializer);
     Term_t* term = NULL;
     if (is_term_not_null) {
-        Term_t* term = term_deserialize(serializer);
+        term = term_deserialize(serializer);
     }
     Frame_t* frame = heap_get_frame_by_index(heap,
         serializer_read_word(serializer));
