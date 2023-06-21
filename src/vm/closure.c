@@ -40,14 +40,23 @@ BOOL closure_is_update(Closure_t* closure) {
 void closure_serialize(Serializer_t* serializer, Heap_t* heap,
     Closure_t* closure)
 {
-    term_serialize(serializer, closure->term);
+    if (closure->term == NULL) {
+        serializer_write(serializer, 0);
+    } else {
+        serializer_write(serializer, 1);
+        term_serialize(serializer, closure->term);
+    }
     serializer_write_word(serializer,
         heap_get_frame_index(heap, closure->frame));
 }
 
 Closure_t* closure_deserialize(Serializer_t* serializer, Heap_t* heap)
 {
-    Term_t* term = term_deserialize(serializer);
+    BOOL is_term_not_null = serializer_read(serializer);
+    Term_t* term = NULL;
+    if (is_term_not_null) {
+        Term_t* term = term_deserialize(serializer);
+    }
     Frame_t* frame = heap_get_frame_by_index(heap,
         serializer_read_word(serializer));
     return closure_make(term, frame);
