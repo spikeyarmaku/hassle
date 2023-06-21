@@ -79,3 +79,17 @@ A combinatory account of internal structure - https://www.researchgate.net/publi
     relevant SE thread: https://cstheory.stackexchange.com/questions/42735/is-combinatory-logic-cl-still-relevant-for-programming-language-theory
 Control Flow Analysis for SF Combinator Calculus - https://arxiv.org/pdf/1512.03861.pdf
 Efficient Combinator Code - https://sci-hub.se/https://doi.org/10.1016/0096-0551(85)90017-7
+
+interactive programming:
+bare minimum to have interactive repl programming like common lisp - https://www.reddit.com/r/lisp/comments/urp908/bare_minimum_to_have_interactive_repl_programming/
+Interpreter with debug capability? - https://www.reddit.com/r/ProgrammingLanguages/comments/doiq6l/interpreter_with_debug_capability/
+Modeling an Algebraic Stepper - https://www2.ccs.neu.edu/racket/pubs/esop2001-cff.pdf
+THE DEBUGGABLE INTERPRETER DESIGN PATTERN - http://www.bergel.eu/download/papers/Berg07d-debugger.pdf
+Design and Implementation of Efficient Interpretation - http://www.cs.toronto.edu/~matz/dissertation/matzDissertation-latex2html/node7.html
+The Structure and Performance of Efficient Interpreters - https://jilp.org/vol5/v5paper12.pdf
+Is interactive REPL-based development in conflict with the functional discipline? - https://www.reddit.com/r/lisp/comments/pyemx9/is_interactive_replbased_development_in_conflict/
+
+GC:
+How can I provide garbage collection for an interpreted language implemented in C? - https://stackoverflow.com/questions/28414345/how-can-i-provide-garbage-collection-for-an-interpreted-language-implemented-in
+Boehm garbage collector - https://en.wikipedia.org/wiki/Boehm_garbage_collector
+Manual vs GC memory management in Interpreter & using malloc/free [closed] - https://stackoverflow.com/questions/59530853/manual-vs-gc-memory-management-in-interpreter-using-malloc-free

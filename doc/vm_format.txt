@@ -1,0 +1,54 @@
+read-vm:
+    word-size = read(1)
+    heap-count = read(word-size)
+    frames = repeat(read-frame, heap-count)
+    control = read-closure
+    stack = read-stack
+
+read-frame:
+    name = read-string
+    closure = read-closure
+    parent-index = read(word-size)
+
+read-closure:
+    is-term-null = read(1)
+    if (is-term-null == 1):
+        term = read-term
+    frame-index = read(word-size)
+
+read-term:
+    term-type = read(1)
+    switch(term-type)
+        0:
+            read-primval
+        1:
+            read-string
+            read-term
+        2, 3:
+            read-term
+            read-term
+        4:
+            op = read(1)
+        5:
+            NOT_IMPLEMENTED
+
+read-primval:
+    primval-type = read(1)
+    switch(primval-type)
+        0:
+            read-rational
+        1, 2:
+            read-string
+
+read-rational:
+    sign = read(1) ; 0 - zero, 1 - positive, 2 - negative
+    numerator = read-alnat
+    denominator = read-alnat
+
+read-alnat:
+    read bytes until its most significant bit is 0 (i.e. its byte value is less
+    than 128)
+
+read-stack:
+    stack-count = read(word-size)
+    elems = repeat(read-closure, stack-count)
