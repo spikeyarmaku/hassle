@@ -33,9 +33,6 @@ VM_t* _vm_make(Stack_t* stack, Heap_t* heap, Closure_t* control) {
 
 VM_t* vm_init() {
     VM_t* vm = _vm_make(stack_make(), heap_make_default(), NULL);
-
-    // vm_set_control_to_expr(vm, expr); expr = NULL;
-
     return vm;
 }
 

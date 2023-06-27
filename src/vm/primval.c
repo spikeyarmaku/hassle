@@ -99,6 +99,23 @@ PrimVal_t* primval_deserialize(Serializer_t* serializer) {
     }
 }
 
+void primval_print(PrimVal_t* primval) {
+    switch(primval->type) {
+        case RationalValue: {
+            rational_print(primval->rational);
+            break;
+        }
+        case StringValue: {
+            printf("\"%s\"", primval->string);
+            break;
+        }
+        case SymbolValue: {
+            printf("%s", primval->string);
+            break;
+        }
+    }
+}
+
 void primval_free(PrimVal_t* val) {
     assert(val != NULL);
     switch (val->type) {

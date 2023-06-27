@@ -18,6 +18,7 @@ char*               primval_get_symbol      (PrimVal_t*);
 PrimVal_t*          primval_copy            (PrimVal_t*);
 void                primval_serialize       (Serializer_t*, PrimVal_t*);
 PrimVal_t*          primval_deserialize     (Serializer_t*);
+void                primval_print           (PrimVal_t*);
 void                primval_free            (PrimVal_t*);
 
 #endif
