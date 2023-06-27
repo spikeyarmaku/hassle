@@ -1,7 +1,7 @@
 read-vm:
     word-size = read(1)
     heap-count = read(word-size)
-    frames = repeat(read-frame, heap-count)
+    heap = repeat(read-frame, heap-count) ; NULL frame is implied
     control = read-closure
     stack = read-stack
 
@@ -11,8 +11,8 @@ read-frame:
     parent-index = read(word-size)
 
 read-closure:
-    is-term-null = read(1)
-    if (is-term-null == 1):
+    is-term-not-null = read(1)
+    if (is-term-not-null == 1):
         term = read-term
     frame-index = read(word-size)
 

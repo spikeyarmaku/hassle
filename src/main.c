@@ -16,59 +16,227 @@ Coding convenctions:
   (callee-frees)
 */
 
-#include "main.h"
+#include "config.h"
+#include "global.h"
+
+#include "parse\parse.h"
+#include "vm\vm.h"
+#include "serialize\serialize.h"
+
+#include "network.h"
+#include "memory.h"
+#include "response.h"
+
 #include "vm/vm.h"
 
-// enum ErrorCode interpret(Frame_t env, Expr_t expr) {
-//     struct Term result;
-//     enum ErrorCode Error_code = eval_expr(env, expr, &result);
-//     if (Error_code != Success) {
-//         return Error_code;
-//     }
-    
-//     char buf[1024];
-//     print_term(buf, result, env);
-//     printf("%s", buf);
+struct Config {
+    BOOL open_socket;
+    uint16_t port;
+    BOOL log_memory;
+    char* file_to_interpret;
+};
 
-//     free_term(result);
+typedef struct Config Config_t;
 
-//     return Success;
-// }
+Config_t*   _config_init                    ();
+ErrorCode_t _flag_handle                    (Config_t*, char*);
+void        _interpreter_start              (Config_t*);
+void        _print_help_message             ();
+void        _interpret_file                 (char*);
+void        _repl_start_local               (VM_t*);
+void        _repl_start_remote              (VM_t*, Connection_t);
+Response_t* _execute_command                (VM_t*, char*);
 
-#ifdef REPL_ENABLED
-enum ErrorCode repl() {
-    // char buffer[STRING_BUFFER_SIZE];
-
-    // int go_on = 1;
-    // Frame_t env = make_default_frame();
-    // while (go_on) {
-    //     printf("HASSLE> ");
-
-    //     if (!fgets(buffer, STRING_BUFFER_SIZE, stdin)) {
-    //         printf("Error while reading from stdin.\n");
-    //     }
-
-    //     if (buffer[0] == '\n') {
-    //         go_on = 0;
-    //         break;
-    //     }
-
-    //     ErrorCode_t error_code;
-    //     Expr_t expr = parse_from_str(&error_code, buffer);
-    //     if (error_code != Success) {
-    //         return error_code;
-    //     }
-        
-    //     interpret(env, expr);
-    //     free_expr(&expr);
-    // }
-
-    // free_frame(&env);
-    return Success;
+Config_t* _config_init() {
+    Config_t* config = (Config_t*)allocate_mem(NULL, NULL, sizeof(Config_t));
+    config->open_socket = FALSE;
+    config->port = 0;
+    config->log_memory = FALSE;
+    config->file_to_interpret = NULL;
+    return config;
 }
-#endif
 
-void interpret_file(char* file_name) {
+ErrorCode_t _flag_handle(Config_t* config, char* flag) {
+    printf("Checking flag %s\n", flag);
+    switch(flag[1]) {
+        case 'p': {
+            int port_num = atoi(flag + 2);
+            if (port_num == 0) {
+                // Make sure there is an error instead of just port number being
+                // 0
+                if (strlen(flag) != 3) {
+                    // port number cannot be read
+                    printf("Error in flag %s: can't read port number.\n", flag);
+                    return Error;
+                }
+            }
+            config->open_socket = TRUE;
+            config->port = port_num;
+            return Success;
+        }
+        case 'm': {
+            config->log_memory = TRUE;
+            return Success;
+        }
+        case 'h': {
+            return Error;
+        }
+        default: {
+            assert(FALSE);
+            return Success;
+        }
+    }
+}
+
+void _interpreter_start(Config_t* config) {
+    printf("Initializing VM\n");
+    VM_t* vm = vm_init();
+    
+    if (config->log_memory == TRUE) {
+        printf("Starting memory logger service\n");
+        init_logger();
+    }
+
+    if (config->file_to_interpret != NULL) {
+        printf("Interpreting file %s\n", config->file_to_interpret);
+        _interpret_file(config->file_to_interpret);
+    } else {
+        if (config->open_socket == TRUE) {
+            printf("Listening on port %d\n", config->port);
+            Connection_t client = network_listen(config->port);
+            _repl_start_remote(vm, client);
+        } else {
+            _repl_start_local(vm);
+        }
+    }
+}
+
+void _repl_start_local(VM_t* vm) {
+    // read in command
+    char buffer[1024];
+    Response_t* response = response_make_void();
+    
+    while (response_get_type(response) != ExitResponse) {
+        gets(buffer);
+        response = _execute_command(vm, buffer);
+        switch (response_get_type(response)) {
+            case EvalStateResponse: {
+                break;
+            }
+            case TermResponse: {
+                break;
+            }
+            case VMDataResponse: {
+                break;
+            }
+            case VoidResponse: {
+                break;
+            }
+            case InvalidCommandResponse: {
+                break;
+            }
+            case ExitResponse: {
+                break;
+            }
+        }
+    }
+}
+// TODO
+void _repl_start_remote(VM_t* vm, Connection_t conn) {
+    printf("Starting remote repl\n");
+    Response_t* response = response_make_void();
+    int size;
+    BOOL is_alive = TRUE;
+    while ((response_get_type(response) != ExitResponse) && (is_alive == TRUE))
+    {
+        uint8_t* buffer = network_receive(conn, &size, &is_alive);
+        if (size >= 0) {
+            printf("Incoming message (%d bytes): %s\n", size, (char*)buffer);
+            // network_send(conn, buffer, size); // DEBUG
+        }
+        response = _execute_command(vm, (char*)buffer);
+        size_t resp_data_size;
+        uint8_t* resp_data = response_get_data(response, &resp_data_size);
+        network_send(conn, resp_data, (int)resp_data_size);
+        response_free(response);
+    }
+    network_close(conn);
+}
+
+Response_t* _execute_command(VM_t* vm, char* cmd) {
+    int token_len = str_get_token_end(cmd);
+    char* cmds[] = {"file", "expr", "step", "run", "reset", "get", "exit"};
+    int cmd_count = sizeof(cmds) / sizeof(cmds[0]);
+    for (int i = 0; i < cmd_count; i++) {
+        if (strlen(cmds[i]) == token_len &&
+            strncmp(cmd, cmds[i], token_len) == 0)
+        {
+            switch(i) {
+                case 0: {
+                    // file
+                    _interpret_file(cmd + token_len + 1);
+                    return response_make_void();
+                }
+                case 1: {
+                    // expr
+                    vm_set_control_to_expr(vm,
+                        parse_from_str(cmd + token_len + 1));
+                    return response_make_void();
+                }
+                case 2: {
+                    // step
+                    return response_make_eval_state(vm_step(vm));
+                }
+                case 3: {
+                    // run
+                    return response_make_term(vm_run(vm));
+                }
+                case 4: {
+                    // reset
+                    vm_reset(vm);
+                    return response_make_void();
+                }
+                case 5: {
+                    // get word_size
+                    int param_len = str_get_token_end(cmd + token_len + 1);
+                    uint8_t word_size;
+                    if (param_len == 0) {
+                        word_size = sizeof(size_t);
+                    } else {
+                        word_size = atoi(cmd + token_len + 1);
+                    }
+                    return response_make_vm_data(vm_serialize(vm, word_size));
+                }
+                case 6: {
+                    // exit
+                    return response_make_exit();
+                }
+            }
+        }
+    }
+    return response_make_invalid_command();
+}
+
+void _print_help_message() {
+    printf("HASSLE\n");
+    printf("\n");
+    printf("USAGE\n");
+    printf("  hassle [-p[PORT_NUMBER]] [-m] [-h] [filename]\n");
+    printf("\n");
+    printf("DESCRIPTION\n");
+    printf(
+"  Hassle can interpret a file, or act as an interactive debugger. If a\n"
+"  filename is given, it will evaluate the file's content. If the -p switch\n"
+"  is specified, a listener port is opened, to which a debugger can connect.\n"
+"  The filename and the -p flag can be specified together, but at least one\n"
+"  of must be present.\n");
+    printf("\n");
+    printf("  -p[PORT_NUMBER]  Listens to a client on PORT_NUMBER\n");
+    printf("  -m               Turns on memory logging (useful for debugging)\n");
+    printf("  -h               Prints this message\n");
+}
+
+void _interpret_file(char* file_name) {
     printf("%s\n", file_name);
     
     debug("\n\n------PARSE------\n\n");
@@ -95,50 +263,27 @@ void interpret_file(char* file_name) {
     show_logger_entries();
 }
 
-struct Test{
-    char* msg;
-};
-struct Test char_test(char* msg) {
-    struct Test t;
-    t.msg = msg;
-    return t;
-}
-
 // If called with a file, run it, else start a REPL
 int main(int argc, char *argv[]) {
-    printf("----------\nHassle\n----------\n\n");
+    printf("---------- Hassle ----------\n\n");
     setvbuf(stdout, (char *) NULL, _IONBF, 0); /* make stdout line-buffered */
-    init_logger();
-    
-    if (argc > 1) {
-        // There is at least one parameter
-        
-        interpret_file(argv[1]);
-        
-        // char buf[100];
-        // sprintf(buf, "126");
-        // Alnat_t alnat1 = string_to_alnat(buf);
-        // Alnat_t alnat1copy = alnat_copy(alnat1);
-        // sprintf(buf, "2");
-        // Alnat_t alnat2 = string_to_alnat(buf);
-        // Alnat_t alnat2copy = alnat_copy(alnat2);
-        // Alnat_t sum = alnat_add(alnat1copy, alnat2copy);
-        // debug("\nResult's raw bytes:\n");
-        // alnat_print_raw_bytes(sum);
+    Config_t* config = _config_init();
 
-        // Alnat_t sumcopy = alnat_copy(sum);
-        // debug("\nRESULT:\n\n");
-        // alnat_print(sumcopy);
-
-        // run_tests();
-    } else {
-        #ifdef REPL_ENABLED
-        // There are no arguments, start a REPL
-        repl();
-        #else
-        printf("Error: no filename provided.\n");
-        #endif
+    for (int i = 1; i < argc; i++) {
+        if (argv[i][0] == '-') {
+            ErrorCode_t error_code = _flag_handle(config, argv[i]);
+            if (error_code == Error) {
+                _print_help_message();
+                return error_code;
+            }
+        } else {
+            // Interpret the provided file
+            config->file_to_interpret = argv[i];
+        }
     }
+
+    _interpreter_start(config);
+    
     return 0;
 }
 

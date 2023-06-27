@@ -31,10 +31,10 @@ VM_t* _vm_make(Stack_t* stack, Heap_t* heap, Closure_t* control) {
     return vm;
 }
 
-VM_t* vm_init(Expr_t* expr) {
+VM_t* vm_init() {
     VM_t* vm = _vm_make(stack_make(), heap_make_default(), NULL);
 
-    vm_set_control_to_expr(vm, expr); expr = NULL;
+    // vm_set_control_to_expr(vm, expr); expr = NULL;
 
     return vm;
 }
@@ -209,6 +209,12 @@ void vm_free(VM_t* vm) {
     stack_free(vm->stack);
     heap_free(vm->heap);
     free_mem("vm_free", vm);
+}
+
+void vm_reset(VM_t* vm) {
+    closure_free(vm->control);  vm->control = NULL;
+    stack_free(vm->stack);      vm->stack = stack_make();
+    heap_free(vm->heap);        vm->heap = heap_make_default();
 }
 
 // ------------------------- VM invocations ------------------------------------

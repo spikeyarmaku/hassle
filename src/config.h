@@ -8,9 +8,6 @@
 // TODO implement unicode support
 // # define UNICODE
 
-// Comment this out to disable the repl
-#define REPL_ENABLED
-
 // Comment this out to disable logging memory usage
 // #define MEMORY_DIAGNOSTIC
 

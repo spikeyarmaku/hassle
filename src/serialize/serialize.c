@@ -140,3 +140,7 @@ void serializer_free(Serializer_t* serializer) {
     free_mem("serializer_free/data", serializer->data);
     free_mem("serializer_free", serializer);
 }
+
+void serializer_free_toplevel(Serializer_t* serializer) {
+    free_mem("serializer_free_toplevel", serializer);
+}

@@ -1,2 +1,2 @@
-.\bin\hassle.exe test\test.hsl
-@REM .\bin\hassle.exe
+@REM .\bin\hassle.exe test\test.hsl
+.\bin\hassle.exe -p32123

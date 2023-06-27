@@ -13,7 +13,7 @@
 #include <stdio.h>
 #endif
 
-#define WORD size_t
+#define VM_WORD size_t
 
 #define BOOL uint8_t
 #define FALSE 0
@@ -31,8 +31,9 @@ void    debug_end       (const char* s, ...);
 void    debug_on        ();
 void    debug_off       ();
 
-WORD    bytes_to_word   (uint8_t*, uint8_t);
-void    word_to_bytes   (WORD, uint8_t*, uint8_t);
-char*   str_cpy         (char*);
+VM_WORD bytes_to_word       (uint8_t*, uint8_t);
+void    word_to_bytes       (VM_WORD, uint8_t*, uint8_t);
+char*   str_cpy             (char*);
+int     str_get_token_end   (const char*);
 
 #endif

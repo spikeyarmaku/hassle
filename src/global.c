@@ -69,9 +69,9 @@ void debug_off() {
     #endif
 }
 
-WORD bytes_to_word(uint8_t* bytes, uint8_t count) {
-    WORD result = 0;
-    WORD multiplier = 1;
+VM_WORD bytes_to_word(uint8_t* bytes, uint8_t count) {
+    VM_WORD result = 0;
+    VM_WORD multiplier = 1;
     for (uint8_t i = 0; i < count; i++) {
         result += bytes[i] * multiplier;
         multiplier <<= 8;
@@ -79,8 +79,8 @@ WORD bytes_to_word(uint8_t* bytes, uint8_t count) {
     return result;
 }
 
-void word_to_bytes(WORD word, uint8_t* buffer, uint8_t count) {
-    WORD temp = 255;
+void word_to_bytes(VM_WORD word, uint8_t* buffer, uint8_t count) {
+    VM_WORD temp = 255;
     for (uint8_t i = 0; i < count; i++) {
         buffer[i] = (word & temp) >> (8 * i);
         temp <<= 8;
@@ -92,4 +92,13 @@ char* str_cpy(char* src) {
         sizeof(char) * (strlen(src) + 1));
     strcpy(result, src);
     return result;
+}
+
+// Return the start of the next token after the separator
+int str_get_token_end(const char* src) {
+    int i = 0;
+    while (src[i] != ' ' && src[i] != 0) {
+        i++;
+    }
+    return i;
 }

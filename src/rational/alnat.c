@@ -287,7 +287,7 @@ Alnat_t* string_to_alnat(char* string) {
 // Double the digits in a string, least significant digit first. E.g. "2678"
 // becomes "42571"
 void _alnat_str_double(char* num_str) {
-    WORD index = 0;
+    VM_WORD index = 0;
     uint8_t d;
     uint8_t carry = 0;
     BOOL go_on = TRUE;
@@ -318,7 +318,7 @@ void _alnat_str_double(char* num_str) {
 // Add the second number to the first one, least significant digit first, and
 // write it back into the first parameter. E.g. "456" and "28" becomes "637".
 void _alnat_str_add(char* num1_str, char* num2_str) {
-    WORD index = 0;
+    VM_WORD index = 0;
     BOOL go_on = TRUE;
     uint8_t d1;
     uint8_t d2;
@@ -415,8 +415,8 @@ char* alnat_to_string(Alnat_t* alnat) {
     // Strip the unused characters
     // Search for the first 0 byte
     char* current = result;
-    WORD length = 0;
-    for (WORD i = 0; i < digit_base_10_count; i++) {
+    VM_WORD length = 0;
+    for (VM_WORD i = 0; i < digit_base_10_count; i++) {
         if (current[i] == 0) {
             length = i;
             break;
@@ -424,7 +424,7 @@ char* alnat_to_string(Alnat_t* alnat) {
     }
     // printf("first zero: %llu\n", length);
     // go back until the first non-0 *digit*
-    for (WORD i = length - 1; i > 0; i--) {
+    for (VM_WORD i = length - 1; i > 0; i--) {
         if (current[i] != '0') {
             length = i + 2;
             break;
@@ -722,7 +722,7 @@ AlnatDiv_t alnat_div(Alnat_t* dividend, Alnat_t* divisor) {
     Alnat_t* dividend_part = (Alnat_t*)allocate_mem("alnat_div", NULL,
         sizeof(uint8_t) * (divisor_digit_count + 1));
 
-    for (WORD i = divisor_digit_count; i > 0; i--) {
+    for (VM_WORD i = divisor_digit_count; i > 0; i--) {
         dividend_part[i - 1] = _alnat_get_curr_digit(dividend_m);
         _alnat_move_backward(&dividend_m);
         _alnat_unsafe_mark_digit(i - 1, i == divisor_digit_count,
@@ -730,10 +730,10 @@ AlnatDiv_t alnat_div(Alnat_t* dividend, Alnat_t* divisor) {
     }
     // Start the loop
     uint8_t new_digit = 0;
-    WORD digit_counter = 0;
+    VM_WORD digit_counter = 0;
     do {
         // Add a new digit to the dividend
-        for (WORD i = divisor_digit_count; i > 0; i--) {
+        for (VM_WORD i = divisor_digit_count; i > 0; i--) {
             dividend_part[i] = dividend_part[i - 1];
         }
         dividend_part[0] = _alnat_get_curr_digit(dividend_m);
@@ -747,7 +747,7 @@ AlnatDiv_t alnat_div(Alnat_t* dividend, Alnat_t* divisor) {
             new_digit++;
 
             // Copy new_dividend_part back to dividend_part
-            WORD idx = 0;
+            VM_WORD idx = 0;
             do {
                 dividend_part[idx] = new_dividend_part[idx];
                 idx++;
@@ -772,7 +772,7 @@ AlnatDiv_t alnat_div(Alnat_t* dividend, Alnat_t* divisor) {
     } else {
         // Reverse digits
         uint8_t temp;
-        for (WORD i = 0; i < digit_counter / 2; i++) {
+        for (VM_WORD i = 0; i < digit_counter / 2; i++) {
             temp = quot[i];
             quot[i] = quot[digit_counter - i - 1];
             quot[digit_counter - i - 1] = temp;
