@@ -1,4 +1,49 @@
-- compile:
-tcc -o main.exe main.c
-- test:
-./main.exe hello.hsl
+strict application - !(T1 T2)
+it evaluates T2 first, and puts T1 on the stack
+
+before evaluation, the source code is converted into a scott-encoded list
+
+Syntax
+
+(State)         s  ::= 〈c, σ, μ〉
+(Term)          t  ::= i | Λi.t | t t | !(t t) | op
+(PrimOp)        op ::= + | − | ∗ | / | = | > | < | eval
+(Variable)      i ∈ string
+(Closure)       c ::= t[l]
+(Value)         v ::= Λi.t[l] | i[l]
+(Heap)          μ ::= ε | μ[(i, l) → ρ]
+(Environment)   ρ ::= • | c · l
+(Context)       σ ::=  | σ c | σ u
+(Location)      l, u, f ∈ N
+
+Semantics
+
+encode(t) converts a term t into a lambda-encoded list
+
+Update a value at a certain environment frame with the current closure
+(Upd)  〈v, σ u, μ〉→CE〈v, σ, μ(u → v · l)〉 where c · l = μ(u)
+
+Introduce a new frame into the environment
+(Lam) 〈Λi.t[l], σ c, μ〉 →CE〈t[f], σ, μ[(i, f) → c · l]〉 f ∈ dom(μ)
+
+Put the second term onto the stack and make the first term the current closure
+(App1) 〈t t′[l], σ, μ〉→CE〈t[l], σ t′[l], μ〉
+(App2) 〈!(t t′)[l], σ, μ〉→CE〈t′[l], σ t[l], μ〉
+
+Look up the var's value and make it the current closure, while putting its
+location onto the stack
+(Var)  〈0[l], σ, μ〉→CE〈c, σ l, μ〉 where c · l′ = μ(l)
+
+literals and operators addition:
+
+Swap the current closure and the top of the stack
+(Int)  〈n[l], σ c, μ, k〉→CE〈c, σ n[l], μ, k〉
+
+Take the necessary amount of items off the stack, and apply them with the
+current operator
+(Op1)  〈op[l], σ n′ n, μ, k〉→CE〈op(n′, n)[l], σ, μ, k〉
+(Op2)  〈op[l], σ t′ t, μ, k〉→CE〈!(!(op n′) n)[l], σ, μ, k〉
+
+Notes:
+- eval: if the term is null, panic, otherwise eval the first elem and apply the
+unevaluated rest
