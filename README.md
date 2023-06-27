@@ -1,6 +1,6 @@
 # Hassle
 
-An interpreter based on a modified Cactus Environment Machine
+A language and an interpreter based on a modified Cactus Environment Machine
 
 Inspirations:    
 **Scheme** - for its syntax and homoiconicity    
