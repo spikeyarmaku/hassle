@@ -4,9 +4,6 @@ TODO
 - add locale support (decimal separators, etc.)
 - check memory allocations for leaks
 - Check if the input expression is well-formed (all parens match)
-- add the ability to restrict the VM to a certain word size.
-    This is so a vm state can be loaded on a 16-bit machine, even though it was
-    saved on a 64-bit machine
 */
 
 /*
@@ -42,7 +39,7 @@ Config_t*   _config_init                    ();
 ErrorCode_t _flag_handle                    (Config_t*, char*);
 void        _interpreter_start              (Config_t*);
 void        _print_help_message             ();
-void        _interpret_file                 (char*);
+Term_t*     _interpret_file                 (VM_t*, char*);
 void        _repl_start_local               (VM_t*);
 void        _repl_start_remote              (VM_t*, Connection_t);
 Response_t* _execute_command                (VM_t*, char*);
@@ -57,7 +54,6 @@ Config_t* _config_init() {
 }
 
 ErrorCode_t _flag_handle(Config_t* config, char* flag) {
-    printf("Checking flag %s\n", flag);
     switch(flag[1]) {
         case 'p': {
             int port_num = atoi(flag + 2);
@@ -99,7 +95,9 @@ void _interpreter_start(Config_t* config) {
 
     if (config->file_to_interpret != NULL) {
         printf("Interpreting file %s\n", config->file_to_interpret);
-        _interpret_file(config->file_to_interpret);
+        Term_t* term = _interpret_file(vm, config->file_to_interpret);
+        term_print(term);
+        term_free(term);
     } else {
         if (config->open_socket == TRUE) {
             printf("Listening on port %d\n", config->port);
@@ -141,7 +139,7 @@ void _repl_start_local(VM_t* vm) {
         }
     }
 }
-// TODO
+
 void _repl_start_remote(VM_t* vm, Connection_t conn) {
     printf("Starting remote repl\n");
     Response_t* response = response_make_void();
@@ -150,10 +148,6 @@ void _repl_start_remote(VM_t* vm, Connection_t conn) {
     while ((response_get_type(response) != ExitResponse) && (is_alive == TRUE))
     {
         uint8_t* buffer = network_receive(conn, &size, &is_alive);
-        if (size >= 0) {
-            printf("Incoming message (%d bytes): %s\n", size, (char*)buffer);
-            // network_send(conn, buffer, size); // DEBUG
-        }
         response = _execute_command(vm, (char*)buffer);
         size_t resp_data_size;
         uint8_t* resp_data = response_get_data(response, &resp_data_size);
@@ -174,7 +168,7 @@ Response_t* _execute_command(VM_t* vm, char* cmd) {
             switch(i) {
                 case 0: {
                     // file
-                    _interpret_file(cmd + token_len + 1);
+                    _interpret_file(vm, cmd + token_len + 1);
                     return response_make_void();
                 }
                 case 1: {
@@ -236,31 +230,10 @@ void _print_help_message() {
     printf("  -h               Prints this message\n");
 }
 
-void _interpret_file(char* file_name) {
-    printf("%s\n", file_name);
-    
-    debug("\n\n------PARSE------\n\n");
-
+Term_t* _interpret_file(VM_t* vm, char* file_name) {
     Expr_t* expr = parse_from_file(file_name);
-
-    VM_t* vm = vm_init(expr);
-
-    debug("\n\n------EVAL------\n\n");
-
-    Term_t* result = vm_run(vm);
-    (void)result;
-
-    // if (result != NULL) {
-    //     printf("RESULT:\n");
-    //     term_print(result);
-    //     printf("\n");
-    // }
-
-    debug("\n\n------FREE VM------\n\n");
-
-    vm_free(vm);
-
-    show_logger_entries();
+    vm_set_control_to_expr(vm, expr);
+    return vm_run(vm);
 }
 
 // If called with a file, run it, else start a REPL

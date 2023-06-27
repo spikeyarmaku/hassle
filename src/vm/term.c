@@ -88,10 +88,7 @@ Term_t* _term_read_symbol(char* str) {
 // replace the variables in the resulting term with their index in the list,
 // and return the list along with the term
 //
-// Turn an expression into symbols and lazy apps
-//
-// TODO Rewrite it, so that it turns an expression into a scott-encoded list
-// expression
+// Turn an expression into a scott-encoded list
 // http://fexpr.blogspot.com/2013/07/explicit-evaluation.html
 Term_t* term_from_expr(Expr_t* expr) {
     if (!expr_is_list(expr)) {
@@ -153,15 +150,6 @@ Term_t* term_make_abs(char* var_name, Term_t* body) {
     return term;
 }
 
-// Term_t* term_make_syntax(char* var_name, Term_t* body) {
-//     Term_t* term = (Term_t*)allocate_mem("term_make_abs", NULL,
-//         sizeof(struct Term));
-//     term->type = AbsTerm;
-//     term->abs.var = var_name;
-//     term->abs.app_body = body;
-//     return term;
-// }
-
 Term_t* term_make_lazy_app(Term_t* term1, Term_t* term2) {
     Term_t* term = (Term_t*)allocate_mem("term_make_lazy_app", NULL,
         sizeof(struct Term));
@@ -199,13 +187,11 @@ PrimVal_t* term_get_primval(Term_t* term) {
 
 char* term_get_abs_var(Term_t* term) {
     assert(term_get_type(term) == AbsTerm);
-        // term_get_type(term) == SyntaxTerm);
     return term->abs.var;
 }
 
 Term_t* term_get_abs_body(Term_t* term) {
     assert(term_get_type(term) == AbsTerm);
-        // term_get_type(term) == SyntaxTerm);
     return term->abs.app_body;
 }
 
@@ -233,9 +219,6 @@ Term_t* term_copy(Term_t* term) {
         case AbsTerm:
             return term_make_abs(
                 str_cpy(term->abs.var), term_copy(term->abs.app_body));
-        // case SyntaxTerm:
-        //     return term_make_syntax(
-        //         str_cpy(term->abs.var), term_copy(term->abs.app_body));
         case LazyAppTerm:
             return term_make_lazy_app(
                 term_copy(term->app.term1), term_copy(term->app.term2));
@@ -259,7 +242,6 @@ void term_free(Term_t* term) {
             break;
         }
         case AbsTerm:
-        // case SyntaxTerm:
             free_mem("term_free/abs/var", term->abs.var);
             term_free(term->abs.app_body);
             break;
@@ -286,26 +268,21 @@ void term_free_toplevel(Term_t* term) {
 }
 
 void term_serialize(Serializer_t* serializer, Term_t* term) {
-    printf("Serializing term\n");
     serializer_write(serializer, (uint8_t)term->type);
     switch (term->type) {
         case PrimvalTerm:
-            printf("Serializing primval term\n");
             primval_serialize(serializer, term->primval);
             break;
         case AbsTerm:
-            printf("Serializing abs term\n");
             serializer_write_string(serializer, term->abs.var);
             term_serialize(serializer, term->abs.app_body);
             break;
         case LazyAppTerm:
         case StrictAppTerm:
-            printf("Serializing app term\n");
             term_serialize(serializer, term->app.term1);
             term_serialize(serializer, term->app.term2);
             break;
         case OpTerm:
-            printf("Serializing op term\n");
             serializer_write(serializer, (uint8_t)term->op);
             break;
         case WorldTerm:
@@ -356,56 +333,50 @@ Term_t* term_deserialize(Serializer_t* serializer) {
     return NULL;
 }
 
-// void term_print(Term_t* term) {
-//     switch (term->type) {
-//         case PrimvalTerm:
-//             printf("<Primval ");
-//             primval_print(term->primval);
-//             printf(">");
-//             break;
-//         case AbsTerm:
-//             printf("<Abs %s ", term->abs.var);
-//             term_print(term->abs.app_body);
-//             printf(">");
-//             break;
-//         // case SyntaxTerm: {
-//         //     printf("<Syntax %s ", term->abs.var);
-//         //     term_print(term->abs.app_body);
-//         //     printf(">");
-//         //     break;
-//         // }
-//         case LazyAppTerm:
-//             printf("<LazyApp ");
-//             term_print(term->app.term1);
-//             printf(" ");
-//             term_print(term->app.term2);
-//             printf(">");
-//             break;
-//         case StrictAppTerm:
-//             printf("<StrictApp ");
-//             term_print(term->app.term1);
-//             printf(" ");
-//             term_print(term->app.term2);
-//             printf(">");
-//             break;
-//         case OpTerm:
-//             switch(term->op) {
-//                 case Lambda:    printf("<OpLambda>");   break;
-//                 case Eval:      printf("<OpEval>");     break;
-//                 case Add:       printf("<OpAdd>");      break;
-//                 case Sub:       printf("<OpSub>");      break;
-//                 case Mul:       printf("<OpMul>");      break;
-//                 case Div:       printf("<OpDiv>");      break;
-//                 case Eq:        printf("<OpEq>");       break;
-//             }
-//             break;
-//         case WorldTerm:
-//             printf("<World>");
-//             break;
-//         default:
-//             assert(FALSE);
-//     }
-// }
+void term_print(Term_t* term) {
+    switch (term->type) {
+        case PrimvalTerm:
+            printf("<Primval ");
+            primval_print(term->primval);
+            printf(">");
+            break;
+        case AbsTerm:
+            printf("<Abs %s ", term->abs.var);
+            term_print(term->abs.app_body);
+            printf(">");
+            break;
+        case LazyAppTerm:
+            printf("<LazyApp ");
+            term_print(term->app.term1);
+            printf(" ");
+            term_print(term->app.term2);
+            printf(">");
+            break;
+        case StrictAppTerm:
+            printf("<StrictApp ");
+            term_print(term->app.term1);
+            printf(" ");
+            term_print(term->app.term2);
+            printf(">");
+            break;
+        case OpTerm:
+            switch(term->op) {
+                case Lambda:    printf("<OpLambda>");   break;
+                case Eval:      printf("<OpEval>");     break;
+                case Add:       printf("<OpAdd>");      break;
+                case Sub:       printf("<OpSub>");      break;
+                case Mul:       printf("<OpMul>");      break;
+                case Div:       printf("<OpDiv>");      break;
+                case Eq:        printf("<OpEq>");       break;
+            }
+            break;
+        case WorldTerm:
+            printf("<World>");
+            break;
+        default:
+            assert(FALSE);
+    }
+}
 
 // Scott-encoded cons: \x. \xs. \n. \c. c x xs
 // (x = head, y = tail, n = what-to-do-if-nil, c = what-to-do-if-pair)
@@ -505,21 +476,3 @@ Term_t* term_encode_as_list(Term_t* term) {
         return result;
     }
 }
-
-// Take a term, treat it as a scott-encoded list, and construct a series of
-// primvals and lazy apps
-// Term_t* term_decode_from_list(Term_t* term) {
-//     // app(app(cons, term1), term2))
-//     assert(term_get_type(term) == LazyAppTerm);
-
-//     Term_t* inner_app = term_get_app_term1(term);
-//     Term_t* term2 = term_get_app_term2(term);
-//     term_free_toplevel(term); term = NULL;
-
-//     Term_t* term1 = term_get_app_term2(inner_app);
-//     term_free(term_get_app_term1(inner_app));
-//     term_free_toplevel(inner_app); inner_app = NULL;
-
-//     // todo
-
-// }

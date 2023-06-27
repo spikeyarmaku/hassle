@@ -40,7 +40,6 @@ void _network_append_message(MsgBuf_t* buf, const uint8_t* data, int size) {
 Connection_t network_listen(uint16_t port) {
     #ifdef WIN32
     WSADATA wsadata;
-    printf("Calling WSAStartup\n");
     int iResult = WSAStartup(MAKEWORD(2, 2), &wsadata);
     if (iResult != NO_ERROR) {
         printf("WSAStartup failed: %d\n", iResult);
@@ -81,7 +80,6 @@ Connection_t network_listen(uint16_t port) {
         WSACleanup();
         return -1;
     }
-    printf("Client connected\n");
 
     closesocket(sock);
     return client_sock;
@@ -104,7 +102,6 @@ uint8_t* network_receive(Connection_t sock, int* size, BOOL* is_alive) {
 
     while (msg_complete == FALSE) {
         // Read from socket
-        printf("Reading from socket\n");
         int result = recv(sock, (char*)buf_temp, buf_temp_capacity, 0);
 
         // Check for errors
@@ -116,7 +113,6 @@ uint8_t* network_receive(Connection_t sock, int* size, BOOL* is_alive) {
                 printf("More messages are available\n");
                 _network_append_message(msg_buf, buf_temp, buf_temp_capacity);
             } else {
-                printf("All messages have been read\n");
                 msg_complete = TRUE;
             }
         } else {
@@ -127,7 +123,6 @@ uint8_t* network_receive(Connection_t sock, int* size, BOOL* is_alive) {
             } else {
                 _network_append_message(msg_buf, buf_temp, result);
             }
-            printf("All messages have been read\n");
             msg_complete = TRUE;
         }
     }

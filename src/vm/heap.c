@@ -70,14 +70,11 @@ void heap_add(Heap_t* heap, Frame_t* frame) {
 }
 
 void heap_serialize(Serializer_t* serializer, Heap_t* heap) {
-    printf("Serializing heap\n");
-    
     // The first NULL frame must not be serialized, hence heap->count - 1 is
     // given as argument
     serializer_write_word(serializer, heap->count - 1);
     
     for (size_t i = 1; i < heap->count; i++) {
-        printf("  Serializing frame #%llu\n", i);
         frame_serialize(serializer, heap, heap->frames[i]);
     }
 }
@@ -87,9 +84,7 @@ Heap_t* heap_deserialize(Serializer_t* serializer) {
     // heap_count is 1 less than the final heap count, due to the first NULL
     // frame
     size_t heap_count = serializer_read_word(serializer);
-    printf("Heap count: %llu\n", heap_count);
     for (size_t i = 0; i < heap_count; i++) {
-        printf("  deserializing frame #%llu\n", i);
         Frame_t* frame = frame_deserialize(serializer, heap);
         heap_add(heap, frame);
     }

@@ -66,12 +66,10 @@ void primval_serialize(Serializer_t* serializer, PrimVal_t* primval) {
     serializer_write(serializer, (uint8_t)primval->type);
     switch (primval->type) {
         case RationalValue:
-            printf("Serializing rational primval\n");
             rational_serialize(serializer, primval->rational);
             break;
         case StringValue:
         case SymbolValue:
-            printf("Serializing string /symbol primval\n");
             serializer_write_string(serializer, primval->string);
             break;
         default:

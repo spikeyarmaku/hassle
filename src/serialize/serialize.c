@@ -61,8 +61,6 @@ void serializer_write(Serializer_t* serializer, uint8_t byte) {
         _serializer_grow(serializer);
     }
 
-    printf("Writing %llu. byte: %d\n", serializer->data_count, byte);
-
     serializer->data[serializer->data_count] = byte;
     serializer->data_count++;
 }
@@ -105,7 +103,6 @@ char* serializer_read_string(Serializer_t* serializer) {
 }
 
 size_t serializer_read_word(Serializer_t* serializer) {
-    printf("serializer_read_word\n");
     uint8_t bytes[sizeof(size_t)];
     for (uint8_t i = 0; i < serializer->word_size; i++) {
         bytes[i] = serializer_read(serializer);
@@ -119,7 +116,6 @@ void serializer_move_cursor(Serializer_t* serializer, size_t amount) {
 
 uint8_t serializer_read(Serializer_t* serializer) {
     uint8_t data = serializer_peek(serializer);
-    printf("Reading %llu. byte: %d\n", serializer->cursor, data);
     serializer_move_cursor(serializer, 1);
     return data;
 }
