@@ -43,6 +43,10 @@ void stack_add_update(Stack_t* stack, Frame_t* frame) {
 }
 
 Closure_t* stack_pop(Stack_t* stack) {
+    if (stack->next == 0) {
+        return NULL;
+    }
+    
     stack->next--;
     Closure_t* closure = stack->elems[stack->next];
 

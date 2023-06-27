@@ -310,6 +310,9 @@ void _vm_invoke_var(VM_t* vm) {
 void _vm_invoke_int(VM_t* vm) {
     Closure_t* control = vm->control;
     Closure_t* stack_top = stack_pop(vm->stack);
+    if (stack_top == NULL) {
+        return;
+    }
     stack_add_closure(vm->stack, control);
     vm->control = stack_top;
 }
