@@ -11,10 +11,11 @@ read-frame:
     parent-index = read(word-size)
 
 read-closure:
-    is-term-not-null = read(1)
-    if (is-term-not-null == 1):
+    type = read(1) ; 0 - empty closure, 1 - update marker, 2 - proper closure
+    if (type == 2):
         term = read-term
-    frame-index = read(word-size)
+    if (type == 1 || type == 2):
+        frame-index = read(word-size)
 
 read-term:
     term-type = read(1)

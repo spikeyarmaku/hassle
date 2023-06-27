@@ -40,10 +40,15 @@ BOOL closure_is_update(Closure_t* closure) {
 void closure_serialize(Serializer_t* serializer, Heap_t* heap,
     Closure_t* closure)
 {
-    if (closure->term == NULL) {
+    if (closure == NULL) {
         serializer_write(serializer, 0);
-    } else {
+        return;
+    }
+    
+    if (closure->term == NULL) {
         serializer_write(serializer, 1);
+    } else {
+        serializer_write(serializer, 2);
         term_serialize(serializer, closure->term);
     }
     serializer_write_word(serializer,

@@ -116,6 +116,9 @@ enum EvalState vm_step(VM_t* vm) {
     }
 
     stack_top = stack_peek(vm->stack, 0);
+    if (vm->control == NULL) {
+        return EvalFinished;
+    }
     if (term_get_type(closure_get_term(vm->control)) == PrimvalTerm &&
         stack_top == NULL)
     {

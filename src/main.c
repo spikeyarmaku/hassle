@@ -192,7 +192,7 @@ Response_t* _execute_command(VM_t* vm, char* cmd) {
                 }
                 case 5: {
                     // get word_size
-                    int param_len = str_get_token_end(cmd + token_len + 1);
+                    int param_len = str_get_token_end(cmd + token_len);
                     uint8_t word_size;
                     if (param_len == 0) {
                         word_size = sizeof(size_t);

@@ -1,5 +1,7 @@
 #include "global.h"
 
+#include <ctype.h>
+
 #ifdef DEBUG_PRINTS
 uint64_t debug_level = 0;
 BOOL is_debug = TRUE;
@@ -97,7 +99,7 @@ char* str_cpy(char* src) {
 // Return the start of the next token after the separator
 int str_get_token_end(const char* src) {
     int i = 0;
-    while (src[i] != ' ' && src[i] != 0) {
+    while (!isspace(src[i]) && src[i] != 0) {
         i++;
     }
     return i;
