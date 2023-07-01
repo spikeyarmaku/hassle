@@ -15,8 +15,8 @@ struct VM {
 
 VM_t*   _vm_make        (Stack_t*, Heap_t*, Closure_t*);
 void    _vm_invoke_upd  (VM_t*);
-void    _vm_invoke_lam  (VM_t*, BOOL);
-void    _vm_invoke_app  (VM_t*, BOOL);
+void    _vm_invoke_lam  (VM_t*);
+void    _vm_invoke_app  (VM_t*);
 void    _vm_invoke_var  (VM_t*);
 void    _vm_invoke_int  (VM_t*);
 void    _vm_invoke_op   (VM_t*);
@@ -37,12 +37,16 @@ VM_t* vm_init() {
 }
 
 void vm_set_control_to_expr(VM_t* vm, Expr_t* expr) {
-    Term_t* term = term_from_expr(expr);
+    Term_t* term =
+        // term_from_expr(expr);
+        term_make_app(term_make_primval_symbol("eval"),
+            term_from_expr_encoded(expr));
+    // term_print(term); printf("\n");
     expr_free(expr); expr = NULL;
     
-    if (vm->control != NULL) {
-        closure_free(vm->control);
-    }
+    // if (vm->control != NULL) {
+    //     closure_free(vm->control);
+    // }
     vm->control = closure_make(term, heap_get_current_frame(vm->heap));
     term = NULL;
 
@@ -67,22 +71,21 @@ enum EvalState vm_step(VM_t* vm) {
     Term_t* term = closure_get_term(control);
     switch (term_get_type(term)) {
         case AbsTerm: {
-            _vm_invoke_lam(vm, TRUE);
+            _vm_invoke_lam(vm);
             break;
         }
 
     // Put the second term onto the stack and make the first term the current
     // closure
-    // (App1) 〈t t′[l], σ, μ〉→CE〈t[l], σ t′[l], μ〉
-    // (App2) 〈!(t t′)[l], σ, μ〉→CE〈t′[l], σ t[l], μ〉
-        case LazyAppTerm: {
-            _vm_invoke_app(vm, TRUE);
+    // (App) 〈t t′[l], σ, μ〉→CE〈t[l], σ t′[l], μ〉
+        case AppTerm: {
+            _vm_invoke_app(vm);
             break;
         }
-        case StrictAppTerm: {
-            _vm_invoke_app(vm, FALSE);
-            break;
-        }
+        // case StrictAppTerm: {
+        //     _vm_invoke_app(vm, FALSE);
+        //     break;
+        // }
 
     // Look up the var's value and make it the current closure, while putting
     // its location onto the stack
@@ -103,7 +106,6 @@ enum EvalState vm_step(VM_t* vm) {
     // Take the necessary amount of items off the stack, and apply them with the
     // current operator
     // (Op1)  〈op[l], σ n′ n, μ, k〉→CE〈op(n′, n)[l], σ, μ, k〉
-    // (Op2)  〈op[l], σ t′ t, μ, k〉→CE〈!(!(op n′) n)[l], σ, μ, k〉
         case OpTerm: {
             _vm_invoke_op(vm);
             break;
@@ -147,24 +149,31 @@ struct VMData vm_serialize(VM_t* vm, uint8_t word_size) {
 
     // Save the heap
     heap_serialize(serializer, vm->heap);
+    // printf("Serializer after heap:\n");
+    // serializer_print(serializer); printf("\n");
     
     // Save the control
     closure_serialize(serializer, vm->heap, vm->control);
+    // printf("Serializer after closure:\n");
+    // serializer_print(serializer); printf("\n");
     
     // Save the stack
     stack_serialize(serializer, vm->heap, vm->stack);
+    // printf("Serializer after stack:\n");
+    // serializer_print(serializer); printf("\n\n");
     
     struct VMData vm_data;
     vm_data.data = serializer_get_data(serializer);
     vm_data.data_size = serializer_get_data_size(serializer);
+    // serializer_free_toplevel(serializer);
 
     // if word_size is the same as the word size for this architecture, this
     // condition will always be false
-    if (vm_data.data_size > (1 << word_size)) {
-        serializer_free(serializer); serializer = NULL;
-        vm_data.data = NULL;
-        vm_data.data_size = 0;
-    }
+    // if (vm_data.data_size > (1 << word_size)) {
+    //     serializer_free(serializer); serializer = NULL;
+    //     vm_data.data = NULL;
+    //     vm_data.data_size = 0;
+    // }
 
     return vm_data;
 }
@@ -182,18 +191,20 @@ VM_t* vm_deserialize(uint8_t* bytes) {
     return _vm_make(stack, heap, control);
 }
 
-void vm_free(VM_t* vm) {
-    assert(vm != NULL);
-    closure_free(vm->control);
-    stack_free(vm->stack);
-    heap_free(vm->heap);
-    free_mem("vm_free", vm);
-}
+// void vm_free(VM_t* vm) {
+//     assert(vm != NULL);
+//     closure_free(vm->control);
+//     stack_free(vm->stack);
+//     heap_free(vm->heap);
+//     free_mem("vm_free", vm);
+// }
 
 void vm_reset(VM_t* vm) {
-    closure_free(vm->control);  vm->control = NULL;
-    stack_free(vm->stack);      vm->stack = stack_make();
-    heap_free(vm->heap);        vm->heap = heap_make_default();
+    // closure_free(vm->control);  vm->control = NULL;
+    // stack_free(vm->stack);
+    vm->stack = stack_make();
+    // heap_free(vm->heap);
+    vm->heap = heap_make_default();
 }
 
 // ------------------------- VM invocations ------------------------------------
@@ -201,65 +212,61 @@ void vm_reset(VM_t* vm) {
 // (Upd)  〈v, σ u, μ〉→CE〈v, σ, μ(u → v · l)〉 where c · l = μ(u)
 // Update the bound term in the frame with its evaluated value
 void _vm_invoke_upd(VM_t* vm) {
+    printf("[UPD]\n");
     Closure_t* stack_top = stack_pop(vm->stack);
     Frame_t* frame = closure_get_frame(stack_top);
-    closure_free(stack_top); stack_top = NULL;
+    // closure_free(stack_top); stack_top = NULL;
     Closure_t* control = vm->control;
     frame_update(frame, closure_copy(control));
 }
 
 // (Lam) 〈λi.t[l], σ c, μ〉 →CE〈t[f], σ, μ[(i, f) → c · l]〉 f ∈ dom(μ)
 //     (f ∈ dom(μ))
-// Bind the lambda's variable to the (encoded) value on the top of the stack
-void _vm_invoke_lam(VM_t* vm, BOOL encode) {
+// Bind the vau's variable to the (encoded) value on the top of the stack
+void _vm_invoke_lam(VM_t* vm) {
+    printf("[LAM]\n");
     // Pop the closure from the top of the stack
     Closure_t* stack_top = stack_pop(vm->stack);
     Closure_t* control = vm->control;
     Term_t* control_term = closure_get_term(control);
-    Frame_t* control_frame = closure_get_frame(control);
-    
+
     assert(term_get_type(control_term) == AbsTerm);
 
-    // Deconstruct the control's content and put back the body of the lambda
+    // Deconstruct the control's content and put back the body of the vau
     char* var_name = term_get_abs_var(control_term);
-    Term_t* abs_term = term_get_abs_body(control_term);
-    vm->control = closure_make(abs_term, control_frame);
-    closure_free_toplevel(control); control = NULL;
-    term_free_toplevel(control_term); control_term = NULL;
-
-    if (encode == TRUE) {
-        Frame_t* stack_top_frame = closure_get_frame(stack_top);
-        Term_t* stack_top_term = closure_get_term(stack_top);
-        stack_top = closure_make(term_encode_as_list(stack_top_term),
-            stack_top_frame);
-    }
-
+    
     // Bind the variable to the item that was popped off the stack
     heap_add(vm->heap, frame_make(var_name, stack_top,
-        heap_get_current_frame(vm->heap)));
+        closure_get_frame(control)));
+
+    Term_t* abs_term = term_get_abs_body(control_term);
+    vm->control = closure_make(abs_term, heap_get_current_frame(vm->heap));
+    // closure_free_toplevel(control); control = NULL;
+    // term_free_toplevel(control_term); control_term = NULL;
+
 }
 
-// (App1) 〈t t′[l], σ, μ〉→CE〈t[l], σ t′[l], μ〉
-// (App2) 〈!(t t′)[l], σ, μ〉→CE〈t′[l], σ t[l], μ〉
+// (App) 〈t t′[l], σ, μ〉→CE〈t[l], σ t′[l], μ〉
 // Put the right (is_lazy) or the left side (!is_lazy) of the app to the stack
-void _vm_invoke_app(VM_t* vm, BOOL is_lazy) {
+void _vm_invoke_app(VM_t* vm) {
+    printf("[APP]\n");
     Closure_t* control = vm->control;
     Term_t* control_term = closure_get_term(control);
     
-    assert(term_get_type(control_term) == LazyAppTerm ||
-        term_get_type(control_term) == StrictAppTerm);
+    assert(term_get_type(control_term) == AppTerm);
+        // term_get_type(control_term) == StrictAppTerm);
 
     Term_t* term1 = term_get_app_term1(control_term);
     Term_t* term2 = term_get_app_term2(control_term);
-    if (is_lazy == FALSE) {
-        Term_t* temp = term1;
-        term1 = term2;
-        term2 = temp;
-    }
+    // if (is_lazy == FALSE) {
+    //     Term_t* temp = term1;
+    //     term1 = term2;
+    //     term2 = temp;
+    // }
 
     vm->control = closure_make(term1, closure_get_frame(control));
-    closure_free_toplevel(control); control = NULL;
-    term_free_toplevel(control_term); control_term = NULL;
+    // closure_free_toplevel(control); control = NULL;
+    // term_free_toplevel(control_term); control_term = NULL;
 
     stack_add_closure(vm->stack,
         closure_make(term2, heap_get_current_frame(vm->heap)));
@@ -268,6 +275,8 @@ void _vm_invoke_app(VM_t* vm, BOOL is_lazy) {
 // (Var)  〈0[l], σ, μ〉→CE〈c, σ l, μ〉 where c · l′ = μ(l)
 // Look up the value of the variable in its env
 void _vm_invoke_var(VM_t* vm) {
+    assert(vm != NULL);
+    printf("[VAR]\n");
     Closure_t* control = vm->control;
     Term_t* control_term = closure_get_term(control);
 
@@ -280,13 +289,14 @@ void _vm_invoke_var(VM_t* vm) {
     Closure_t* value = frame_lookup(closure_get_frame(control),
         primval_get_symbol(primval));
     // TODO check if frame_lookup doesn't return a useful value (if applicable)
-    closure_free(control); control = NULL;
+    // closure_free(control); control = NULL;
     vm->control = value;
 }
 
 // (Int)  〈n[l], σ c, μ, k〉→CE〈c, σ n[l], μ, k〉
 // Swap the contents of the control and the top of the stack
 void _vm_invoke_int(VM_t* vm) {
+    printf("[INT]\n");
     Closure_t* control = vm->control;
     Closure_t* stack_top = stack_pop(vm->stack);
     if (stack_top == NULL) {
@@ -296,10 +306,10 @@ void _vm_invoke_int(VM_t* vm) {
     vm->control = stack_top;
 }
 
-// (Op1)  〈op[l], σ n′ n, μ, k〉→CE〈op(n′, n)[l], σ, μ, k〉
-// (Op2)  〈op[l], σ t′ t, μ, k〉→CE〈!(!(op n′) n)[l], σ, μ, k〉
+// (Op)   〈op[l], σ n′ n, μ, k〉→CE〈op(n′, n)[l], σ, μ, k〉
 // Apply the operator to the topmost elements of the stack
 void _vm_invoke_op(VM_t* vm) {
+    printf("[OP]\n");
     Closure_t* control = vm->control;
     Term_t* control_term = closure_get_term(control);
 
@@ -307,13 +317,14 @@ void _vm_invoke_op(VM_t* vm) {
     
     enum PrimOp op = term_get_op(control_term);
     uint8_t op_arity = primop_get_arity(op);
-    closure_free_toplevel(control); control = NULL; vm->control = NULL;
+    // closure_free_toplevel(control); control = NULL; vm->control = NULL;
 
     // Pop off n items from stack and check if they are all values
     Closure_t** args = (Closure_t**)allocate_mem("_vm_invoke_op1", NULL,
         (sizeof(Closure_t*) * op_arity));
     BOOL all_values = TRUE;
     for (uint8_t i = 0; i < op_arity; i++) {
+        // TODO use peek instead of pop
         args[i] = stack_pop(vm->stack);
         all_values = all_values &
             (term_get_type(closure_get_term(args[i])) == PrimvalTerm);
@@ -326,8 +337,8 @@ void _vm_invoke_op(VM_t* vm) {
         // Construct a strict app of the operator and the args
         Term_t* result = control_term;
         for (uint8_t i = 0; i < op_arity; i++) {
-            result = term_make_strict_app(result, closure_get_term(args[i]));
-            closure_free_toplevel(args[i]);
+            result = term_make_app(result, closure_get_term(args[i]));
+            // closure_free_toplevel(args[i]);
         }
         vm->control = closure_make(result, heap_get_current_frame(vm->heap));
     }

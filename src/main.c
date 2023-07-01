@@ -2,7 +2,7 @@
 TODO
 - add Unicode support
 - add locale support (decimal separators, etc.)
-- check memory allocations for leaks
+- use boehm's GC
 - Check if the input expression is well-formed (all parens match)
 */
 
@@ -35,7 +35,7 @@ struct Config {
 
 typedef struct Config Config_t;
 
-Config_t*   _config_init                    ();
+Config_t    _config_init                    ();
 ErrorCode_t _flag_handle                    (Config_t*, char*);
 void        _interpreter_start              (Config_t*);
 void        _print_help_message             ();
@@ -44,12 +44,12 @@ void        _repl_start_local               (VM_t*);
 void        _repl_start_remote              (VM_t*, Connection_t);
 Response_t* _execute_command                (VM_t*, char*);
 
-Config_t* _config_init() {
-    Config_t* config = (Config_t*)allocate_mem(NULL, NULL, sizeof(Config_t));
-    config->open_socket = FALSE;
-    config->port = 0;
-    config->log_memory = FALSE;
-    config->file_to_interpret = NULL;
+Config_t  _config_init() {
+    Config_t config; // = (Config_t*)allocate_mem(NULL, NULL, sizeof(Config_t));
+    config.open_socket = FALSE;
+    config.port = 0;
+    config.log_memory = FALSE;
+    config.file_to_interpret = NULL;
     return config;
 }
 
@@ -97,16 +97,19 @@ void _interpreter_start(Config_t* config) {
         printf("Interpreting file %s\n", config->file_to_interpret);
         Term_t* term = _interpret_file(vm, config->file_to_interpret);
         term_print(term);
-        term_free(term);
+        // term_free(term);
     } else {
         if (config->open_socket == TRUE) {
             printf("Listening on port %d\n", config->port);
             Connection_t client = network_listen(config->port);
             _repl_start_remote(vm, client);
         } else {
+            printf("Starting local session\n");
             _repl_start_local(vm);
         }
     }
+
+    // vm_free(vm);
 }
 
 void _repl_start_local(VM_t* vm) {
@@ -115,29 +118,59 @@ void _repl_start_local(VM_t* vm) {
     Response_t* response = response_make_void();
     
     while (response_get_type(response) != ExitResponse) {
+        printf("HASSLE> ");
         gets(buffer);
+        response_free(response);
         response = _execute_command(vm, buffer);
         switch (response_get_type(response)) {
             case EvalStateResponse: {
+                // TODO
                 break;
             }
             case TermResponse: {
+                // TODO
                 break;
             }
             case VMDataResponse: {
+                size_t size;
+                uint8_t* data = response_get_data(response, &size);
+                size_t i = 0;
+                uint8_t counter = 0;
+                while (i < size) {
+                    if (counter == 16) {
+                        counter = 0;
+                        printf("\n");
+                    }
+                    uint8_t byte = data[i];
+                    if (byte < 10) {
+                        printf(" ");
+                    }
+                    if (byte < 100) {
+                        printf(" ");
+                    }
+                    printf("%d ", data[i]);
+                    i++;
+                    counter++;
+                }
+                printf("\n");
                 break;
             }
             case VoidResponse: {
+                // TODO
                 break;
             }
             case InvalidCommandResponse: {
+                // TODO
                 break;
             }
             case ExitResponse: {
+                // TODO cleanup
                 break;
             }
         }
     }
+
+    response_free(response);
 }
 
 void _repl_start_remote(VM_t* vm, Connection_t conn) {
@@ -148,12 +181,16 @@ void _repl_start_remote(VM_t* vm, Connection_t conn) {
     while ((response_get_type(response) != ExitResponse) && (is_alive == TRUE))
     {
         uint8_t* buffer = network_receive(conn, &size, &is_alive);
+        // printf("[RECEIVED] %s\n", (char*)buffer);
+        response_free(response);
         response = _execute_command(vm, (char*)buffer);
+        free_mem("_repl_start_remote", buffer);
         size_t resp_data_size;
         uint8_t* resp_data = response_get_data(response, &resp_data_size);
         network_send(conn, resp_data, (int)resp_data_size);
-        response_free(response);
+        // printf("Sent %d bytes\n", (int)resp_data_size);
     }
+    response_free(response);
     network_close(conn);
 }
 
@@ -168,13 +205,20 @@ Response_t* _execute_command(VM_t* vm, char* cmd) {
             switch(i) {
                 case 0: {
                     // file
-                    _interpret_file(vm, cmd + token_len + 1);
+                    char* arg = str_get_substr(cmd, 1, TRUE);
+                    if (arg != NULL) {
+                        _interpret_file(vm, arg);
+                    }
+                    free_mem("execute_command/file", arg);
                     return response_make_void();
                 }
                 case 1: {
                     // expr
-                    vm_set_control_to_expr(vm,
-                        parse_from_str(cmd + token_len + 1));
+                    char* arg = str_get_substr(cmd, 1, TRUE);
+                    if (arg != NULL) {
+                        vm_set_control_to_expr(vm, parse_from_str(arg));
+                    }
+                    free_mem("execute_command/expr", arg);
                     return response_make_void();
                 }
                 case 2: {
@@ -192,13 +236,14 @@ Response_t* _execute_command(VM_t* vm, char* cmd) {
                 }
                 case 5: {
                     // get word_size
-                    int param_len = str_get_token_end(cmd + token_len);
+                    char* arg = str_get_substr(cmd, 1, FALSE);
                     uint8_t word_size;
-                    if (param_len == 0) {
+                    if (arg == NULL) {
                         word_size = sizeof(size_t);
                     } else {
-                        word_size = atoi(cmd + token_len + 1);
+                        word_size = atoi(arg);
                     }
+                    free_mem("execute_command/get", arg);
                     return response_make_vm_data(vm_serialize(vm, word_size));
                 }
                 case 6: {
@@ -240,22 +285,22 @@ Term_t* _interpret_file(VM_t* vm, char* file_name) {
 int main(int argc, char *argv[]) {
     printf("---------- Hassle ----------\n\n");
     setvbuf(stdout, (char *) NULL, _IONBF, 0); /* make stdout line-buffered */
-    Config_t* config = _config_init();
+    Config_t config = _config_init();
 
     for (int i = 1; i < argc; i++) {
         if (argv[i][0] == '-') {
-            ErrorCode_t error_code = _flag_handle(config, argv[i]);
+            ErrorCode_t error_code = _flag_handle(&config, argv[i]);
             if (error_code == Error) {
                 _print_help_message();
                 return error_code;
             }
         } else {
             // Interpret the provided file
-            config->file_to_interpret = argv[i];
+            config.file_to_interpret = argv[i];
         }
     }
 
-    _interpreter_start(config);
+    _interpreter_start(&config);
     
     return 0;
 }

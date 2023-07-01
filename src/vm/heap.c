@@ -10,20 +10,37 @@ struct Heap {
 
 void    _heap_grow          (Heap_t*);
 void    _heap_add_operator  (Heap_t*, char*, enum PrimOp);
+void    _heap_add_term      (Heap_t*, char*, Term_t*);
 
 void _heap_grow(Heap_t* heap) {
     size_t new_size = heap->capacity < STACK_BUFFER_SIZE ?
         STACK_BUFFER_SIZE : heap->capacity * BUFFER_SIZE_MULTIPLY_FACTOR;
     heap->frames = allocate_mem("_stack_grow", heap->frames,
         sizeof(Closure_t*) * new_size);
+    heap->capacity = new_size;
 }
 
 void _heap_add_operator(Heap_t* heap, char* op_name, enum PrimOp op) {
     Term_t* term_op = term_make_op(op);
+
+    // apply_op = \op. \x. \y. (x (y op))
+    Term_t* term_apply_op =
+        term_make_abs(str_cpy("x"),
+            term_make_abs(str_cpy("y"),
+                term_make_app(
+                    term_make_primval_symbol("y"),
+                    term_make_app(
+                        term_make_primval_symbol("x"),
+                        term_op))));
+
+    _heap_add_term(heap, op_name, term_apply_op);
+}
+
+void _heap_add_term(Heap_t* heap, char* name, Term_t* term) {
     Frame_t* current_frame = heap_get_current_frame(heap);
-    Closure_t* closure_op = closure_make(term_op, current_frame);
-    Frame_t* frame_op = frame_make(op_name, closure_op, current_frame);
-    heap_add(heap, frame_op);
+    Closure_t* closure = closure_make(term, current_frame);
+    Frame_t* frame = frame_make(str_cpy(name), closure, current_frame);
+    heap_add(heap, frame);
 }
 
 Heap_t* heap_make() {
@@ -42,12 +59,68 @@ Heap_t* heap_make() {
 Heap_t* heap_make_default() {
     Heap_t* heap = heap_make();
 
-    // Add operators
+    // Add primops
+    // _heap_add_operator(heap, "$vau", Vau);
     _heap_add_operator(heap, "+", Add);
     _heap_add_operator(heap, "-", Sub);
     _heap_add_operator(heap, "*", Mul);
     _heap_add_operator(heap, "/", Div);
 
+    // Add list functions
+    _heap_add_term(heap, "cons",    term_make_cons_raw());
+    _heap_add_term(heap, "nil",     term_make_nil_raw());
+    _heap_add_term(heap, "head",    term_make_head_raw());
+    _heap_add_term(heap, "tail",    term_make_tail_raw());
+    _heap_add_term(heap, "true",    term_make_true_raw());
+    _heap_add_term(heap, "false",   term_make_false_raw());
+
+    // fix = \f. (\x. f (x x)) (\x. f (x x))
+    _heap_add_term(heap, "fix",
+        term_make_abs(str_cpy("f"),
+            term_make_app(
+                term_make_abs(str_cpy("x"),
+                    term_make_app(term_make_primval_symbol("f"),
+                        term_make_app(term_make_primval_symbol("x"),
+                            term_make_primval_symbol("x")))),
+                term_make_abs(str_cpy("x"),
+                    term_make_app(term_make_primval_symbol("f"),
+                        term_make_app(term_make_primval_symbol("x"),
+                            term_make_primval_symbol("x")))))));
+
+    // _eval = \eval. \list. list nil (\x. \xs. (eval x) xs)
+    _heap_add_term(heap, "_eval",
+        term_make_abs(str_cpy("eval"),
+            term_make_abs(str_cpy("list"),
+                term_make_app(
+                    term_make_app(
+                        term_make_primval_symbol("list"),
+                        term_make_nil()),
+                    term_make_abs(str_cpy("x"),
+                        term_make_abs(str_cpy("xs"),
+                            term_make_app(
+                                term_make_app(
+                                    term_make_primval_symbol("eval"),
+                                    term_make_primval_symbol("x")),
+                                term_make_primval_symbol("xs"))))))));
+
+    // eval = fix _eval eval
+    _heap_add_term(heap, "eval",
+        term_make_app(term_make_primval_symbol("fix"),
+        term_make_primval_symbol("_eval")));
+
+    // _heap_add_term(heap, "eval",
+    //     term_make_abs(str_cpy("list"),
+    //         term_make_app(
+    //             term_make_app(
+    //                 term_make_primval_symbol("list"),
+    //                 term_make_nil()),
+    //             term_make_abs(str_cpy("x"),
+    //                 term_make_abs(str_cpy("xs"),
+    //                     term_make_app(
+    //                         term_make_app(
+    //                             term_make_primval_symbol("eval"),
+    //                             term_make_primval_symbol("x")),
+    //                         term_make_primval_symbol("xs")))))));
     return heap;
 }
 
@@ -114,12 +187,19 @@ Frame_t* heap_get_frame_by_index(Heap_t* heap, size_t frame_index) {
 //     return heap->frames[index];
 // }
 
-void heap_free(Heap_t* heap) {
-    assert(heap != NULL);
+// void heap_free(Heap_t* heap) {
+//     assert(heap != NULL);
     
-    for(size_t i = 0; i < heap->capacity; i++) {
-        frame_free(heap->frames[i]);
-    }
-    free_mem("heap_free/frames", heap->frames);
-    free_mem("heap_free", heap);
-}
+//     // for(size_t i = 0; i < heap->capacity; i++) {
+//     //     frame_free(heap->frames[i]);
+//     // }
+//     Frame_t* frame = heap_get_current_frame(heap);
+//     while (frame != NULL) {
+//         frame_free(frame);
+//         heap->count--;
+//         frame = heap_get_current_frame(heap);
+//     }
+
+//     free_mem("heap_free/frames", heap->frames);
+//     free_mem("heap_free", heap);
+// }

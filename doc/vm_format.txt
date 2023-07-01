@@ -1,14 +1,21 @@
 read-vm:
     word-size = read(1)
-    heap-count = read(word-size)
-    heap = repeat(read-frame, heap-count) ; NULL frame is implied
+    heap = read-heap
     control = read-closure
     stack = read-stack
+
+read-heap:
+    heap-count = read(word-size)
+    elems = repeat(read-frame, heap-count) ; NULL frame is implied
 
 read-frame:
     name = read-string
     closure = read-closure
     parent-index = read(word-size)
+
+read-stack:
+    stack-count = read(word-size)
+    elems = repeat(read-closure, stack-count)
 
 read-closure:
     type = read(1) ; 0 - empty closure, 1 - update marker, 2 - proper closure
@@ -25,12 +32,12 @@ read-term:
         1:
             read-string
             read-term
-        2, 3:
+        2:
             read-term
             read-term
-        4:
+        3:
             op = read(1)
-        5:
+        4:
             NOT_IMPLEMENTED
 
 read-primval:
@@ -49,7 +56,3 @@ read-rational:
 read-alnat:
     read bytes until its most significant bit is 0 (i.e. its byte value is less
     than 128)
-
-read-stack:
-    stack-count = read(word-size)
-    elems = repeat(read-closure, stack-count)

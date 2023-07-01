@@ -17,7 +17,7 @@ Closure_t*  stack_pop               (Stack_t*);
 Closure_t*  stack_peek              (Stack_t*, size_t);
 void        stack_serialize         (Serializer_t*, Heap_t*, Stack_t*);
 Stack_t*    stack_deserialize       (Serializer_t*, Heap_t*);
-void        stack_free              (Stack_t*);
+// void        stack_free              (Stack_t*);
 
 // DEBUG
 size_t      stack_get_elem_count    (Stack_t*); // DEBUG

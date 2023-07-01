@@ -18,7 +18,8 @@ uint8_t         serializer_read             (Serializer_t*);
 uint8_t         serializer_get_word_size    (Serializer_t*);
 uint8_t*        serializer_get_data         (Serializer_t*);
 size_t          serializer_get_data_size    (Serializer_t*);
-void            serializer_free             (Serializer_t*);
-void            serializer_free_toplevel    (Serializer_t*);
+// void            serializer_free             (Serializer_t*);
+// void            serializer_free_toplevel    (Serializer_t*);
+void            serializer_print            (Serializer_t*);
 
 #endif

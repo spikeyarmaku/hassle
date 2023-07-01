@@ -83,15 +83,15 @@ Stack_t* stack_deserialize(Serializer_t* serializer, Heap_t* heap)
     return stack;
 }
 
-void stack_free(Stack_t* stack) {
-    assert(stack != NULL);
+// void stack_free(Stack_t* stack) {
+//     assert(stack != NULL);
 
-    for (size_t i = 0; i < stack->capacity; i++) {
-        closure_free(stack->elems[i]);
-    }
-    free_mem("stack_free/elems", stack->elems);
-    free_mem("stack_free", stack);
-}
+//     for (size_t i = 0; i < stack->capacity; i++) {
+//         closure_free(stack->elems[i]);
+//     }
+//     free_mem("stack_free/elems", stack->elems);
+//     free_mem("stack_free", stack);
+// }
 
 size_t stack_get_elem_count(Stack_t* stack) {
     return stack->next;

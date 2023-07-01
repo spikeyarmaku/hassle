@@ -104,3 +104,45 @@ int str_get_token_end(const char* src) {
     }
     return i;
 }
+
+// Get the nth substring of a string seperated by whitespaces
+// E.g. str_split("Hello, world!", 1) returns " world!"
+char* str_get_substr(const char* src, int n, BOOL read_until_end) {
+    int ptr = 0;
+    int count = 0;
+    
+    // Find the start of the nth substring
+    while (count < n) {
+        // Get the end of the current token
+        ptr += str_get_token_end(src + ptr);
+        if (src[ptr] == 0) {
+            return NULL;
+        }
+
+        // Seek the first non-whitespace character
+        while (isspace(src[ptr]) && src[ptr] != 0) {
+            ptr++;
+        }
+        
+        count++;
+    }
+
+    if (src[ptr] == 0) {
+        return NULL;
+    }
+
+    int len = 0;
+    if (read_until_end == TRUE) {
+        //
+        len = strlen(src) - ptr;
+    } else {
+        len = str_get_token_end(src + ptr);
+    }
+
+    char* result = (char*)allocate_mem(NULL, NULL, sizeof(char) * (len + 1));
+    for (int i = 0; i < len; i++) {
+        result[i] = src[ptr + i];
+    }
+    result[len] = 0;
+    return result;
+}

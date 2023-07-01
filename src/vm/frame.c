@@ -19,7 +19,7 @@ Frame_t* frame_make(char* name, Closure_t* value, Frame_t* parent) {
 }
 
 void frame_update(Frame_t* frame, Closure_t* new_value) {
-    closure_free(frame->value);
+    // closure_free(frame->value);
     frame->value = new_value;
 }
 
@@ -60,12 +60,13 @@ Frame_t* frame_deserialize(Serializer_t* serializer, Heap_t* heap) {
         heap_get_frame_by_index(heap, parent_index));
 }
 
-void frame_free(Frame_t* frame) {
-    assert(frame != NULL);
+// void frame_free(Frame_t* frame) {
+//     assert(frame != NULL);
 
-    free_mem("frame_free/name", frame->name);
-    closure_free(frame->value);
-}
+//     printf("Freeing name: %s\n", frame->name);
+//     free_mem("frame_free/name", frame->name);
+//     closure_free(frame->value);
+// }
 
 char* frame_get_name(Frame_t* frame) {
     return frame->name;

@@ -67,16 +67,16 @@ Closure_t* closure_deserialize(Serializer_t* serializer, Heap_t* heap)
     return closure_make(term, frame);
 }
 
-void closure_free(Closure_t* closure) {
-    assert(closure != NULL);
-    term_free(closure->term);
-    free_mem("closure_free", closure);
-    // NOTE decrease refcount for the frame?
-}
+// void closure_free(Closure_t* closure) {
+//     assert(closure != NULL);
+//     term_free(closure->term);
+//     free_mem("closure_free", closure);
+//     // NOTE decrease refcount for the frame?
+// }
 
-// Free the toplevel closure, without destroying the term inside
-// Useful for collecting primval terms from the stack
-void closure_free_toplevel(Closure_t* closure) {
-    free_mem("closure_free_toplevel", closure);
-    // NOTE decrease the ref to the frame?
-}
+// // Free the toplevel closure, without destroying the term inside
+// // Useful for collecting primval terms from the stack
+// void closure_free_toplevel(Closure_t* closure) {
+//     free_mem("closure_free_toplevel", closure);
+//     // NOTE decrease the ref to the frame?
+// }

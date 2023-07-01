@@ -16,7 +16,7 @@ Closure_t*  closure_copy            (Closure_t*);
 BOOL        closure_is_update       (Closure_t*);
 void        closure_serialize       (Serializer_t*, Heap_t*, Closure_t*);
 Closure_t*  closure_deserialize     (Serializer_t*, Heap_t*);
-void        closure_free            (Closure_t*);
-void        closure_free_toplevel   (Closure_t*);
+// void        closure_free            (Closure_t*);
+// void        closure_free_toplevel   (Closure_t*);
 
 #endif

@@ -230,9 +230,7 @@ void expr_free(Expr_t* expr) {
 }
 
 Expr_t* expr_copy(Expr_t* expr) {
-    debug_start("expr_copy - %llu\n", (size_t)expr); // expr_print(expr); debug("\n");
-    // Expr can be null when copying, e.g. if a closure hasn't been fully
-    // completed yet, like with lambda_helper2
+    debug_start("expr_copy - %llu\n", (size_t)expr);
     if (expr == NULL) {
         debug_end("/expr_copy\n");
         return NULL;

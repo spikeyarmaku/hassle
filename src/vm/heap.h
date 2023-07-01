@@ -15,7 +15,7 @@ void        heap_serialize          (Serializer_t*, Heap_t*);
 Heap_t*     heap_deserialize        (Serializer_t*);
 size_t      heap_get_frame_index    (Heap_t*, Frame_t*);
 Frame_t*    heap_get_frame_by_index (Heap_t*, size_t);
-void        heap_free               (Heap_t*);
+// void        heap_free               (Heap_t*);
 
 // DEBUG
 // size_t      heap_get_elem_count     (Heap_t*); // DEBUG

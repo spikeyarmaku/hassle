@@ -17,7 +17,7 @@ PrimVal_t* primval_make_rational(Rational_t* rat) {
 }
 
 PrimVal_t* primval_make_string(char* str) {
-    PrimVal_t* result = (PrimVal_t*)allocate_mem("primval_make_rational", NULL,
+    PrimVal_t* result = (PrimVal_t*)allocate_mem("primval_make_string", NULL,
         sizeof(struct PrimVal));
     result->type = StringValue;
     result->string = str;
@@ -25,7 +25,7 @@ PrimVal_t* primval_make_string(char* str) {
 }
 
 PrimVal_t* primval_make_symbol(char* sym) {
-    PrimVal_t* result = (PrimVal_t*)allocate_mem("primval_make_rational", NULL,
+    PrimVal_t* result = (PrimVal_t*)allocate_mem("primval_make_symbol", NULL,
         sizeof(struct PrimVal));
     result->type = SymbolValue;
     result->string = sym;
@@ -33,36 +33,44 @@ PrimVal_t* primval_make_symbol(char* sym) {
 }
 
 enum PrimValType primval_get_type(PrimVal_t* val) {
+    assert(val != NULL);
     return val->type;
 }
 
 Rational_t* primval_get_rational(PrimVal_t* val) {
+    assert(val != NULL);
     assert(val->type == RationalValue);
     return val->rational;
 }
 
 char* primval_get_string(PrimVal_t* val) {
+    assert(val != NULL);
     assert(val->type == StringValue);
     return val->string;
 }
 
 char* primval_get_symbol(PrimVal_t* val) {
+    assert(val != NULL);
     assert(val->type == SymbolValue);
     return val->string;
 }
 
 PrimVal_t* primval_copy(PrimVal_t* primval) {
+    assert(primval != NULL);
     switch (primval->type) {
         case RationalValue:
             return primval_make_rational(rational_copy(primval->rational));
         case StringValue:
-        case SymbolValue:
             return primval_make_string(str_cpy(primval->string));
+        case SymbolValue:
+            return primval_make_symbol(str_cpy(primval->string));
         default: assert(FALSE); return NULL;
     }
 }
 
 void primval_serialize(Serializer_t* serializer, PrimVal_t* primval) {
+    assert(primval != NULL);
+    assert(serializer != NULL);
     serializer_write(serializer, (uint8_t)primval->type);
     switch (primval->type) {
         case RationalValue:
@@ -78,6 +86,7 @@ void primval_serialize(Serializer_t* serializer, PrimVal_t* primval) {
 }
 
 PrimVal_t* primval_deserialize(Serializer_t* serializer) {
+    assert(serializer != NULL);
     enum PrimValType type = (enum PrimValType)serializer_read(serializer);
     switch (type) {
         case RationalValue: {
@@ -100,6 +109,7 @@ PrimVal_t* primval_deserialize(Serializer_t* serializer) {
 }
 
 void primval_print(PrimVal_t* primval) {
+    assert(primval != NULL);
     switch(primval->type) {
         case RationalValue: {
             rational_print(primval->rational);
@@ -116,19 +126,19 @@ void primval_print(PrimVal_t* primval) {
     }
 }
 
-void primval_free(PrimVal_t* val) {
-    assert(val != NULL);
-    switch (val->type) {
-        case RationalValue:
-            rational_free(val->rational);
-            break;
-        case StringValue:
-        case SymbolValue:
-            free_mem("value_free/symbol", val->string);
-            break;
-        default:
-            assert(FALSE);
-    }
+// void primval_free(PrimVal_t* val) {
+//     assert(val != NULL);
+//     switch (val->type) {
+//         case RationalValue:
+//             rational_free(val->rational);
+//             break;
+//         case StringValue:
+//         case SymbolValue:
+//             free_mem("value_free/symbol", val->string);
+//             break;
+//         default:
+//             assert(FALSE);
+//     }
 
-    free_mem("primval_free", val);
-}
+//     free_mem("primval_free", val);
+// }

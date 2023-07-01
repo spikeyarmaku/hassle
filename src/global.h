@@ -35,5 +35,6 @@ VM_WORD bytes_to_word       (uint8_t*, uint8_t);
 void    word_to_bytes       (VM_WORD, uint8_t*, uint8_t);
 char*   str_cpy             (char*);
 int     str_get_token_end   (const char*);
+char*   str_get_substr      (const char*, int, BOOL);
 
 #endif

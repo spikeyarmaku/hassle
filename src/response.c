@@ -44,6 +44,7 @@ Response_t* response_make_vm_data(struct VMData vm_data) {
     Response_t* response = _allocate_response_data(vm_data.data_size + 1);
     response->data[0] = (uint8_t)VMDataResponse;
     memcpy(response->data + 1, vm_data.data, vm_data.data_size);
+    free_mem("response_make_vm_data", vm_data.data);
     return response;
 }
 
@@ -63,7 +64,7 @@ Response_t* response_make_term(Term_t* term) {
     response->data[0] = (uint8_t)TermResponse;
     response->size = data_size;
 
-    serializer_free_toplevel(serializer);
+    // serializer_free_toplevel(serializer);
 
     return response;
 }
