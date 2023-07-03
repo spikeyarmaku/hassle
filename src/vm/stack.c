@@ -18,6 +18,7 @@ void _stack_grow(Stack_t* stack) {
         STACK_BUFFER_SIZE : stack->capacity * BUFFER_SIZE_MULTIPLY_FACTOR;
     stack->elems = allocate_mem("_stack_grow", stack->elems,
         sizeof(Closure_t*) * new_size);
+        stack->capacity = new_size;
 }
 
 Stack_t* stack_make() {

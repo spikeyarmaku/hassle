@@ -28,9 +28,13 @@ void _heap_add_operator(Heap_t* heap, char* op_name, enum PrimOp op) {
         term_make_abs(str_cpy("x"),
             term_make_abs(str_cpy("y"),
                 term_make_app(
-                    term_make_primval_symbol("y"),
                     term_make_app(
-                        term_make_primval_symbol("x"),
+                        term_make_primval_symbol("eval"),
+                        term_make_primval_symbol("y")),
+                    term_make_app(
+                        term_make_app(
+                            term_make_primval_symbol("eval"),
+                            term_make_primval_symbol("x")),
                         term_op))));
 
     _heap_add_term(heap, op_name, term_apply_op);
@@ -59,6 +63,21 @@ Heap_t* heap_make() {
 Heap_t* heap_make_default() {
     Heap_t* heap = heap_make();
 
+    // Add list functions
+    _heap_add_term(heap, "$id",     term_make_vau_id_raw());
+    _heap_add_term(heap, "cons",    term_make_cons_raw());
+    _heap_add_term(heap, "nil",     term_make_nil_raw());
+    _heap_add_term(heap, "head",    term_make_head_raw());
+    _heap_add_term(heap, "tail",    term_make_tail_raw());
+    _heap_add_term(heap, "true",    term_make_true_raw());
+    _heap_add_term(heap, "false",   term_make_false_raw());
+    _heap_add_term(heap, "pair",    term_make_pair_raw());
+    _heap_add_term(heap, "leaf",    term_make_leaf_raw());
+    _heap_add_term(heap, "fix",     term_make_fix_raw());
+    _heap_add_term(heap, "eval",    term_make_eval_raw());
+    _heap_add_term(heap, "wrap",    term_make_wrap_raw());
+    _heap_add_term(heap, "id",      term_make_id_raw());
+    
     // Add primops
     // _heap_add_operator(heap, "$vau", Vau);
     _heap_add_operator(heap, "+", Add);
@@ -66,61 +85,6 @@ Heap_t* heap_make_default() {
     _heap_add_operator(heap, "*", Mul);
     _heap_add_operator(heap, "/", Div);
 
-    // Add list functions
-    _heap_add_term(heap, "cons",    term_make_cons_raw());
-    _heap_add_term(heap, "nil",     term_make_nil_raw());
-    _heap_add_term(heap, "head",    term_make_head_raw());
-    _heap_add_term(heap, "tail",    term_make_tail_raw());
-    _heap_add_term(heap, "true",    term_make_true_raw());
-    _heap_add_term(heap, "false",   term_make_false_raw());
-
-    // fix = \f. (\x. f (x x)) (\x. f (x x))
-    _heap_add_term(heap, "fix",
-        term_make_abs(str_cpy("f"),
-            term_make_app(
-                term_make_abs(str_cpy("x"),
-                    term_make_app(term_make_primval_symbol("f"),
-                        term_make_app(term_make_primval_symbol("x"),
-                            term_make_primval_symbol("x")))),
-                term_make_abs(str_cpy("x"),
-                    term_make_app(term_make_primval_symbol("f"),
-                        term_make_app(term_make_primval_symbol("x"),
-                            term_make_primval_symbol("x")))))));
-
-    // _eval = \eval. \list. list nil (\x. \xs. (eval x) xs)
-    _heap_add_term(heap, "_eval",
-        term_make_abs(str_cpy("eval"),
-            term_make_abs(str_cpy("list"),
-                term_make_app(
-                    term_make_app(
-                        term_make_primval_symbol("list"),
-                        term_make_nil()),
-                    term_make_abs(str_cpy("x"),
-                        term_make_abs(str_cpy("xs"),
-                            term_make_app(
-                                term_make_app(
-                                    term_make_primval_symbol("eval"),
-                                    term_make_primval_symbol("x")),
-                                term_make_primval_symbol("xs"))))))));
-
-    // eval = fix _eval eval
-    _heap_add_term(heap, "eval",
-        term_make_app(term_make_primval_symbol("fix"),
-        term_make_primval_symbol("_eval")));
-
-    // _heap_add_term(heap, "eval",
-    //     term_make_abs(str_cpy("list"),
-    //         term_make_app(
-    //             term_make_app(
-    //                 term_make_primval_symbol("list"),
-    //                 term_make_nil()),
-    //             term_make_abs(str_cpy("x"),
-    //                 term_make_abs(str_cpy("xs"),
-    //                     term_make_app(
-    //                         term_make_app(
-    //                             term_make_primval_symbol("eval"),
-    //                             term_make_primval_symbol("x")),
-    //                         term_make_primval_symbol("xs")))))));
     return heap;
 }
 

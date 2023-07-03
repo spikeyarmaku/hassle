@@ -1,3 +1,6 @@
+// TODO collect the strings to a string pool, and just use indexes instead of
+// actual strings
+
 #include "serialize.h"
 
 // DEBUG

@@ -44,7 +44,7 @@ Closure_t* primop_apply(enum PrimOp primop, Closure_t** args) {
 Closure_t* _primop_vau(Closure_t* closure1, Closure_t* closure2) {
     Term_t* term1 = closure_get_term(closure1);
     
-    assert(term_get_type(term1) == PrimvalTerm);
+    assert(term_get_type(term1) == PrimValTerm);
     
     PrimVal_t* primval1 = term_get_primval(term1);
 
@@ -66,11 +66,11 @@ Closure_t* _primop_eval(Closure_t* closure) {
     Term_t* term = closure_get_term(closure);
     Frame_t* frame = closure_get_frame(closure);
     
-    // if (term_get_type(term) == PrimvalTerm) {
+    // if (term_get_type(term) == PrimValTerm) {
         PrimVal_t* primval = term_get_primval(term);
         if (primval_get_type(primval) == SymbolValue) {
             // if symbol, look up value of symbol
-            return frame_lookup(frame, primval_get_symbol(primval));
+            return frame_lookup(frame, primval_get_symbol(primval), NULL);
         } else {
             // if value, return value
             return closure;
@@ -115,8 +115,8 @@ Closure_t* _primop_rational_op(Closure_t* closure1, Closure_t* closure2,
     Term_t* term2 = closure_get_term(closure2);
     Frame_t* frame = closure_get_frame(closure2);
     
-    assert(term_get_type(term1) == PrimvalTerm &&
-        term_get_type(term2) == PrimvalTerm);
+    assert(term_get_type(term1) == PrimValTerm &&
+        term_get_type(term2) == PrimValTerm);
     
     // Extract the numbers
     PrimVal_t* val1 = term_get_primval(term1);
@@ -145,8 +145,8 @@ Closure_t* _primop_eq(Closure_t* closure1, Closure_t* closure2) {
     Term_t* term2 = closure_get_term(closure2);
     Frame_t* frame = closure_get_frame(closure1);
     
-    assert(term_get_type(term1) == PrimvalTerm &&
-        term_get_type(term1) == PrimvalTerm);
+    assert(term_get_type(term1) == PrimValTerm &&
+        term_get_type(term1) == PrimValTerm);
 
     // Extract the values
     PrimVal_t* val1 = term_get_primval(term1);

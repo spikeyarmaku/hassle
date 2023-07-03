@@ -25,10 +25,16 @@ void frame_update(Frame_t* frame, Closure_t* new_value) {
 
 // Find the value assigned to this variable name in the environment and return a
 // copy of the value. If there isn't any, return the symbol itself.
-Closure_t* frame_lookup(Frame_t* frame, char* var_name) {
+Closure_t* frame_lookup(Frame_t* frame, char* var_name, OUT Frame_t** parent) {
     // Climb the spaghetti stack and look for the variable name
     Frame_t* current_frame = frame;
+    if (parent != NULL) {
+        *parent = current_frame;
+    }
     while (current_frame != NULL) {
+        if (parent != NULL) {
+            *parent = current_frame;
+        }
         if (strcmp(current_frame->name, var_name) == 0) {
             return closure_copy(current_frame->value);
         }

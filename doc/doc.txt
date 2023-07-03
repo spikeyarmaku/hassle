@@ -36,7 +36,7 @@ location onto the stack
 literals and operators addition:
 
 Swap the current closure and the top of the stack
-(Int)  〈n[l], σ c, μ〉→CE〈c, σ n[l], μ〉
+(Val)  〈n[l], σ c, μ〉→CE〈c, σ n[l], μ〉
 
 Take the necessary amount of items off the stack, and apply them with the
 current operator

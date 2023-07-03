@@ -145,18 +145,14 @@ Term_t* term_from_expr(Expr_t* expr) {
     }
 }
 
-// Turn an expression into a scott-encoded list
+// Turn an expression into a scott-encoded binary tree
+// https://stackoverflow.com/questions/30655680/how-do-you-represent-nested-types-using-the-scott-encoding
+// As explained in the following blog post, preprocessing avoids trivializing
+// the equational theory of the language, while still supporting metaprogramming
 // http://fexpr.blogspot.com/2013/07/explicit-evaluation.html
-// In short, this avoids a trivial equational theory, while still being able to
-// support some form of metaprogramming. The `Kernel` language uses the same
-// trick.
 Term_t* term_from_expr_encoded(Expr_t* expr) {
     if (!expr_is_list(expr)) {
-        return
-            term_make_app(
-                term_make_app(
-                    term_make_cons(), _term_primval_from_expr(expr)),
-                term_make_nil());
+        return term_make_app(term_make_leaf(), _term_primval_from_expr(expr));
     } else {
         // expr is a list
 
@@ -166,30 +162,15 @@ Term_t* term_from_expr_encoded(Expr_t* expr) {
         for (size_t i = 0; i < expr_get_child_count(expr); i++) {
             Expr_t* new_expr = expr_get_child(expr, i);
             Term_t* new_term = NULL;
-            if (!expr_is_list(new_expr)) {
-                new_term = _term_primval_from_expr(new_expr);
-            } else {
-                new_term = term_from_expr(new_expr);
-            }
+            new_term = term_from_expr_encoded(new_expr);
             if (result == NULL) {
                 result = new_term;
             } else {
                 result =
                     term_make_app(
-                        term_make_app(term_make_cons(), result), new_term);
+                        term_make_app(term_make_pair(), result), new_term);
             }
         }
-        // The head of the list is always evaluated
-        // if (expr_get_child_count(expr) > 0) {
-        //     Term_t* new_term = NULL;
-        //     Expr_t* new_expr = expr_get_child(expr, 0);
-        //     if (!expr_is_list(new_expr)) {
-        //         new_term = _term_primval_from_expr(new_expr);
-        //     } else {
-        //         new_term = term_from_expr(new_expr);
-        //     }
-        //     result = term_make_app(new_term, result);
-        // }
         return result;
     }
 }
@@ -197,7 +178,7 @@ Term_t* term_from_expr_encoded(Expr_t* expr) {
 Term_t* term_make_primval(PrimVal_t* val) {
     Term_t* term = (Term_t*)allocate_mem("term_make_primval", NULL,
         sizeof(struct Term));
-    term->type = PrimvalTerm;
+    term->type = PrimValTerm;
     term->primval = val;
     return term;
 }
@@ -235,7 +216,7 @@ enum TermType term_get_type(Term_t* term) {
 
 PrimVal_t* term_get_primval(Term_t* term) {
     assert(term != NULL);
-    assert(term_get_type(term) == PrimvalTerm);
+    assert(term_get_type(term) == PrimValTerm);
     return term->primval;
 }
 
@@ -271,10 +252,22 @@ enum PrimOp term_get_op(Term_t* term) {
     return term->op;
 }
 
+BOOL term_is_self_evaluating(Term_t* term) {
+    if (term->type == AppTerm) {
+        return FALSE;
+    }
+    if (term->type == PrimValTerm) {
+        if (primval_get_type(term_get_primval(term)) == SymbolValue) {
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
 Term_t* term_copy(Term_t* term) {
     assert(term != NULL);
     switch(term->type) {
-        case PrimvalTerm:
+        case PrimValTerm:
             return term_make_primval(primval_copy(term->primval));
         case AbsTerm:
             return term_make_abs(
@@ -297,7 +290,7 @@ Term_t* term_copy(Term_t* term) {
 // void term_free(Term_t* term) {
 //     assert(term != NULL);
 //     switch (term->type) {
-//         case PrimvalTerm: {
+//         case PrimValTerm: {
 //             primval_free(term->primval);
 //             break;
 //         }
@@ -331,7 +324,7 @@ void term_serialize(Serializer_t* serializer, Term_t* term) {
     assert(term != NULL);
     serializer_write(serializer, (uint8_t)term->type);
     switch (term->type) {
-        case PrimvalTerm:
+        case PrimValTerm:
             primval_serialize(serializer, term->primval);
             break;
         case AbsTerm:
@@ -359,7 +352,7 @@ Term_t* term_deserialize(Serializer_t* serializer) {
     assert(serializer != NULL);
     enum TermType type = (enum TermType)serializer_read(serializer);
     switch (type) {
-        case PrimvalTerm: {
+        case PrimValTerm: {
             PrimVal_t* primval = primval_deserialize(serializer);
             return term_make_primval(primval);
         }
@@ -402,7 +395,7 @@ Term_t* term_make_primval_symbol(char* name) {
 void term_print(Term_t* term) {
     assert(term != NULL);
     switch (term->type) {
-        case PrimvalTerm:
+        case PrimValTerm:
             printf("<Primval ");
             primval_print(term->primval);
             printf(">");
@@ -444,6 +437,59 @@ void term_print(Term_t* term) {
             assert(FALSE);
     }
 }
+
+Term_t* term_make_cons() {
+    return term_make_primval_symbol("cons");
+}
+
+Term_t* term_make_nil() {
+    return term_make_primval_symbol("nil");
+}
+
+Term_t* term_make_head() {
+    return term_make_primval_symbol("head");
+}
+
+Term_t* term_make_tail() {
+    return term_make_primval_symbol("tail");
+}
+
+Term_t* term_make_true() {
+    return term_make_primval_symbol("true");
+}
+
+Term_t* term_make_false() {
+    return term_make_primval_symbol("false");
+}
+
+Term_t* term_make_pair() {
+    return term_make_primval_symbol("pair");
+}
+Term_t* term_make_leaf() {
+    return term_make_primval_symbol("leaf");
+}
+
+// id = \x. x
+Term_t* term_make_vau_id_raw() {
+    return
+        term_make_abs("x", term_make_primval_symbol("x"));
+}
+
+// fix = \f. (\x. f (x x)) (\x. f (x x))
+Term_t* term_make_fix_raw() {
+    return
+        term_make_abs("f",
+            term_make_app(
+                term_make_abs("x",
+                    term_make_app(term_make_primval_symbol("f"),
+                        term_make_app(term_make_primval_symbol("x"),
+                            term_make_primval_symbol("x")))),
+                term_make_abs("x",
+                    term_make_app(term_make_primval_symbol("f"),
+                        term_make_app(term_make_primval_symbol("x"),
+                            term_make_primval_symbol("x"))))));
+}
+
 
 // Scott-encoded cons: \x. \xs. \n. \c. c x xs
 // (x = head, y = tail, n = what-to-do-if-nil, c = what-to-do-if-pair)
@@ -509,37 +555,74 @@ Term_t* term_make_false_raw() {
                     primval_make_symbol(str_cpy("y")))));
 }
 
-Term_t* term_make_cons() {
-    return term_make_primval_symbol("cons");
+Term_t* term_make_pair_raw() {
+    return
+        term_make_abs("x",
+            term_make_abs("y",
+                term_make_abs("p",
+                    term_make_abs("l",
+                        term_make_app(
+                            term_make_app(
+                                term_make_primval_symbol("p"),
+                                term_make_primval_symbol("x")),
+                            term_make_primval_symbol("y"))))));
 }
 
-Term_t* term_make_nil() {
-    return term_make_primval_symbol("nil");
+Term_t* term_make_leaf_raw() {
+    return
+        term_make_abs("x",
+            term_make_abs("p",
+                term_make_abs("l",
+                    term_make_app(
+                        term_make_primval_symbol("l"),
+                        term_make_primval_symbol("x")))));
 }
 
-Term_t* term_make_head() {
-    return term_make_primval_symbol("head");
+Term_t* term_make_eval_raw() {
+    return
+        term_make_app(term_make_primval_symbol("fix"),
+    // _eval = \eval. \tree. (tree (\x. \y. (eval x) y)) (\x.x)
+            term_make_abs("eval",
+                term_make_abs("tree",
+                    term_make_app(
+                        term_make_app(
+                            term_make_primval_symbol("tree"),
+                            term_make_abs("x",
+                                term_make_abs("y",
+                                    term_make_app(
+                                        term_make_app(
+                                            term_make_primval_symbol("eval"),
+                                            term_make_primval_symbol("x")),
+                                        term_make_primval_symbol("y"))))),
+                        term_make_primval_symbol("$id")))));
 }
 
-Term_t* term_make_tail() {
-    return term_make_primval_symbol("tail");
+// \f. \x. f (eval x)
+Term_t* term_make_wrap_raw() {
+    return
+        term_make_abs("f",
+            term_make_abs("x",
+                term_make_app(
+                    term_make_primval_symbol("f"),
+                    term_make_app(
+                        term_make_primval_symbol("eval"),
+                        term_make_primval_symbol("x")))));
 }
 
-Term_t* term_make_true() {
-    return term_make_primval_symbol("true");
+// \f. \x. (wrap f) x
+Term_t* term_make_id_raw() {
+    return
+        term_make_app(
+            term_make_primval_symbol("wrap"),
+            term_make_primval_symbol("$id"));
 }
-
-Term_t* term_make_false() {
-    return term_make_primval_symbol("false");
-}
-
 
 // Take a term, containing only lazy apps and primvals, and emit a list-encoded
 // term
 Term_t* term_encode_as_list(Term_t* term) {
     assert(term != NULL);
 
-    if (term_get_type(term) == PrimvalTerm) {
+    if (term_get_type(term) == PrimValTerm) {
         return
             term_make_app(
                 term_make_app(term_make_cons(), term),

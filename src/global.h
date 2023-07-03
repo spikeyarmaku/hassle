@@ -19,6 +19,8 @@
 #define FALSE 0
 #define TRUE 1
 
+#define OUT
+
 #define DEPTH uint32_t
 
 enum ErrorCode {Success, Error};
