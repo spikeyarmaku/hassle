@@ -1,16 +1,85 @@
 /*
 TODO
+- add a way to turn a tree into a term, using the closure of the tree (useful
+for $vau) - name it `unpack`?
+
+    - after $vau expansion: put "\x -> `unpack` body" in the control
+    - `unpack` creates an update marker with the control's env, and gets
+    replaced with "update_closure"
+    - `update_closure` checks if the control is a variable - if it is, updates
+    - the control with the value of that variable. If not, then updates the
+    control's env with the topmost update marker, and removes the update marker
+    from the stack
+
+    ^ not good, the update markers from the variable lookup will go on top of
+    the `update_closure` marker.
+    However, we could add a `env_num with-env term` operator, that would change
+    the current env of the control to `env_num`, and then put `term` in it
+
+
+    new idea: (<op_name> signifies an operator)
+    (<get-current-env> <set-env-to> body)
+    // it becomes
+    (<set-env-to> 54 body)
+    // which becomes
+    (body set-pair-env-to-54 set-leaf-env-to-54)
+    // where set-pair-env-to-54 =
+    // (\x -> \y -> (<set-env-to> 54 x) (<set-env-to> 54 y))
+    // and set-leaf-env-to-54 = (\x -> <set-env-to> 54 x)
+    // body evaluates...
+    ((\p -> \l -> ((p x) y)) set-pair-env-to-54 set-leaf-env-to-54)
+    ((set-pair-env-to-54 x) y)
+    ((<set-env-to> 54 x) (<set-env-to> 54 y))
+
+
+    update: (# is the mark to get the current frame index, #54 is a concrete
+    frame index)
+    at first, this is in the control:
+    # (<SetEnv> body)
+    next step:
+    #54 (<SetEnv> body)
+    then <SetEnv> notices that in the stack, the topmost element is not a frame
+    index, therefore it knows it shall construct an extractor, so next step is:
+    (body (\x. \y. (<SetEnv> 54 x) (<SetEnv> 54 y))) (\x. <SetEnv> 54 x)
+    and now when <SetEnv> is eval'd, the topmost element on the stack will be a
+    number
+
+    ^ doesn't work. Either you have to store the frame in the term, in which
+    case you would need the heap to serialize it, which you don't, or you need
+    to store the frame index, in which case you need the heap when the primop is
+    running, which you also don't have access to
+
+    attempt #3: convert the tree into an actual expression. It will need to be
+    marked as "not to evaluate" somewhere along the line
+    - OR -
+    find which closure's frame to overwrite
+
+    attempt #4:
+    define an <eval-with> primop, that takes two arguments, and constructs a
+    closure from the first closure's term and the second closure's frame
+    then, let <vau> construct:
+    (x -> eval-with body x)
+
+
+    decode =
+        fix
+            (\decode. \t.
+                (t
+                    (\x. \y.
+                        (decode x)
+                        (<make-app> (decode y)))
+                    (\x. x)))
+    x -> dummy ((decode body) <with-env>)
+    <make-app> creates a closure with a NULL frame
+    the VM treats everything with a NULL frame as a value
+    <with-env> creates a closure from the term of closure1 and the frame of
+    closure2
+
+
 - add Unicode support
 - add locale support (decimal separators, etc.)
 - use boehm's GC
 - Check if the input expression is well-formed (all parens match)
-*/
-
-/*
-Coding convenctions:
-
-- each function is responsible for cleaning up the arguments they receive
-  (callee-frees)
 */
 
 #include "config.h"

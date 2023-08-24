@@ -3,11 +3,12 @@
 #include "term.h" // keeping this include here avoids a circular dependency
 #include "frame.h"
 
-Closure_t* _primop_vau         (Closure_t*, Closure_t*);
-Closure_t* _primop_eval        (Closure_t*);
-Closure_t* _primop_rational_op (Closure_t*, Closure_t*,
+Closure_t* _primop_vau          (Closure_t*, Closure_t*);
+Closure_t* _primop_rational_op  (Closure_t*, Closure_t*,
     Rational_t*(*)(Rational_t*, Rational_t*));
-Closure_t* _primop_eq          (Closure_t*, Closure_t*);
+Closure_t* _primop_eq           (Closure_t*, Closure_t*);
+Closure_t* _primop_make_app     (Closure_t*, Closure_t*);
+Closure_t* _primop_with_env     (Closure_t*, Closure_t*);
 
 uint8_t primop_get_arity(enum PrimOp primop) {
     return 2;
@@ -15,6 +16,9 @@ uint8_t primop_get_arity(enum PrimOp primop) {
 
 Closure_t* primop_apply(enum PrimOp primop, Closure_t** args) {
     switch (primop) {
+        case Vau: {
+            return _primop_vau(args[0], args[1]);
+        }
         case Add: {
             return _primop_rational_op(args[0], args[1], &rational_add);
         }
@@ -30,17 +34,16 @@ Closure_t* primop_apply(enum PrimOp primop, Closure_t** args) {
         case Eq: {
             return _primop_eq(args[0], args[1]);
         }
+        case MakeApp: {
+            return _primop_make_app(args[0], args[1]);
+        }
+        case WithEnv: {
+            return _primop_with_env(args[0], args[1]);
+        }
         default: assert(FALSE); return NULL;
     }
 }
 
-// Return an abstraction with body marked to be evaluated (since the body is
-// a scott-encoded list, evaluation has to be induced. Scott-encoding of the
-// whole program term is necessary to support metaprogramming)
-// Note that the vau primop is not the same as the `lambda` function in the
-// standard lib. It is actually the common backend for both `lambda` and
-// `syntax`. The difference between them is that `lambda` will induce evaluation
-// of its argument.
 Closure_t* _primop_vau(Closure_t* closure1, Closure_t* closure2) {
     Term_t* term1 = closure_get_term(closure1);
     
@@ -50,62 +53,21 @@ Closure_t* _primop_vau(Closure_t* closure1, Closure_t* closure2) {
 
     assert(primval_get_type(primval1) == SymbolValue);
 
-    Closure_t* evaled2 = _primop_eval(closure2);
-
+    // x -> dummy ((decode body) <with-env>)
+    // body = closure2
+    Term_t* vau_body =
+        term_make_app(
+            term_make_dummy(),
+            term_make_app(
+                term_make_app(
+                    term_make_decode_raw(),
+                    closure_get_term(closure2)),
+                term_make_op(WithEnv)));
     return
         closure_make(
             term_make_abs(
-                primval_get_symbol(primval1), closure_get_term(evaled2)),
+                primval_get_symbol(primval1), vau_body),
             closure_get_frame(closure2));
-}
-
-// If the argument is a value, return the value. If the argument is a symbol,
-// return its value. If the argument is a list, evaluate the head, and apply
-// the rest as-is.
-Closure_t* _primop_eval(Closure_t* closure) {
-    Term_t* term = closure_get_term(closure);
-    Frame_t* frame = closure_get_frame(closure);
-    
-    // if (term_get_type(term) == PrimValTerm) {
-        PrimVal_t* primval = term_get_primval(term);
-        if (primval_get_type(primval) == SymbolValue) {
-            // if symbol, look up value of symbol
-            return frame_lookup(frame, primval_get_symbol(primval), NULL);
-        } else {
-            // if value, return value
-            return closure;
-        }
-    // } else {
-        // TODO this doesn't treat the arg as a list
-        // if app, eval head and apply it to the rest
-        // assert(term_get_type(term) == LazyAppTerm);
-        // Term_t* term1 = term_get_app_term1(term);
-        // Term_t* term2 = term_get_app_term2(term);
-        // Closure_t* evaled_head = _primop_eval(closure_make(term1, frame));
-        // return
-        //     closure_make(
-        //         term_make_app(closure_get_term(evaled_head), term2),
-        //         frame);
-
-        // eval = \xs. xs nil (\h. \t. (eval h) t)
-        // return
-        //     closure_make(
-        //         term_make_abs(str_cpy("xs"),
-        //             term_make_app(
-        //                 term_make_app(
-        //                     term_make_primval(primval_make_symbol("xs")),
-        //                     term_make_nil()),
-        //                 term_make_abs(str_cpy("h"),
-        //                     term_make_abs(str_cpy("t"),
-        //                         term_make_app(
-        //                             term_make_app(
-        //                                 term_make_op(Eval),
-        //                                 term_make_primval(
-        //                                     primval_make_symbol("h"))),
-        //                             term_make_primval(
-        //                                 primval_make_symbol("t"))))))),
-        //         frame);
-    // }
 }
 
 Closure_t* _primop_rational_op(Closure_t* closure1, Closure_t* closure2,
@@ -174,6 +136,10 @@ Closure_t* _primop_eq(Closure_t* closure1, Closure_t* closure2) {
                     return closure_make(term_make_false(), frame);
                 }
             }
+            case ReferenceValue: {
+                // TODO eval both closures and compare the terms?
+                return NULL;
+            }
             case SymbolValue: {
                 char* sym1 = primval_get_symbol(val1);
                 char* sym2 = primval_get_symbol(val2);
@@ -188,3 +154,13 @@ Closure_t* _primop_eq(Closure_t* closure1, Closure_t* closure2) {
     }
 }
 
+Closure_t* _primop_make_app(Closure_t* closure1, Closure_t* closure2) {
+    Term_t* term = term_make_app(closure_get_term(closure1),
+        closure_get_term(closure2));
+    return closure_make(term, closure_get_frame(closure1));
+}
+
+Closure_t* _primop_with_env(Closure_t* closure1, Closure_t* closure2) {
+    return closure_make(closure_get_term(closure1),
+        closure_get_frame(closure2));
+}

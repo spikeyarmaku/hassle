@@ -23,18 +23,18 @@ void _heap_grow(Heap_t* heap) {
 void _heap_add_operator(Heap_t* heap, char* op_name, enum PrimOp op) {
     Term_t* term_op = term_make_op(op);
 
-    // apply_op = \op. \x. \y. (x (y op))
+    // apply_op = \op. \x. \y. ((eval x) ((eval y) op))
     Term_t* term_apply_op =
         term_make_abs(str_cpy("x"),
             term_make_abs(str_cpy("y"),
                 term_make_app(
                     term_make_app(
-                        term_make_primval_symbol("eval"),
-                        term_make_primval_symbol("y")),
+                        term_make_primval_reference("eval"),
+                        term_make_primval_reference("y")),
                     term_make_app(
                         term_make_app(
-                            term_make_primval_symbol("eval"),
-                            term_make_primval_symbol("x")),
+                            term_make_primval_reference("eval"),
+                            term_make_primval_reference("x")),
                         term_op))));
 
     _heap_add_term(heap, op_name, term_apply_op);
@@ -64,22 +64,23 @@ Heap_t* heap_make_default() {
     Heap_t* heap = heap_make();
 
     // Add list functions
-    _heap_add_term(heap, "$id",     term_make_vau_id_raw());
-    _heap_add_term(heap, "cons",    term_make_cons_raw());
-    _heap_add_term(heap, "nil",     term_make_nil_raw());
-    _heap_add_term(heap, "head",    term_make_head_raw());
-    _heap_add_term(heap, "tail",    term_make_tail_raw());
-    _heap_add_term(heap, "true",    term_make_true_raw());
-    _heap_add_term(heap, "false",   term_make_false_raw());
+    // _heap_add_term(heap, "$vau",    term_make_vau_raw());
+    _heap_add_term(heap, "fix",     term_make_fix_raw());
+    _heap_add_term(heap, "$id",     term_make_id_raw());
+    _heap_add_term(heap, "eval",    term_make_eval_raw());
     _heap_add_term(heap, "pair",    term_make_pair_raw());
     _heap_add_term(heap, "leaf",    term_make_leaf_raw());
-    _heap_add_term(heap, "fix",     term_make_fix_raw());
-    _heap_add_term(heap, "eval",    term_make_eval_raw());
-    _heap_add_term(heap, "wrap",    term_make_wrap_raw());
-    _heap_add_term(heap, "id",      term_make_id_raw());
-    
+    _heap_add_term(heap, "$vau",    term_make_vau_raw());
+    _heap_add_term(heap, "$lambda", term_make_lambda_raw());
+    // _heap_add_term(heap, "cons",    term_make_cons_raw());
+    // _heap_add_term(heap, "nil",     term_make_nil_raw());
+    // _heap_add_term(heap, "head",    term_make_head_raw());
+    // _heap_add_term(heap, "tail",    term_make_tail_raw());
+    // _heap_add_term(heap, "true",    term_make_true_raw());
+    // _heap_add_term(heap, "false",   term_make_false_raw());
+    // _heap_add_term(heap, "wrap",    term_make_wrap_raw());
+
     // Add primops
-    // _heap_add_operator(heap, "$vau", Vau);
     _heap_add_operator(heap, "+", Add);
     _heap_add_operator(heap, "-", Sub);
     _heap_add_operator(heap, "*", Mul);

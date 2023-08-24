@@ -24,8 +24,16 @@ PrimVal_t* primval_make_string(char* str) {
     return result;
 }
 
+PrimVal_t* primval_make_reference(char* sym) {
+    PrimVal_t* result = (PrimVal_t*)allocate_mem("primval_make_reference", NULL,
+        sizeof(struct PrimVal));
+    result->type = ReferenceValue;
+    result->string = sym;
+    return result;
+}
+
 PrimVal_t* primval_make_symbol(char* sym) {
-    PrimVal_t* result = (PrimVal_t*)allocate_mem("primval_make_symbol", NULL,
+    PrimVal_t* result = (PrimVal_t*)allocate_mem("primval_make_reference", NULL,
         sizeof(struct PrimVal));
     result->type = SymbolValue;
     result->string = sym;
@@ -55,6 +63,12 @@ char* primval_get_symbol(PrimVal_t* val) {
     return val->string;
 }
 
+char* primval_get_reference(PrimVal_t* val) {
+    assert(val != NULL);
+    assert(val->type == ReferenceValue);
+    return val->string;
+}
+
 PrimVal_t* primval_copy(PrimVal_t* primval) {
     assert(primval != NULL);
     switch (primval->type) {
@@ -62,6 +76,8 @@ PrimVal_t* primval_copy(PrimVal_t* primval) {
             return primval_make_rational(rational_copy(primval->rational));
         case StringValue:
             return primval_make_string(str_cpy(primval->string));
+        case ReferenceValue:
+            return primval_make_reference(str_cpy(primval->string));
         case SymbolValue:
             return primval_make_symbol(str_cpy(primval->string));
         default: assert(FALSE); return NULL;
@@ -77,6 +93,7 @@ void primval_serialize(Serializer_t* serializer, PrimVal_t* primval) {
             rational_serialize(serializer, primval->rational);
             break;
         case StringValue:
+        case ReferenceValue:
         case SymbolValue:
             serializer_write_string(serializer, primval->string);
             break;
@@ -96,6 +113,10 @@ PrimVal_t* primval_deserialize(Serializer_t* serializer) {
         case StringValue: {
             char* string = serializer_read_string(serializer);
             return primval_make_string(string);
+        }
+        case ReferenceValue: {
+            char* ref = serializer_read_string(serializer);
+            return primval_make_reference(ref);
         }
         case SymbolValue: {
             char* symbol = serializer_read_string(serializer);
@@ -119,6 +140,10 @@ void primval_print(PrimVal_t* primval) {
             printf("\"%s\"", primval->string);
             break;
         }
+        case ReferenceValue: {
+            printf("%s", primval->string);
+            break;
+        }
         case SymbolValue: {
             printf("%s", primval->string);
             break;
@@ -133,7 +158,7 @@ void primval_print(PrimVal_t* primval) {
 //             rational_free(val->rational);
 //             break;
 //         case StringValue:
-//         case SymbolValue:
+//         case ReferenceValue:
 //             free_mem("value_free/symbol", val->string);
 //             break;
 //         default:

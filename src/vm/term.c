@@ -1,5 +1,7 @@
 #include "term.h"
 
+typedef struct Frame* Frame_t;
+
 // This is a lambda term, extended with symbols and built-in values (numbers and
 // strings)
 struct Term {
@@ -82,7 +84,7 @@ Term_t* _term_read_string(char* str) {
 
 // Read the string as a symbol
 Term_t* _term_read_symbol(char* str) {
-    return term_make_primval(primval_make_symbol(str));
+    return term_make_primval(primval_make_reference(str));
 }
 
 Term_t* _term_primval_from_expr(Expr_t* expr) {
@@ -152,7 +154,8 @@ Term_t* term_from_expr(Expr_t* expr) {
 // http://fexpr.blogspot.com/2013/07/explicit-evaluation.html
 Term_t* term_from_expr_encoded(Expr_t* expr) {
     if (!expr_is_list(expr)) {
-        return term_make_app(term_make_leaf(), _term_primval_from_expr(expr));
+        return
+            term_make_app(term_make_leaf(), _term_primval_from_expr(expr));
     } else {
         // expr is a list
 
@@ -177,15 +180,14 @@ Term_t* term_from_expr_encoded(Expr_t* expr) {
 
 Term_t* term_make_primval(PrimVal_t* val) {
     Term_t* term = (Term_t*)allocate_mem("term_make_primval", NULL,
-        sizeof(struct Term));
+        sizeof(Term_t));
     term->type = PrimValTerm;
     term->primval = val;
     return term;
 }
 
 Term_t* term_make_abs(char* var_name, Term_t* body) {
-    Term_t* term = (Term_t*)allocate_mem("term_make_abs", NULL,
-        sizeof(struct Term));
+    Term_t* term = (Term_t*)allocate_mem("term_make_abs", NULL, sizeof(Term_t));
     term->type = AbsTerm;
     term->abs.var = var_name;
     term->abs.app_body = body;
@@ -193,8 +195,7 @@ Term_t* term_make_abs(char* var_name, Term_t* body) {
 }
 
 Term_t* term_make_app(Term_t* term1, Term_t* term2) {
-    Term_t* term = (Term_t*)allocate_mem("term_make_app", NULL,
-        sizeof(struct Term));
+    Term_t* term = (Term_t*)allocate_mem("term_make_app", NULL, sizeof(Term_t));
     term->type = AppTerm;
     term->app.term1 = term1;
     term->app.term2 = term2;
@@ -202,10 +203,15 @@ Term_t* term_make_app(Term_t* term1, Term_t* term2) {
 }
 
 Term_t* term_make_op(enum PrimOp op) {
-    Term_t* term = (Term_t*)allocate_mem("term_make_op", NULL,
-        sizeof(Term_t));
+    Term_t* term = (Term_t*)allocate_mem("term_make_op", NULL, sizeof(Term_t));
     term->type = OpTerm;
     term->op = op;
+    return term;
+}
+
+Term_t* term_make_dummy() {
+    Term_t* term = (Term_t*)allocate_mem("term_make_op", NULL, sizeof(Term_t));
+    term->type = DummyTerm;
     return term;
 }
 
@@ -235,14 +241,12 @@ Term_t* term_get_abs_body(Term_t* term) {
 Term_t* term_get_app_term1(Term_t* term) {
     assert(term != NULL);
     assert(term_get_type(term) == AppTerm);
-        // term_get_type(term) == StrictAppTerm);
     return term->app.term1;
 }
 
 Term_t* term_get_app_term2(Term_t* term) {
     assert(term != NULL);
     assert(term_get_type(term) == AppTerm);
-        // term_get_type(term) == StrictAppTerm);
     return term->app.term2;
 }
 
@@ -257,7 +261,7 @@ BOOL term_is_self_evaluating(Term_t* term) {
         return FALSE;
     }
     if (term->type == PrimValTerm) {
-        if (primval_get_type(term_get_primval(term)) == SymbolValue) {
+        if (primval_get_type(term_get_primval(term)) == ReferenceValue) {
             return FALSE;
         }
     }
@@ -275,76 +279,45 @@ Term_t* term_copy(Term_t* term) {
         case AppTerm:
             return term_make_app(
                 term_copy(term->app.term1), term_copy(term->app.term2));
-        // case StrictAppTerm:
-        //     return term_make_strict_app(
-        //         term_copy(term->app.term1), term_copy(term->app.term2));
         case OpTerm:
             return term_make_op(term->op);
-        case WorldTerm:
+        case DummyTerm:
             // TODO
             return NULL;
         default: assert(FALSE); return NULL;
     }
 }
 
-// void term_free(Term_t* term) {
-//     assert(term != NULL);
-//     switch (term->type) {
-//         case PrimValTerm: {
-//             primval_free(term->primval);
-//             break;
-//         }
-//         case AbsTerm:
-//             free_mem("term_free/abs/var", term->abs.var);
-//             term_free(term->abs.app_body);
-//             break;
-//         case AppTerm:
-//         // case StrictAppTerm:
-//             term_free(term->app.term1);
-//             term_free(term->app.term2);
-//             break;
-//         case OpTerm:
-//         case WorldTerm:
-//             break;
-//         default: {
-//             assert(FALSE);
-//         }
-//     }
-//     free_mem("term_free", term);
-// }
-
-// // Free the toplevel term, without destroying the child elements
-// // Useful for deconstructing terms from the VM's control register, and putting
-// // back one of the constituents
-// void term_free_toplevel(Term_t* term) {
-//     free_mem("term_free_toplevel", term);
-// }
-
 void term_serialize(Serializer_t* serializer, Term_t* term) {
     assert(term != NULL);
     serializer_write(serializer, (uint8_t)term->type);
     switch (term->type) {
-        case PrimValTerm:
+        case PrimValTerm: {
             primval_serialize(serializer, term->primval);
             break;
-        case AbsTerm:
+        }
+        case AbsTerm: {
             serializer_write_string(serializer, term->abs.var);
             term_serialize(serializer, term->abs.app_body);
             break;
-        case AppTerm:
-        // case StrictAppTerm:
+        }
+        case AppTerm: {
             term_serialize(serializer, term->app.term1);
             term_serialize(serializer, term->app.term2);
             break;
-        case OpTerm:
+        }
+        case OpTerm: {
             serializer_write(serializer, (uint8_t)term->op);
             break;
-        case WorldTerm:
+        }
+        case DummyTerm: {
             // TODO
             break;
-        default:
+        }
+        default: {
             assert(FALSE);
             break;
+        }
     }
 }
 
@@ -366,16 +339,11 @@ Term_t* term_deserialize(Serializer_t* serializer) {
             Term_t* term2 = term_deserialize(serializer);
             return term_make_app(term1, term2);
         }
-        // case StrictAppTerm: {
-        //     Term_t* term1 = term_deserialize(serializer);
-        //     Term_t* term2 = term_deserialize(serializer);
-        //     return term_make_strict_app(term1, term2);
-        // }
         case OpTerm: {
             enum PrimOp op = (enum PrimOp)serializer_read(serializer);
             return term_make_op(op);
         }
-        case WorldTerm: {
+        case DummyTerm: {
             // TODO
             break;
         }
@@ -390,6 +358,10 @@ Term_t* term_deserialize(Serializer_t* serializer) {
 
 Term_t* term_make_primval_symbol(char* name) {
     return term_make_primval(primval_make_symbol(str_cpy(name)));
+}
+
+Term_t* term_make_primval_reference(char* name) {
+    return term_make_primval(primval_make_reference(str_cpy(name)));
 }
 
 void term_print(Term_t* term) {
@@ -412,26 +384,20 @@ void term_print(Term_t* term) {
             term_print(term->app.term2);
             printf(">");
             break;
-        // case StrictAppTerm:
-        //     printf("<StrictApp ");
-        //     term_print(term->app.term1);
-        //     printf(" ");
-        //     term_print(term->app.term2);
-        //     printf(">");
-        //     break;
         case OpTerm:
             switch(term->op) {
-                // case Vau:   printf("<OpVau>");  break;
-                // case Eval:  printf("<OpEval>"); break;
-                case Add:   printf("<OpAdd>");  break;
-                case Sub:   printf("<OpSub>");  break;
-                case Mul:   printf("<OpMul>");  break;
-                case Div:   printf("<OpDiv>");  break;
-                case Eq:    printf("<OpEq>");   break;
+                case Vau:       printf("<OpVau>");      break;
+                case Add:       printf("<OpAdd>");      break;
+                case Sub:       printf("<OpSub>");      break;
+                case Mul:       printf("<OpMul>");      break;
+                case Div:       printf("<OpDiv>");      break;
+                case Eq:        printf("<OpEq>");       break;
+                case MakeApp:   printf("<OpMakeApp>");  break;
+                case WithEnv:   printf("<OpWithEnv>");  break;
             }
             break;
-        case WorldTerm:
-            printf("<World>");
+        case DummyTerm:
+            printf("<Dummy>");
             break;
         default:
             assert(FALSE);
@@ -439,40 +405,34 @@ void term_print(Term_t* term) {
 }
 
 Term_t* term_make_cons() {
-    return term_make_primval_symbol("cons");
+    return term_make_primval_reference("cons");
 }
 
 Term_t* term_make_nil() {
-    return term_make_primval_symbol("nil");
+    return term_make_primval_reference("nil");
 }
 
 Term_t* term_make_head() {
-    return term_make_primval_symbol("head");
+    return term_make_primval_reference("head");
 }
 
 Term_t* term_make_tail() {
-    return term_make_primval_symbol("tail");
+    return term_make_primval_reference("tail");
 }
 
 Term_t* term_make_true() {
-    return term_make_primval_symbol("true");
+    return term_make_primval_reference("true");
 }
 
 Term_t* term_make_false() {
-    return term_make_primval_symbol("false");
+    return term_make_primval_reference("false");
 }
 
 Term_t* term_make_pair() {
-    return term_make_primval_symbol("pair");
+    return term_make_primval_reference("pair");
 }
 Term_t* term_make_leaf() {
-    return term_make_primval_symbol("leaf");
-}
-
-// id = \x. x
-Term_t* term_make_vau_id_raw() {
-    return
-        term_make_abs("x", term_make_primval_symbol("x"));
+    return term_make_primval_reference("leaf");
 }
 
 // fix = \f. (\x. f (x x)) (\x. f (x x))
@@ -481,13 +441,13 @@ Term_t* term_make_fix_raw() {
         term_make_abs("f",
             term_make_app(
                 term_make_abs("x",
-                    term_make_app(term_make_primval_symbol("f"),
-                        term_make_app(term_make_primval_symbol("x"),
-                            term_make_primval_symbol("x")))),
+                    term_make_app(term_make_primval_reference("f"),
+                        term_make_app(term_make_primval_reference("x"),
+                            term_make_primval_reference("x")))),
                 term_make_abs("x",
-                    term_make_app(term_make_primval_symbol("f"),
-                        term_make_app(term_make_primval_symbol("x"),
-                            term_make_primval_symbol("x"))))));
+                    term_make_app(term_make_primval_reference("f"),
+                        term_make_app(term_make_primval_reference("x"),
+                            term_make_primval_reference("x"))))));
 }
 
 
@@ -502,11 +462,11 @@ Term_t* term_make_cons_raw() {
                         term_make_app(
                             term_make_app(
                                 term_make_primval(
-                                    primval_make_symbol(str_cpy("c"))),
+                                    primval_make_reference(str_cpy("c"))),
                                 term_make_primval(
-                                    primval_make_symbol(str_cpy("x")))),
+                                    primval_make_reference(str_cpy("x")))),
                             term_make_primval(
-                                primval_make_symbol(str_cpy("xs"))))))));
+                                primval_make_reference(str_cpy("xs"))))))));
 }
 
 // Scott-encoded nil: \n. \c. n, which is the same as `true` (\x. \y. x)
@@ -520,8 +480,8 @@ Term_t* term_make_head_raw() {
         term_make_abs(str_cpy("list"),
             term_make_app(
                 term_make_app(
-                    term_make_primval(primval_make_symbol(str_cpy("list"))),
-                    term_make_primval(primval_make_symbol(str_cpy("u")))),
+                    term_make_primval(primval_make_reference(str_cpy("list"))),
+                    term_make_primval(primval_make_reference(str_cpy("u")))),
                 term_make_true()));
 }
 
@@ -531,8 +491,8 @@ Term_t* term_make_tail_raw() {
         term_make_abs(str_cpy("list"),
             term_make_app(
                 term_make_app(
-                    term_make_primval(primval_make_symbol(str_cpy("list"))),
-                    term_make_primval(primval_make_symbol(str_cpy("u")))),
+                    term_make_primval(primval_make_reference(str_cpy("list"))),
+                    term_make_primval(primval_make_reference(str_cpy("u")))),
                 term_make_false()));
 }
 
@@ -543,7 +503,7 @@ Term_t* term_make_true_raw() {
         term_make_abs(str_cpy("x"),
             term_make_abs(str_cpy("y"),
                 term_make_primval(
-                    primval_make_symbol(str_cpy("x")))));
+                    primval_make_reference(str_cpy("x")))));
 }
 
 // false = second = \x. \y. y
@@ -552,7 +512,7 @@ Term_t* term_make_false_raw() {
         term_make_abs(str_cpy("x"),
             term_make_abs(str_cpy("y"),
                 term_make_primval(
-                    primval_make_symbol(str_cpy("y")))));
+                    primval_make_reference(str_cpy("y")))));
 }
 
 Term_t* term_make_pair_raw() {
@@ -563,9 +523,9 @@ Term_t* term_make_pair_raw() {
                     term_make_abs("l",
                         term_make_app(
                             term_make_app(
-                                term_make_primval_symbol("p"),
-                                term_make_primval_symbol("x")),
-                            term_make_primval_symbol("y"))))));
+                                term_make_primval_reference("p"),
+                                term_make_primval_reference("x")),
+                            term_make_primval_reference("y"))))));
 }
 
 Term_t* term_make_leaf_raw() {
@@ -574,27 +534,27 @@ Term_t* term_make_leaf_raw() {
             term_make_abs("p",
                 term_make_abs("l",
                     term_make_app(
-                        term_make_primval_symbol("l"),
-                        term_make_primval_symbol("x")))));
+                        term_make_primval_reference("l"),
+                        term_make_primval_reference("x")))));
 }
 
 Term_t* term_make_eval_raw() {
     return
-        term_make_app(term_make_primval_symbol("fix"),
+        term_make_app(term_make_primval_reference("fix"),
     // _eval = \eval. \tree. (tree (\x. \y. (eval x) y)) (\x.x)
             term_make_abs("eval",
                 term_make_abs("tree",
                     term_make_app(
                         term_make_app(
-                            term_make_primval_symbol("tree"),
+                            term_make_primval_reference("tree"),
                             term_make_abs("x",
                                 term_make_abs("y",
                                     term_make_app(
                                         term_make_app(
-                                            term_make_primval_symbol("eval"),
-                                            term_make_primval_symbol("x")),
-                                        term_make_primval_symbol("y"))))),
-                        term_make_primval_symbol("$id")))));
+                                            term_make_primval_reference("eval"),
+                                            term_make_primval_reference("x")),
+                                        term_make_primval_reference("y"))))),
+                        term_make_primval_reference("$id")))));
 }
 
 // \f. \x. f (eval x)
@@ -603,40 +563,122 @@ Term_t* term_make_wrap_raw() {
         term_make_abs("f",
             term_make_abs("x",
                 term_make_app(
-                    term_make_primval_symbol("f"),
+                    term_make_primval_reference("f"),
                     term_make_app(
-                        term_make_primval_symbol("eval"),
-                        term_make_primval_symbol("x")))));
+                        term_make_primval_reference("eval"),
+                        term_make_primval_reference("x")))));
 }
 
-// \f. \x. (wrap f) x
-Term_t* term_make_id_raw() {
+// (((eval name) vau) body)
+Term_t* term_make_vau_raw() {
+    return
+        term_make_abs("name",
+            term_make_abs("body",
+                term_make_app(
+                    term_make_app(
+                        term_make_app(
+                            term_make_primval_reference("eval"),
+                            term_make_primval_reference("name")),
+                        term_make_op(Vau)),
+                    term_make_primval_reference("body"))));
+}
+
+// ($lambda x x 1) = 1
+// $lambda = $vau name ($vau body (eval ($vau name (eval body))))
+// name -> body -> eval ($vau name (eval body))
+// eval ($vau name (eval body))
+// (($vau name) (eval body))
+// $vau name (eval body) = ($vau name) (eval body) =
+//      (pair ((pair (leaf $vau)) (leaf name))) ((pair (leaf eval)) (leaf body))
+// $lambda =
+// ($vau name ($vau body (eval
+//   ((pair ((pair (leaf $vau)) (leaf name)))
+//     ((pair (leaf eval)) (leaf body))))))
+// (($vau name) (($vau body) (eval ((pair ((pair (leaf $vau)) (leaf name)))
+//    ((pair (leaf eval)) (leaf body))))))
+
+// Kernel version:
+// $lambda = $vau name ($vau body (wrap (eval
+//              (pair (pair (leaf $vau) (leaf name)) (leaf body)))))
+// (($vau name) (($vau body) (wrap (eval
+//    (pair ((pair (leaf $vau)) (leaf name)) (leaf body))))))
+Term_t* term_make_lambda_raw() {
     return
         term_make_app(
-            term_make_primval_symbol("wrap"),
-            term_make_primval_symbol("$id"));
-}
-
-// Take a term, containing only lazy apps and primvals, and emit a list-encoded
-// term
-Term_t* term_encode_as_list(Term_t* term) {
-    assert(term != NULL);
-
-    if (term_get_type(term) == PrimValTerm) {
-        return
             term_make_app(
-                term_make_app(term_make_cons(), term),
-                term_make_nil());
-    } else {
-        // term must be app
-        assert(term_get_type(term) == AppTerm);
-        Term_t* result =
+                term_make_primval_reference("$vau"),
+                term_make_primval_reference("name")),
             term_make_app(
                 term_make_app(
-                    term_make_cons(),
-                    term_encode_as_list(term_get_app_term1(term))),
-                term_encode_as_list(term_get_app_term2(term)));
-        // term_free_toplevel(term);
-        return result;
-    }
+                    term_make_primval_reference("$vau"),
+                    term_make_primval_reference("body")),
+                term_make_app(
+                    term_make_primval_reference("eval"),
+                    term_make_app(
+                        term_make_app(
+                            term_make_primval_reference("pair"),
+                            term_make_app(
+                                term_make_app(
+                                    term_make_primval_reference("pair"),
+                                    term_make_app(
+                                        term_make_primval_reference("leaf"),
+                                        term_make_primval_reference("$vau"))),
+                                term_make_app(
+                                    term_make_primval_reference("leaf"),
+                                    term_make_primval_reference("name")))),
+                        term_make_app(
+                            term_make_app(
+                                term_make_primval_reference("pair"),
+                                term_make_app(
+                                    term_make_primval_reference("leaf"),
+                                    term_make_primval_reference("eval"))),
+                            term_make_app(
+                                term_make_primval_reference("leaf"),
+                                term_make_primval_reference("body")))))));
 }
+
+Term_t* term_wrap(char* symbol) {
+    return
+        term_make_app(
+            term_make_primval_reference("wrap"),
+            term_make_primval_reference(symbol));
+}
+
+Term_t* term_make_id_raw() {
+    return
+        term_make_abs("x", term_make_primval_reference("x"));
+}
+
+// decode =
+//     fix
+//         (\decode. \t.
+//             (t
+//                 (\x. \y.
+//                     (decode x)
+//                     (<make-app> (decode y)))
+//                 (\x. x)))
+Term_t* term_make_decode_raw() {
+    Term_t* if_pair =
+        term_make_abs("x",
+            term_make_abs("y",
+                term_make_app(
+                    term_make_app(
+                        term_make_primval_reference("decode"),
+                        term_make_primval_reference("x")),
+                    term_make_app(
+                        term_make_op(MakeApp),
+                        term_make_app(
+                            term_make_primval_reference("decode"),
+                            term_make_primval_reference("y"))))));
+    return
+        term_make_app(term_make_primval_reference("fix"),
+            term_make_abs("decode",
+                term_make_abs("t",
+                    term_make_app(
+                        term_make_app(
+                            term_make_primval_reference("t"),
+                            if_pair),
+                        term_make_abs("x",
+                            term_make_primval_reference("x"))))));
+}
+

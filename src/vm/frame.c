@@ -24,7 +24,8 @@ void frame_update(Frame_t* frame, Closure_t* new_value) {
 }
 
 // Find the value assigned to this variable name in the environment and return a
-// copy of the value. If there isn't any, return the symbol itself.
+// copy of the value. If there isn't any, return the symbol itself. The optional
+// `parent` argument is for inner uses only.
 Closure_t* frame_lookup(Frame_t* frame, char* var_name, OUT Frame_t** parent) {
     // Climb the spaghetti stack and look for the variable name
     Frame_t* current_frame = frame;
@@ -42,8 +43,10 @@ Closure_t* frame_lookup(Frame_t* frame, char* var_name, OUT Frame_t** parent) {
     }
 
     // Haven't found a value assigned to this variable, make a new symbol
-    return closure_make(term_make_primval(primval_make_symbol(var_name)),
-        frame);
+    // return closure_make(term_make_primval(primval_make_reference(var_name)),
+    //     frame);
+
+    return NULL;
 }
 
 void frame_serialize(Serializer_t* serializer, Heap_t* heap, Frame_t* frame) {

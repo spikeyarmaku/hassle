@@ -8,7 +8,7 @@
 #include "primop.h"
 #include "serialize\serialize.h"
 
-enum TermType   {PrimValTerm, AbsTerm, AppTerm, OpTerm, WorldTerm};
+enum TermType   {PrimValTerm, AbsTerm, AppTerm, OpTerm, DummyTerm};
 
 typedef struct Term Term_t;
 
@@ -19,6 +19,7 @@ Term_t*         term_make_abs               (char*, Term_t*);
 Term_t*         term_make_app               (Term_t*, Term_t*);
 Term_t*         term_make_eval              (Term_t*);
 Term_t*         term_make_op                (enum PrimOp);
+Term_t*         term_make_dummy             ();
 enum TermType   term_get_type               (Term_t*);
 PrimVal_t*      term_get_primval            (Term_t*);
 char*           term_get_abs_var            (Term_t*);
@@ -34,7 +35,7 @@ void            term_print                  (Term_t*);
 void            term_serialize              (Serializer_t*, Term_t*);
 Term_t*         term_deserialize            (Serializer_t*);
 Term_t*         term_make_primval_symbol    (char*);
-Term_t*         term_encode_as_list         (Term_t*);
+Term_t*         term_make_primval_reference (char*);
 
 // Helper functions to make operator `eq` and `vau` work
 Term_t*         term_make_cons              ();
@@ -45,7 +46,6 @@ Term_t*         term_make_true              ();
 Term_t*         term_make_false             ();
 Term_t*         term_make_pair              ();
 Term_t*         term_make_leaf              ();
-Term_t*         term_make_vau_id_raw        ();
 Term_t*         term_make_fix_raw           ();
 Term_t*         term_make_cons_raw          ();
 Term_t*         term_make_nil_raw           ();
@@ -57,6 +57,10 @@ Term_t*         term_make_pair_raw          ();
 Term_t*         term_make_leaf_raw          ();
 Term_t*         term_make_eval_raw          ();
 Term_t*         term_make_wrap_raw          ();
+Term_t*         term_make_vau_raw           ();
+Term_t*         term_make_lambda_raw        ();
 Term_t*         term_make_id_raw            ();
+Term_t*         term_make_decode_raw        ();
+Term_t*         term_wrap                   (char*);
 
 #endif
