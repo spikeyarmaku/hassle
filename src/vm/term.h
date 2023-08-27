@@ -8,7 +8,7 @@
 #include "primop.h"
 #include "serialize\serialize.h"
 
-enum TermType   {PrimValTerm, AbsTerm, AppTerm, OpTerm, DummyTerm};
+enum TermType   {PrimValTerm, AbsTerm, AppTerm, OpTerm, DummyTerm, VauTerm};
 
 typedef struct Term Term_t;
 
@@ -20,6 +20,7 @@ Term_t*         term_make_app               (Term_t*, Term_t*);
 Term_t*         term_make_eval              (Term_t*);
 Term_t*         term_make_op                (enum PrimOp);
 Term_t*         term_make_dummy             ();
+Term_t*         term_make_vau               (Term_t*);
 enum TermType   term_get_type               (Term_t*);
 PrimVal_t*      term_get_primval            (Term_t*);
 char*           term_get_abs_var            (Term_t*);
@@ -27,6 +28,7 @@ Term_t*         term_get_abs_body           (Term_t*);
 Term_t*         term_get_app_term1          (Term_t*);
 Term_t*         term_get_app_term2          (Term_t*);
 enum PrimOp     term_get_op                 (Term_t*);
+Term_t*         term_get_vau                (Term_t*);
 BOOL            term_is_self_evaluating     (Term_t*);
 Term_t*         term_copy                   (Term_t*);
 void            term_print                  (Term_t*);

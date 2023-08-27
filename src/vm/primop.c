@@ -7,8 +7,6 @@ Closure_t* _primop_vau          (Closure_t*, Closure_t*);
 Closure_t* _primop_rational_op  (Closure_t*, Closure_t*,
     Rational_t*(*)(Rational_t*, Rational_t*));
 Closure_t* _primop_eq           (Closure_t*, Closure_t*);
-Closure_t* _primop_make_app     (Closure_t*, Closure_t*);
-Closure_t* _primop_with_env     (Closure_t*, Closure_t*);
 
 uint8_t primop_get_arity(enum PrimOp primop) {
     return 2;
@@ -34,12 +32,6 @@ Closure_t* primop_apply(enum PrimOp primop, Closure_t** args) {
         case Eq: {
             return _primop_eq(args[0], args[1]);
         }
-        case MakeApp: {
-            return _primop_make_app(args[0], args[1]);
-        }
-        case WithEnv: {
-            return _primop_with_env(args[0], args[1]);
-        }
         default: assert(FALSE); return NULL;
     }
 }
@@ -53,20 +45,13 @@ Closure_t* _primop_vau(Closure_t* closure1, Closure_t* closure2) {
 
     assert(primval_get_type(primval1) == SymbolValue);
 
-    // x -> dummy ((decode body) <with-env>)
-    // body = closure2
-    Term_t* vau_body =
-        term_make_app(
-            term_make_dummy(),
-            term_make_app(
-                term_make_app(
-                    term_make_decode_raw(),
-                    closure_get_term(closure2)),
-                term_make_op(WithEnv)));
     return
         closure_make(
             term_make_abs(
-                primval_get_symbol(primval1), vau_body),
+                primval_get_symbol(primval1),
+                term_make_app(
+                    term_make_decode_raw(),
+                    closure_get_term(closure2))),
             closure_get_frame(closure2));
 }
 
@@ -152,15 +137,4 @@ Closure_t* _primop_eq(Closure_t* closure1, Closure_t* closure2) {
             default: return closure_make(term_make_false(), frame);
         }
     }
-}
-
-Closure_t* _primop_make_app(Closure_t* closure1, Closure_t* closure2) {
-    Term_t* term = term_make_app(closure_get_term(closure1),
-        closure_get_term(closure2));
-    return closure_make(term, closure_get_frame(closure1));
-}
-
-Closure_t* _primop_with_env(Closure_t* closure1, Closure_t* closure2) {
-    return closure_make(closure_get_term(closure1),
-        closure_get_frame(closure2));
 }

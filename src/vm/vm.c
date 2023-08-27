@@ -20,6 +20,7 @@ void            _vm_invoke_app  (VM_t*);
 void            _vm_invoke_var  (VM_t*);
 void            _vm_invoke_val  (VM_t*);
 void            _vm_invoke_op   (VM_t*);
+void            _vm_invoke_vau  (VM_t*);
 enum EvalState  _vm_check_state (VM_t* vm);
 
 VM_t* _vm_make(Stack_t* stack, Heap_t* heap, Closure_t* control) {
@@ -117,66 +118,67 @@ enum EvalState vm_step(VM_t* vm) {
     // (Lam) 〈λi.t[l], σ c, μ〉 →CE〈t[f], σ, μ[(i, f) → c · l]〉 f ∈ dom(μ)
     //     (f ∈ dom(μ))
     Closure_t* control = vm->control;
+    Term_t* term = closure_get_term(control);
+    switch (term_get_type(term)) {
+        case AbsTerm: {
+            if (stack_top != NULL) {
+                _vm_invoke_lam(vm);
+            } else {
+                return EvalFinished;
+            }
+            break;
+        }
 
-    if (closure_get_frame(control) == NULL) {
-        // If the closure has no valid frame, treat it as a value
-        _vm_invoke_val(vm);
-    } else {
-        Term_t* term = closure_get_term(control);
-        switch (term_get_type(term)) {
-            case AbsTerm: {
+// Put the second term onto the stack and make the first term the current
+// closure
+// (App) 〈t t′[l], σ, μ〉→CE〈t[l], σ t′[l], μ〉
+        case AppTerm: {
+            _vm_invoke_app(vm);
+            break;
+        }
+
+// Look up the var's value and make it the current closure, while putting
+// its location onto the stack
+// (Var)  〈0[l], σ, μ〉→CE〈c, σ l, μ〉 where c · l′ = μ(l)
+// literals and operators addition:
+// Swap the current closure and the top of the stack
+// (Val)  〈n[l], σ c, μ, k〉→CE〈c, σ n[l], μ, k〉
+        case PrimValTerm: {
+            // PrimVal_t* primval = term_get_primval(term);
+            if (term_is_self_evaluating(term) == FALSE) {
+            // if (primval_get_type(primval) == ReferenceValue) {
+                _vm_invoke_var(vm);
+            } else {
                 if (stack_top != NULL) {
-                    _vm_invoke_lam(vm);
+                    _vm_invoke_val(vm);
                 } else {
                     return EvalFinished;
                 }
-                break;
             }
+            break;
+        }
 
-    // Put the second term onto the stack and make the first term the current
-    // closure
-    // (App) 〈t t′[l], σ, μ〉→CE〈t[l], σ t′[l], μ〉
-            case AppTerm: {
-                _vm_invoke_app(vm);
-                break;
+// Take the necessary amount of items off the stack, and apply them with the
+// current operator
+// (Op1)  〈op[l], σ n′ n, μ, k〉→CE〈op(n′, n)[l], σ, μ, k〉
+        case OpTerm: {
+            if (stack_top != NULL) {
+                _vm_invoke_op(vm);
+            } else {
+                return EvalFinished;
             }
+            break;
+        }
 
-    // Look up the var's value and make it the current closure, while putting
-    // its location onto the stack
-    // (Var)  〈0[l], σ, μ〉→CE〈c, σ l, μ〉 where c · l′ = μ(l)
-    // literals and operators addition:
-    // Swap the current closure and the top of the stack
-    // (Val)  〈n[l], σ c, μ, k〉→CE〈c, σ n[l], μ, k〉
-            case PrimValTerm: {
-                // PrimVal_t* primval = term_get_primval(term);
-                if (term_is_self_evaluating(term) == FALSE) {
-                // if (primval_get_type(primval) == ReferenceValue) {
-                    _vm_invoke_var(vm);
-                } else {
-                    if (stack_top != NULL) {
-                        _vm_invoke_val(vm);
-                    } else {
-                        return EvalFinished;
-                    }
-                }
-                break;
-            }
+        case DummyTerm: {
+            _vm_invoke_val(vm);
+        }
 
-    // Take the necessary amount of items off the stack, and apply them with the
-    // current operator
-    // (Op1)  〈op[l], σ n′ n, μ, k〉→CE〈op(n′, n)[l], σ, μ, k〉
-            case OpTerm: {
-                if (stack_top != NULL) {
-                    _vm_invoke_op(vm);
-                } else {
-                    return EvalFinished;
-                }
-                break;
-            }
-
-            case DummyTerm: {
-                _vm_invoke_val(vm);
-            }
+// Traverse the stack for the var's true value, which is anything but a
+// variable, and replace the control's term part with it
+// (Vau) 〈Ϝ v[l], σ, μ〉→CE〈c[l], σ, μ〉 where c · l′ = μ(l)
+        case VauTerm: {
+            _vm_invoke_vau(vm);
         }
     }
 
@@ -392,4 +394,35 @@ void _vm_invoke_op(VM_t* vm) {
 
     // Free up the argument array, but not its constituents
     free_mem("_vm_invoke_op1", args);
+}
+
+// (Vau) 〈Ϝ v[l], σ, μ〉→CE〈c[l], σ, μ〉 where c · l′ = μ(l)
+// Traverse the stack for the var's true value, which is anything but a
+// variable, and replace the control's term part with it
+void _vm_invoke_vau(VM_t* vm) {
+    printf("[VAU]\n");
+    Closure_t* closure = vm->control;
+    Term_t* term = term_get_vau(closure_get_term(closure));
+    PrimVal_t* primval;
+
+    BOOL found = FALSE;
+
+    while (found == FALSE) {
+        found = TRUE;
+        if (term_get_type(term) == PrimValTerm) {
+            printf("PrimValTerm\n");
+            primval = term_get_primval(term);
+            if (primval_get_type(primval) == ReferenceValue)
+            {
+                printf("ReferenceValue\n");
+                closure = frame_lookup(closure_get_frame(closure),
+                    primval_get_reference(primval), NULL);
+                found = closure == NULL;
+                printf("found: %d\n", found);
+            }
+        }
+        term = closure_get_term(closure);
+    }
+
+    vm->control = closure_make(term, closure_get_frame(vm->control));
 }
