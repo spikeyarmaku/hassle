@@ -476,6 +476,31 @@ BOOL alnat_is_equal(Alnat_t* a1, Alnat_t* a2) {
     return a1end == a2end;
 }
 
+BOOL alnat_is_greater(Alnat_t* a1, Alnat_t* a2) {
+    struct AlnatMarcher m1 = _alnat_make_marcher(a1);
+    struct AlnatMarcher m2 = _alnat_make_marcher(a2);
+    BOOL a1end, a2end;
+    BOOL a1greater = FALSE;
+    do {
+        if (_alnat_get_curr_digit(m1) > _alnat_get_curr_digit(m2)) {
+            a1greater = TRUE;
+        } else {
+            if (_alnat_get_curr_digit(m1) < _alnat_get_curr_digit(m2)) {
+                a1greater = FALSE;
+            }
+        }
+        a1end = _alnat_move_forward(&m1);
+        a2end = _alnat_move_forward(&m2);
+    } while (a1end || a2end);
+    if (a2end && !a1end) {
+        return TRUE;
+    }
+    if (a1end && !a2end) {
+        return FALSE;
+    }
+    return a1greater;
+}
+
 void _alnat_fast_forward_marcher(struct AlnatMarcher* m) {
     while (_alnat_move_forward(m));
 }
@@ -689,7 +714,6 @@ Alnat_t* alnat_mul(Alnat_t* multiplicand, Alnat_t* multiplier) {
 // count and the dividend's digit count, plus one.
 AlnatDiv_t alnat_div(Alnat_t* dividend, Alnat_t* divisor) {
     // debug_start("alnat_div\n");
-
     AlnatDiv_t result;
 
     // Check for divide-by-zero error
@@ -721,8 +745,9 @@ AlnatDiv_t alnat_div(Alnat_t* dividend, Alnat_t* divisor) {
     // necessary)
     Alnat_t* dividend_part = (Alnat_t*)allocate_mem("alnat_div", NULL,
         sizeof(uint8_t) * (divisor_digit_count + 1));
+    memset(dividend_part, 0, sizeof(uint8_t) * (divisor_digit_count + 1));
 
-    for (VM_WORD i = divisor_digit_count; i > 0; i--) {
+    for (VM_WORD i = divisor_digit_count - 1; i > 0; i--) {
         dividend_part[i - 1] = _alnat_get_curr_digit(dividend_m);
         _alnat_move_backward(&dividend_m);
         _alnat_unsafe_mark_digit(i - 1, i == divisor_digit_count,

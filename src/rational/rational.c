@@ -27,6 +27,37 @@ BOOL rational_is_equal(Rational_t* r1, Rational_t* r2) {
         (r1->sign == r2->sign);
 }
 
+BOOL rational_is_greater(Rational_t* r1, Rational_t* r2) {
+    rational_print(r1); printf(" | "); rational_print(r2); printf("\n");
+    if (r1->sign != r2->sign) {
+        printf("DIFFERENT SIGNS\n");
+        // Different signs
+        return r1->sign == 0 ? TRUE : FALSE;
+    } else {
+        printf("SAME SIGNS - ");
+        BOOL result;
+        // Figure out which is bigger, and then negate it if signs are negative
+        if (alnat_is_equal(r1->denominator, r2->denominator) == FALSE) {
+            printf("DIFFERENT DENOMS\n");
+            // Put them on a common denominator
+            Alnat_t* r1num = alnat_mul(r1->numerator, r2->denominator);
+            Alnat_t* r2num = alnat_mul(r2->numerator, r1->denominator);
+            alnat_print(r1num); printf(" "); alnat_print(r2num); printf("\n");
+            result = alnat_is_greater(r1num, r2num);
+            alnat_free(r1num);
+            alnat_free(r2num);
+        } else {
+            printf("SAME DENOMS\n");
+            result = alnat_is_greater(r1->numerator, r2->numerator);
+        }
+
+        if (r1->sign < 0) {
+            result = result == TRUE ? FALSE : TRUE;
+        }
+        return result;
+    }
+}
+
 // Read a rational number from a string
 Rational_t* rational_from_string(char* string) {
     // Copy the string

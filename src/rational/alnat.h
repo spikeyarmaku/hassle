@@ -34,6 +34,7 @@ void                alnat_free                  (Alnat_t*);
 Alnat_t*            alnat_make_single_digit     (uint8_t);
 BOOL                alnat_is_null               (Alnat_t*);
 BOOL                alnat_is_equal              (Alnat_t*, Alnat_t*);
+BOOL                alnat_is_greater            (Alnat_t*, Alnat_t*);
 
 Alnat_t*            alnat_add                   (Alnat_t*, Alnat_t*);
 Alnat_t*            alnat_sub                   (Alnat_t*, Alnat_t*, int8_t*);

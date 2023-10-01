@@ -26,6 +26,7 @@ Rational_t*     rational_from_string    (char*);
 void            rational_free           (Rational_t*);
 BOOL            rational_is_valid       (Rational_t*);
 BOOL            rational_is_equal       (Rational_t*, Rational_t*);
+BOOL            rational_is_greater     (Rational_t*, Rational_t*);
 void            rational_simplify       (Rational_t*);
 void            rational_reciprocate    (Rational_t*);
 char*           rational_to_string      (Rational_t*);
