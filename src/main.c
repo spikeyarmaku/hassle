@@ -86,15 +86,16 @@ for $vau) - name it `unpack`?
 #include "global.h"
 
 #include "parse\parse.h"
-#include "vm\vm.h"
 #include "serialize\serialize.h"
 
 #include "network.h"
 #include "memory.h"
-#include "response.h"
 
-#include "vm/vm.h"
+#include "eval/term.h"
+#include "eval/eval.h"
 
+// #include "response.h"
+/*
 struct Config {
     BOOL open_socket;
     uint16_t port;
@@ -350,10 +351,11 @@ Term_t* _interpret_file(VM_t* vm, char* file_name) {
     return vm_run(vm);
 }
 
+
 // If called with a file, run it, else start a REPL
 int main(int argc, char *argv[]) {
     printf("---------- Hassle ----------\n\n");
-    setvbuf(stdout, (char *) NULL, _IONBF, 0); /* make stdout line-buffered */
+    setvbuf(stdout, (char *) NULL, _IONBF, 0); // make stdout line-buffered
     Config_t config = _config_init();
 
     for (int i = 1; i < argc; i++) {
@@ -373,4 +375,340 @@ int main(int argc, char *argv[]) {
     
     return 0;
 }
+*/
 
+void test_simple() {
+    // (λx. x x) (λx. x)
+    // [Eval [Apply (λx. [Apply x x]) (λx. x)]]
+    struct Term* term =
+        term_make_app(
+            term_make_abs("x",
+                term_make_app(
+                    term_make_var("x"),
+                    term_make_var("x"))),
+            term_make_abs("x",
+                term_make_var("x")));
+
+    term_print(term); printf("\n");
+    term_print(eval(term));
+
+    // Output should be (\x. x)
+}
+
+void test_lambda() {
+    // (λlambda. (lambda x x)) ([Lam])
+    // [Apply [Lambda lambda [Apply [Apply lambda x] x]] [Lam])
+    struct Term* term1 =
+        term_make_abs("lambda",
+            term_make_app(
+                term_make_app(
+                    term_make_var("lambda"), term_make_var("x")),
+                term_make_var("x")));
+    struct Term* term = term_make_app(term1, term_make_lam());
+
+    term_print(term); printf("\n");
+    term_print(eval(term));
+
+    // Output should be (\x. x)
+}
+
+void test_lambda_2() {
+    // (\lambda. (lambda "x" x)) (\n. \b. [Lam [Sym n] b])
+    struct Term* term1 =
+        term_make_abs("lambda",
+            term_make_app(
+                term_make_app(
+                    term_make_var("lambda"),
+                    term_make_lit(literal_make_string("x"))),
+                term_make_var("x")));
+    struct Term* lambda =
+        term_make_abs("n",
+            term_make_abs("b",
+                term_make_app(
+                    term_make_app(
+                        term_make_lam(),
+                        term_make_app(
+                            term_make_sym(),
+                            term_make_var("n"))),
+                    term_make_var("b"))));
+    struct Term* term = term_make_app(term1, lambda);
+
+    term_print(term); printf("\n");
+    term_print(eval(term));
+
+    // Output should be (\x. x)
+}
+
+void test3() {
+    // (\lambda. ((lambda x x) y)) Lam
+    // [APPLY [LAMBDA lambda [APPLY [APPLY [APPLY lambda x] x] y]] [Lam]]
+    struct Term* term =
+        term_make_app(
+            term_make_abs("lambda",
+                term_make_app(
+                    term_make_app(
+                        term_make_app(
+                            term_make_var("lambda"),
+                            term_make_var("x")),
+                        term_make_var("x")),
+                    term_make_var("y"))),
+            term_make_lam());
+    
+    term_print(term); printf("\n");
+    term_print(eval(term));
+
+    // Output should be y
+}
+
+// Test fst
+void test4() {
+    // \x. \y. x
+    struct Term* fst =
+        term_make_abs("x", term_make_abs("y", term_make_var("x")));
+    struct Term* term =
+        term_make_app(
+            term_make_app(fst, term_make_var("x")),
+            term_make_var("y"));
+
+    term_print(term); printf("\n");
+    term_print(eval(term));
+
+    // Output should be: x
+}
+
+// \f. (\x. (f x x)) (\x. (f x x))
+// struct Term* term_make_fn_fix() {
+//     struct Term* common =
+//         term_make_abs("x",
+//             term_make_app(
+//                 term_make_app(
+//                     term_make_var("f"),
+//                     term_make_var("x")),
+//                 term_make_var("x")));
+//     return term_make_abs("f", term_make_app(common, common));
+// }
+
+// // Strict fixpoint combinator:
+// // \f. (\x. (f (\v. x x v))) (\x. (f (\v. x x v)))
+struct Term* term_make_fn_fix() {
+    struct Term* common =
+        term_make_abs("fix_x",
+            term_make_app(
+                term_make_var("fix_f"),
+                term_make_abs("fix_v",
+                    term_make_app(
+                        term_make_app(
+                            term_make_var("fix_x"),
+                            term_make_var("fix_x")),
+                        term_make_var("fix_v")))));
+    return term_make_abs("fix_f", term_make_app(common, common));
+}
+
+// // \x. x
+struct Term* term_make_fn_id() {
+    return term_make_abs("id_x", term_make_var("id_x"));
+}
+
+// eval-pair   = x -> y -> (eval x) y
+// eval        = t -> t id eval-pair
+// fix (\eval. \t. (t (\x. (Sym x))) (\x. \y. (eval x) y))
+// TODO deal with trees of strings instead of trees of terms
+// also TODO change symbols to strings in test7()
+struct Term* term_make_fn_eval() {
+    return
+        term_make_app(
+            term_make_var("fix"),
+            term_make_abs("eval",
+                term_make_abs("eval_t",
+                    term_make_app(
+                        term_make_app(
+                            term_make_var("eval_t"),
+                            term_make_abs("eval_x",
+                                term_make_app(
+                                    term_make_sym(),
+                                    term_make_var("eval_x")))),
+                        term_make_abs("eval_x",
+                            term_make_abs("eval_y",
+                                term_make_app(
+                                    term_make_app(
+                                        term_make_var("eval"),
+                                        term_make_var("eval_x")),
+                                    term_make_var("eval_y"))))))));
+}
+
+// // \x. \y. \l. \p. p x y
+struct Term* term_make_fn_pair() {
+    return
+        term_make_abs("pair_x",
+            term_make_abs("pair_y",
+                term_make_abs("pair_l",
+                    term_make_abs("pair_p",
+                        term_make_app(
+                            term_make_app(
+                                term_make_var("pair_p"),
+                                term_make_var("pair_x")),
+                            term_make_var("pair_y"))))));
+}
+
+// // \x. \l. \p. l x
+struct Term* term_make_fn_leaf() {
+    return
+        term_make_abs("leaf_x",
+            term_make_abs("leaf_l",
+                term_make_abs("leaf_p",
+                    term_make_app(
+                        term_make_var("leaf_l"), term_make_var("leaf_x")))));
+}
+
+struct Term* term_wrap(char* symbol, struct Term* meaning, struct Term* term) {
+    return term_make_app(term_make_abs(symbol, term), meaning);
+}
+
+struct Term* term_make_fn_lambda() {
+    // lambda = \n. \b. [Lam [Sym (eval n)] b]
+    return
+        term_make_abs("lambda_name",
+            term_make_abs("lambda_body",
+                term_make_app(
+                    term_make_app(
+                        term_make_lam(),
+                        term_make_app(
+                            term_make_sym(),
+                            term_make_app(
+                                term_make_var("eval"),
+                                term_make_var("lambda_name")))),
+                    term_make_var("lambda_body"))));
+}
+
+void test_eval() {
+    // (eval (leaf "x"))
+    struct Term* sub_term =
+        term_make_app(
+            term_make_var("eval"),
+            term_make_app(
+                term_make_var("leaf"),
+                term_make_lit(literal_make_string("id"))));
+    struct Term* term =
+        term_wrap("id", term_make_fn_id(),
+        term_wrap("fix", term_make_fn_fix(),
+        term_wrap("eval", term_make_fn_eval(),
+        term_wrap("leaf", term_make_fn_leaf(),
+            sub_term))));
+    term_print(term); printf("\n");
+    term_print(eval(term));
+
+    // Output should be: x
+}
+
+void test_eval_2() {
+    // (eval ((pair (leaf "id")) (leaf "x")))
+    struct Term* sub_term =
+        term_make_app(
+            term_make_var("eval"),
+            term_make_app(
+                term_make_app(
+                    term_make_var("pair"),
+                    term_make_app(
+                        term_make_var("leaf"),
+                        term_make_lit(literal_make_string("id")))),
+                term_make_app(
+                    term_make_var("leaf"),
+                    term_make_lit(literal_make_string("x")))));
+    struct Term* term =
+        term_wrap("id", term_make_fn_id(),
+        term_wrap("fix", term_make_fn_fix(),
+        term_wrap("eval", term_make_fn_eval(),
+        term_wrap("pair", term_make_fn_pair(),
+        term_wrap("leaf", term_make_fn_leaf(),
+            sub_term)))));
+    term_print(term); printf("\n");
+    term_print(eval(term));
+}
+
+// https://www.lesswrong.com/posts/D4PYwNtYNwsgoixGa/intro-to-hacking-with-the-lambda-calculus
+// TODO test this: ((\y. (\x. (x y))) x)
+void test6() {
+    struct Term* term =
+        term_make_app(
+            term_make_abs("y",
+                term_make_abs("x",
+                    term_make_app(
+                        term_make_var("x"),
+                        term_make_var("y")))),
+            term_make_var("x"));
+    
+    term_print(term); printf("\n");
+    term_print(eval(term));
+
+    // Output should be: (x0 x)
+}
+
+// test `(($lambda x (eval x)) y)`
+// (pair (pair (pair (leaf $vau) (leaf x)) (pair (leaf eval) (leaf x))) (leaf y))
+// ((pair ((pair ((pair (leaf $vau)) (leaf x))) ((pair (leaf eval)) (leaf x)))) (leaf y))
+void test7() {
+    struct Term* term =
+        term_make_app(
+            term_make_app(
+                term_make_var("pair"),
+                term_make_app(
+                    term_make_app(
+                        term_make_var("pair"),
+                        term_make_app(
+                            term_make_app(
+                                term_make_var("pair"),
+                                term_make_app(
+                                    term_make_var("leaf"),
+                                    term_make_var("$lambda"))),
+                            term_make_app(
+                                term_make_var("leaf"),
+                                term_make_var("x")))),
+                    term_make_app(
+                        term_make_app(
+                            term_make_var("pair"),
+                            term_make_app(
+                                term_make_var("leaf"),
+                                term_make_var("eval"))),
+                        term_make_app(
+                            term_make_var("leaf"),
+                            term_make_var("x"))))),
+            term_make_app(
+                term_make_var("leaf"),
+                term_make_var("y")));
+
+    struct Term* eval_term = term_make_app(term_make_var("eval"), term);
+
+    struct Term* final_term =
+        term_wrap("fix", term_make_fn_fix(),
+        term_wrap("id", term_make_fn_id(),
+        term_wrap("eval", term_make_fn_eval(),
+        term_wrap("leaf", term_make_fn_leaf(),
+        term_wrap("pair", term_make_fn_pair(),
+        term_wrap("$lambda", term_make_fn_lambda(),
+            eval_term))))));
+    term_print(final_term); printf("\n");
+    
+    struct Term* evaled = eval(final_term);
+    // term_print_pretty(evaled); printf("\n");
+    term_print(evaled);
+
+    // Output should be:
+    // [APPLY [APPLY [LAMBDA f [APPLY [LAMBDA x [APPLY [APPLY f x] x]] [LAMBDA x [APPLY [APPLY f x] x]]]] [LAMBDA eval [LAMBDA t [APPLY [APPLY t [LAMBDA x [LAMBDA y [APPLY [APPLY eval x] y]]]] [LAMBDA x x]]]]] [APPLY [APPLY [LAMBDA x [LAMBDA y [LAMBDA l [LAMBDA p [APPLY [APPLY p x] y]]]]] [APPLY [APPLY [LAMBDA x [LAMBDA y [LAMBDA l [LAMBDA p [APPLY [APPLY p x] y]]]]] [APPLY [APPLY [LAMBDA x [LAMBDA y [LAMBDA l [LAMBDA p [APPLY [APPLY p x] y]]]]] [APPLY [LAMBDA x [LAMBDA l [LAMBDA p [APPLY l x]]]] [LAM1]]] [APPLY [LAMBDA x [LAMBDA l [LAMBDA p [APPLY l x]]]] x]]] [APPLY [APPLY [LAMBDA x [LAMBDA y [LAMBDA l [LAMBDA p [APPLY [APPLY p x] y]]]]] [APPLY [LAMBDA x [LAMBDA l [LAMBDA p [APPLY l x]]]] [APPLY [LAMBDA f [APPLY [LAMBDA x [APPLY [APPLY f x] x]] [LAMBDA x [APPLY [APPLY f x] x]]]] [LAMBDA eval [LAMBDA t [APPLY [APPLY t [LAMBDA x [LAMBDA y [APPLY [APPLY eval x] y]]]] [LAMBDA x x]]]]]]] [APPLY [LAMBDA x [LAMBDA l [LAMBDA p [APPLY l x]]]] x]]]] [APPLY [LAMBDA x [LAMBDA l [LAMBDA p [APPLY l x]]]] y]]]
+    // y
+}
+
+// TODO implement eval, and see if the encoded version of the input program
+// evaluates correctly
+// Example: `(($vau x (eval x)) 1)`
+// the actual program should look like something like:
+// [APPLY eval <pair (pair (pair (leaf $vau) ...))>]
+// where <...> is the translated version of ..., i was just lazy to write it out
+// (($vau x (eval x)) y)
+// (pair (pair (pair (leaf $vau) (leaf x)) (pair (leaf eval) (leaf x))) (leaf y))
+int main(int argc, char *argv[]) {
+    printf("+--------+\n| Hassle |\n+--------+\n\n");
+
+    test_eval();
+    
+    return 0;
+}
