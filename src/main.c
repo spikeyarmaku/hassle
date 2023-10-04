@@ -1,81 +1,4 @@
 /*
-TODO
-- add a way to turn a tree into a term, using the closure of the tree (useful
-for $vau) - name it `unpack`?
-
-    - after $vau expansion: put "\x -> `unpack` body" in the control
-    - `unpack` creates an update marker with the control's env, and gets
-    replaced with "update_closure"
-    - `update_closure` checks if the control is a variable - if it is, updates
-    - the control with the value of that variable. If not, then updates the
-    control's env with the topmost update marker, and removes the update marker
-    from the stack
-
-    ^ not good, the update markers from the variable lookup will go on top of
-    the `update_closure` marker.
-    However, we could add a `env_num with-env term` operator, that would change
-    the current env of the control to `env_num`, and then put `term` in it
-
-
-    new idea: (<op_name> signifies an operator)
-    (<get-current-env> <set-env-to> body)
-    // it becomes
-    (<set-env-to> 54 body)
-    // which becomes
-    (body set-pair-env-to-54 set-leaf-env-to-54)
-    // where set-pair-env-to-54 =
-    // (\x -> \y -> (<set-env-to> 54 x) (<set-env-to> 54 y))
-    // and set-leaf-env-to-54 = (\x -> <set-env-to> 54 x)
-    // body evaluates...
-    ((\p -> \l -> ((p x) y)) set-pair-env-to-54 set-leaf-env-to-54)
-    ((set-pair-env-to-54 x) y)
-    ((<set-env-to> 54 x) (<set-env-to> 54 y))
-
-
-    update: (# is the mark to get the current frame index, #54 is a concrete
-    frame index)
-    at first, this is in the control:
-    # (<SetEnv> body)
-    next step:
-    #54 (<SetEnv> body)
-    then <SetEnv> notices that in the stack, the topmost element is not a frame
-    index, therefore it knows it shall construct an extractor, so next step is:
-    (body (\x. \y. (<SetEnv> 54 x) (<SetEnv> 54 y))) (\x. <SetEnv> 54 x)
-    and now when <SetEnv> is eval'd, the topmost element on the stack will be a
-    number
-
-    ^ doesn't work. Either you have to store the frame in the term, in which
-    case you would need the heap to serialize it, which you don't, or you need
-    to store the frame index, in which case you need the heap when the primop is
-    running, which you also don't have access to
-
-    attempt #3: convert the tree into an actual expression. It will need to be
-    marked as "not to evaluate" somewhere along the line
-    - OR -
-    find which closure's frame to overwrite
-
-    attempt #4:
-    define an <eval-with> primop, that takes two arguments, and constructs a
-    closure from the first closure's term and the second closure's frame
-    then, let <vau> construct:
-    (x -> eval-with body x)
-
-
-    decode =
-        fix
-            (\decode. \t.
-                (t
-                    (\x. \y.
-                        (decode x)
-                        (<make-app> (decode y)))
-                    (\x. x)))
-    x -> dummy ((decode body) <with-env>)
-    <make-app> creates a closure with a NULL frame
-    the VM treats everything with a NULL frame as a value
-    <with-env> creates a closure from the term of closure1 and the frame of
-    closure2
-
-
 - add Unicode support
 - add locale support (decimal separators, etc.)
 - use boehm's GC
@@ -91,8 +14,8 @@ for $vau) - name it `unpack`?
 #include "network.h"
 #include "memory.h"
 
-#include "eval/term.h"
-#include "eval/eval.h"
+#include "tree/tree.h"
+#include "tree/eval.h"
 
 // #include "response.h"
 /*
@@ -377,338 +300,59 @@ int main(int argc, char *argv[]) {
 }
 */
 
-void test_simple() {
-    // (λx. x x) (λx. x)
-    // [Eval [Apply (λx. [Apply x x]) (λx. x)]]
-    struct Term* term =
-        term_make_app(
-            term_make_abs("x",
-                term_make_app(
-                    term_make_var("x"),
-                    term_make_var("x"))),
-            term_make_abs("x",
-                term_make_var("x")));
-
-    term_print(term); printf("\n");
-    term_print(eval(term));
-
-    // Output should be (\x. x)
+struct Tree* delta() {
+    return tree_make(0);
 }
 
-void test_lambda() {
-    // (λlambda. (lambda x x)) ([Lam])
-    // [Apply [Lambda lambda [Apply [Apply lambda x] x]] [Lam])
-    struct Term* term1 =
-        term_make_abs("lambda",
-            term_make_app(
-                term_make_app(
-                    term_make_var("lambda"), term_make_var("x")),
-                term_make_var("x")));
-    struct Term* term = term_make_app(term1, term_make_lam());
-
-    term_print(term); printf("\n");
-    term_print(eval(term));
-
-    // Output should be (\x. x)
+struct Tree* K() {
+    uint8_t data[] = {1, 0};
+    return tree_deserialize(data);
 }
 
-void test_lambda_2() {
-    // (\lambda. (lambda "x" x)) (\n. \b. [Lam [Sym n] b])
-    struct Term* term1 =
-        term_make_abs("lambda",
-            term_make_app(
-                term_make_app(
-                    term_make_var("lambda"),
-                    term_make_lit(literal_make_string("x"))),
-                term_make_var("x")));
-    struct Term* lambda =
-        term_make_abs("n",
-            term_make_abs("b",
-                term_make_app(
-                    term_make_app(
-                        term_make_lam(),
-                        term_make_app(
-                            term_make_sym(),
-                            term_make_var("n"))),
-                    term_make_var("b"))));
-    struct Term* term = term_make_app(term1, lambda);
-
-    term_print(term); printf("\n");
-    term_print(eval(term));
-
-    // Output should be (\x. x)
+struct Tree* I() {
+    uint8_t data[] = {2, 1, 0, 1, 0};
+    return tree_deserialize(data);
 }
 
-void test3() {
-    // (\lambda. ((lambda x x) y)) Lam
-    // [APPLY [LAMBDA lambda [APPLY [APPLY [APPLY lambda x] x] y]] [Lam]]
-    struct Term* term =
-        term_make_app(
-            term_make_abs("lambda",
-                term_make_app(
-                    term_make_app(
-                        term_make_app(
-                            term_make_var("lambda"),
-                            term_make_var("x")),
-                        term_make_var("x")),
-                    term_make_var("y"))),
-            term_make_lam());
-    
-    term_print(term); printf("\n");
-    term_print(eval(term));
-
-    // Output should be y
+struct Tree* D() {
+    uint8_t data[] = {2, 1, 0, 2, 0, 0};
+    return tree_deserialize(data);
 }
 
-// Test fst
-void test4() {
-    // \x. \y. x
-    struct Term* fst =
-        term_make_abs("x", term_make_abs("y", term_make_var("x")));
-    struct Term* term =
-        term_make_app(
-            term_make_app(fst, term_make_var("x")),
-            term_make_var("y"));
-
-    term_print(term); printf("\n");
-    term_print(eval(term));
-
-    // Output should be: x
+struct Tree* true_tree() {
+    return K();
 }
 
-// \f. (\x. (f x x)) (\x. (f x x))
-// struct Term* term_make_fn_fix() {
-//     struct Term* common =
-//         term_make_abs("x",
-//             term_make_app(
-//                 term_make_app(
-//                     term_make_var("f"),
-//                     term_make_var("x")),
-//                 term_make_var("x")));
-//     return term_make_abs("f", term_make_app(common, common));
-// }
-
-// // Strict fixpoint combinator:
-// // \f. (\x. (f (\v. x x v))) (\x. (f (\v. x x v)))
-struct Term* term_make_fn_fix() {
-    struct Term* common =
-        term_make_abs("fix_x",
-            term_make_app(
-                term_make_var("fix_f"),
-                term_make_abs("fix_v",
-                    term_make_app(
-                        term_make_app(
-                            term_make_var("fix_x"),
-                            term_make_var("fix_x")),
-                        term_make_var("fix_v")))));
-    return term_make_abs("fix_f", term_make_app(common, common));
+struct Tree* false_tree() {
+    return tree_apply(K(), I());
 }
 
-// // \x. x
-struct Term* term_make_fn_id() {
-    return term_make_abs("id_x", term_make_var("id_x"));
-}
-
-// eval-pair   = x -> y -> (eval x) y
-// eval        = t -> t id eval-pair
-// fix (\eval. \t. (t (\x. (Sym x))) (\x. \y. (eval x) y))
-// TODO deal with trees of strings instead of trees of terms
-// also TODO change symbols to strings in test7()
-struct Term* term_make_fn_eval() {
+// d{x} = Δ(Δx)
+// d{K(K I)} = Δ(Δ(K(K I)))
+struct Tree* and_tree() {
     return
-        term_make_app(
-            term_make_var("fix"),
-            term_make_abs("eval",
-                term_make_abs("eval_t",
-                    term_make_app(
-                        term_make_app(
-                            term_make_var("eval_t"),
-                            term_make_abs("eval_x",
-                                term_make_app(
-                                    term_make_sym(),
-                                    term_make_var("eval_x")))),
-                        term_make_abs("eval_x",
-                            term_make_abs("eval_y",
-                                term_make_app(
-                                    term_make_app(
-                                        term_make_var("eval"),
-                                        term_make_var("eval_x")),
-                                    term_make_var("eval_y"))))))));
+        tree_apply(delta(),
+            tree_apply(delta(),
+                tree_apply(K(),
+                    tree_apply(K(), I()))));
 }
 
-// // \x. \y. \l. \p. p x y
-struct Term* term_make_fn_pair() {
-    return
-        term_make_abs("pair_x",
-            term_make_abs("pair_y",
-                term_make_abs("pair_l",
-                    term_make_abs("pair_p",
-                        term_make_app(
-                            term_make_app(
-                                term_make_var("pair_p"),
-                                term_make_var("pair_x")),
-                            term_make_var("pair_y"))))));
+void test_and_true_false() {
+    struct Tree* and_true_false =
+        tree_apply(tree_apply(and_tree(), true_tree()), false_tree());
+    struct Tree* result = eval(and_true_false);
+    size_t size;
+    uint8_t* data = tree_serialize(result, &size);
+    for (size_t i = 0; i < size; i++) {
+        printf("%d ", data[i]);
+    }
+    printf("\n");
 }
 
-// // \x. \l. \p. l x
-struct Term* term_make_fn_leaf() {
-    return
-        term_make_abs("leaf_x",
-            term_make_abs("leaf_l",
-                term_make_abs("leaf_p",
-                    term_make_app(
-                        term_make_var("leaf_l"), term_make_var("leaf_x")))));
-}
-
-struct Term* term_wrap(char* symbol, struct Term* meaning, struct Term* term) {
-    return term_make_app(term_make_abs(symbol, term), meaning);
-}
-
-struct Term* term_make_fn_lambda() {
-    // lambda = \n. \b. [Lam [Sym (eval n)] b]
-    return
-        term_make_abs("lambda_name",
-            term_make_abs("lambda_body",
-                term_make_app(
-                    term_make_app(
-                        term_make_lam(),
-                        term_make_app(
-                            term_make_sym(),
-                            term_make_app(
-                                term_make_var("eval"),
-                                term_make_var("lambda_name")))),
-                    term_make_var("lambda_body"))));
-}
-
-void test_eval() {
-    // (eval (leaf "x"))
-    struct Term* sub_term =
-        term_make_app(
-            term_make_var("eval"),
-            term_make_app(
-                term_make_var("leaf"),
-                term_make_lit(literal_make_string("id"))));
-    struct Term* term =
-        term_wrap("id", term_make_fn_id(),
-        term_wrap("fix", term_make_fn_fix(),
-        term_wrap("eval", term_make_fn_eval(),
-        term_wrap("leaf", term_make_fn_leaf(),
-            sub_term))));
-    term_print(term); printf("\n");
-    term_print(eval(term));
-
-    // Output should be: x
-}
-
-void test_eval_2() {
-    // (eval ((pair (leaf "id")) (leaf "x")))
-    struct Term* sub_term =
-        term_make_app(
-            term_make_var("eval"),
-            term_make_app(
-                term_make_app(
-                    term_make_var("pair"),
-                    term_make_app(
-                        term_make_var("leaf"),
-                        term_make_lit(literal_make_string("id")))),
-                term_make_app(
-                    term_make_var("leaf"),
-                    term_make_lit(literal_make_string("x")))));
-    struct Term* term =
-        term_wrap("id", term_make_fn_id(),
-        term_wrap("fix", term_make_fn_fix(),
-        term_wrap("eval", term_make_fn_eval(),
-        term_wrap("pair", term_make_fn_pair(),
-        term_wrap("leaf", term_make_fn_leaf(),
-            sub_term)))));
-    term_print(term); printf("\n");
-    term_print(eval(term));
-}
-
-// https://www.lesswrong.com/posts/D4PYwNtYNwsgoixGa/intro-to-hacking-with-the-lambda-calculus
-// TODO test this: ((\y. (\x. (x y))) x)
-void test6() {
-    struct Term* term =
-        term_make_app(
-            term_make_abs("y",
-                term_make_abs("x",
-                    term_make_app(
-                        term_make_var("x"),
-                        term_make_var("y")))),
-            term_make_var("x"));
-    
-    term_print(term); printf("\n");
-    term_print(eval(term));
-
-    // Output should be: (x0 x)
-}
-
-// test `(($lambda x (eval x)) y)`
-// (pair (pair (pair (leaf $vau) (leaf x)) (pair (leaf eval) (leaf x))) (leaf y))
-// ((pair ((pair ((pair (leaf $vau)) (leaf x))) ((pair (leaf eval)) (leaf x)))) (leaf y))
-void test7() {
-    struct Term* term =
-        term_make_app(
-            term_make_app(
-                term_make_var("pair"),
-                term_make_app(
-                    term_make_app(
-                        term_make_var("pair"),
-                        term_make_app(
-                            term_make_app(
-                                term_make_var("pair"),
-                                term_make_app(
-                                    term_make_var("leaf"),
-                                    term_make_var("$lambda"))),
-                            term_make_app(
-                                term_make_var("leaf"),
-                                term_make_var("x")))),
-                    term_make_app(
-                        term_make_app(
-                            term_make_var("pair"),
-                            term_make_app(
-                                term_make_var("leaf"),
-                                term_make_var("eval"))),
-                        term_make_app(
-                            term_make_var("leaf"),
-                            term_make_var("x"))))),
-            term_make_app(
-                term_make_var("leaf"),
-                term_make_var("y")));
-
-    struct Term* eval_term = term_make_app(term_make_var("eval"), term);
-
-    struct Term* final_term =
-        term_wrap("fix", term_make_fn_fix(),
-        term_wrap("id", term_make_fn_id(),
-        term_wrap("eval", term_make_fn_eval(),
-        term_wrap("leaf", term_make_fn_leaf(),
-        term_wrap("pair", term_make_fn_pair(),
-        term_wrap("$lambda", term_make_fn_lambda(),
-            eval_term))))));
-    term_print(final_term); printf("\n");
-    
-    struct Term* evaled = eval(final_term);
-    // term_print_pretty(evaled); printf("\n");
-    term_print(evaled);
-
-    // Output should be:
-    // [APPLY [APPLY [LAMBDA f [APPLY [LAMBDA x [APPLY [APPLY f x] x]] [LAMBDA x [APPLY [APPLY f x] x]]]] [LAMBDA eval [LAMBDA t [APPLY [APPLY t [LAMBDA x [LAMBDA y [APPLY [APPLY eval x] y]]]] [LAMBDA x x]]]]] [APPLY [APPLY [LAMBDA x [LAMBDA y [LAMBDA l [LAMBDA p [APPLY [APPLY p x] y]]]]] [APPLY [APPLY [LAMBDA x [LAMBDA y [LAMBDA l [LAMBDA p [APPLY [APPLY p x] y]]]]] [APPLY [APPLY [LAMBDA x [LAMBDA y [LAMBDA l [LAMBDA p [APPLY [APPLY p x] y]]]]] [APPLY [LAMBDA x [LAMBDA l [LAMBDA p [APPLY l x]]]] [LAM1]]] [APPLY [LAMBDA x [LAMBDA l [LAMBDA p [APPLY l x]]]] x]]] [APPLY [APPLY [LAMBDA x [LAMBDA y [LAMBDA l [LAMBDA p [APPLY [APPLY p x] y]]]]] [APPLY [LAMBDA x [LAMBDA l [LAMBDA p [APPLY l x]]]] [APPLY [LAMBDA f [APPLY [LAMBDA x [APPLY [APPLY f x] x]] [LAMBDA x [APPLY [APPLY f x] x]]]] [LAMBDA eval [LAMBDA t [APPLY [APPLY t [LAMBDA x [LAMBDA y [APPLY [APPLY eval x] y]]]] [LAMBDA x x]]]]]]] [APPLY [LAMBDA x [LAMBDA l [LAMBDA p [APPLY l x]]]] x]]]] [APPLY [LAMBDA x [LAMBDA l [LAMBDA p [APPLY l x]]]] y]]]
-    // y
-}
-
-// TODO implement eval, and see if the encoded version of the input program
-// evaluates correctly
-// Example: `(($vau x (eval x)) 1)`
-// the actual program should look like something like:
-// [APPLY eval <pair (pair (pair (leaf $vau) ...))>]
-// where <...> is the translated version of ..., i was just lazy to write it out
-// (($vau x (eval x)) y)
-// (pair (pair (pair (leaf $vau) (leaf x)) (pair (leaf eval) (leaf x))) (leaf y))
 int main(int argc, char *argv[]) {
     printf("+--------+\n| Hassle |\n+--------+\n\n");
 
-    test_eval();
+    test_and_true_false();
     
     return 0;
 }

@@ -9,11 +9,11 @@ struct Tree {
 };
 
 size_t _tree_size(struct Tree* tree) {
-    size_t size = tree->child_count;
+    size_t size = 0;
     for (uint8_t i = 0; i < tree->child_count; i++) {
         size += _tree_size(tree->children[i]);
     }
-    return size;
+    return size + 1;
 }
 
 struct Tree* tree_make(uint8_t child_count) {
@@ -41,11 +41,11 @@ void tree_free(struct Tree* tree) {
     tree_free_toplevel(tree);
 }
 
-size_t tree_child_count(struct Tree* tree) {
+uint8_t tree_child_count(struct Tree* tree) {
     return tree->child_count;
 }
 
-struct Tree* tree_get_child(struct Tree* tree, size_t child_index) {
+struct Tree* tree_get_child(struct Tree* tree, uint8_t child_index) {
     return tree->children[child_index];
 }
 
@@ -59,21 +59,21 @@ struct Tree* tree_apply(struct Tree* tree1, struct Tree* tree2) {
 
 // Write its child count and all of its children's child_count into the array,
 // and return the next address that can be written to
-uint8_t* _tree_serialize_subtree(struct Tree* tree, uint8_t* data) {
-    *data = tree->child_count;
-    uint8_t* new_data = data + sizeof(uint8_t);
+void _tree_serialize_subtree(struct Tree* tree, uint8_t** data) {
+    **data = tree->child_count;
+    *data += sizeof(uint8_t);
     for (uint8_t i = 0; i < tree->child_count; i++) {
-        uint8_t* new_data =
-            _tree_serialize_subtree(tree->children[i], new_data);
+        _tree_serialize_subtree(tree->children[i], data);
     }
-    return new_data;
 }
 
 uint8_t* tree_serialize(struct Tree* tree, size_t* out_size) {
+    // printf("tree size: %llu\n", _tree_size(tree));
     size_t array_size = _tree_size(tree);
     uint8_t* data = allocate_mem("tree_serialize", NULL,
         sizeof(uint8_t) * array_size);
-    _tree_serialize_subtree(tree, data);
+    uint8_t* data_mut = data;
+    _tree_serialize_subtree(tree, &data_mut);
     
     *out_size = array_size;
     return data;
@@ -83,10 +83,19 @@ struct Tree* _tree_deserialize_subtree(uint8_t** data) {
     struct Tree* tree = tree_make(**data);
     *data += sizeof(uint8_t);
     for (uint8_t i = 0; i < tree->child_count; i++) {
-        tree->children[i] = _tree_deserialize_subtree(&data);
+        tree->children[i] = _tree_deserialize_subtree(data);
     }
+    return tree;
 }
 
 struct Tree* tree_deserialize(uint8_t* data) {
     return _tree_deserialize_subtree(&data);
+}
+
+void tree_print(struct Tree* tree) {
+    printf("%d", tree->child_count);
+    for (uint8_t i = 0; i < tree->child_count; i++) {
+        printf(" ");
+        tree_print(tree->children[i]);
+    }
 }
