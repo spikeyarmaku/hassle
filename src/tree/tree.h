@@ -7,6 +7,7 @@
 #include "global.h"
 
 struct Tree*    tree_make           (uint8_t);
+struct Tree*    tree_copy           (struct Tree*);
 void            tree_free           (struct Tree*);
 void            tree_free_toplevel  (struct Tree*);
 uint8_t         tree_child_count    (struct Tree*);

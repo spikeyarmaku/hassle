@@ -29,6 +29,14 @@ struct Tree* tree_make(uint8_t child_count) {
     return tree;
 }
 
+struct Tree* tree_copy(struct Tree* tree) {
+    struct Tree* new_tree = tree_make(tree->child_count);
+    for (uint8_t i = 0; i < tree->child_count; i++) {
+        new_tree->children[i] = tree_copy(tree->children[i]);
+    }
+    return new_tree;
+}
+
 void tree_free_toplevel(struct Tree* tree) {
     free_mem("tree_free/children", tree->children);
     free_mem("tree_free", tree);

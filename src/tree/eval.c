@@ -22,9 +22,10 @@ struct Tree* eval_step(struct Tree* tree) {
                 // (S) rule
                 struct Tree* x = tree_get_child(tree_get_child(tree, 0), 0);
                 struct Tree* y = tree_get_child(tree, 1);
-                struct Tree* z = tree_get_child(tree, 2);
+                struct Tree* z1 = tree_get_child(tree, 2);
+                struct Tree* z2 = tree_copy(z1);
                 tree_free_toplevel(tree);
-                return tree_apply(tree_apply(y, z), tree_apply(x, z));
+                return tree_apply(tree_apply(y, z1), tree_apply(x, z2));
             }
             case 2: {
                 // printf("F rule\n");
