@@ -16,9 +16,10 @@
 
 #include "tree/tree.h"
 #include "tree/eval.h"
+#include "tree/combinators.h"
 
 // #include "response.h"
-/*
+
 struct Config {
     BOOL open_socket;
     uint16_t port;
@@ -26,333 +27,305 @@ struct Config {
     char* file_to_interpret;
 };
 
-typedef struct Config Config_t;
+// typedef struct Config Config_t;
 
-Config_t    _config_init                    ();
-ErrorCode_t _flag_handle                    (Config_t*, char*);
-void        _interpreter_start              (Config_t*);
-void        _print_help_message             ();
-Term_t*     _interpret_file                 (VM_t*, char*);
-void        _repl_start_local               (VM_t*);
-void        _repl_start_remote              (VM_t*, Connection_t);
-Response_t* _execute_command                (VM_t*, char*);
+// Config_t    _config_init                    ();
+// ErrorCode_t _flag_handle                    (Config_t*, char*);
+// void        _interpreter_start              (Config_t*);
+// void        _print_help_message             ();
+// Term_t*     _interpret_file                 (VM_t*, char*);
+// void        _repl_start_local               (VM_t*);
+// void        _repl_start_remote              (VM_t*, Connection_t);
+// Response_t* _execute_command                (VM_t*, char*);
 
-Config_t  _config_init() {
-    Config_t config; // = (Config_t*)allocate_mem(NULL, NULL, sizeof(Config_t));
-    config.open_socket = FALSE;
-    config.port = 0;
-    config.log_memory = FALSE;
-    config.file_to_interpret = NULL;
-    return config;
-}
+// Config_t  _config_init() {
+//     Config_t config; // = (Config_t*)allocate_mem(NULL, NULL, sizeof(Config_t));
+//     config.open_socket = FALSE;
+//     config.port = 0;
+//     config.log_memory = FALSE;
+//     config.file_to_interpret = NULL;
+//     return config;
+// }
 
-ErrorCode_t _flag_handle(Config_t* config, char* flag) {
-    switch(flag[1]) {
-        case 'p': {
-            int port_num = atoi(flag + 2);
-            if (port_num == 0) {
-                // Make sure there is an error instead of just port number being
-                // 0
-                if (strlen(flag) != 3) {
-                    // port number cannot be read
-                    printf("Error in flag %s: can't read port number.\n", flag);
-                    return Error;
-                }
-            }
-            config->open_socket = TRUE;
-            config->port = port_num;
-            return Success;
-        }
-        case 'm': {
-            config->log_memory = TRUE;
-            return Success;
-        }
-        case 'h': {
-            return Error;
-        }
-        default: {
-            assert(FALSE);
-            return Success;
-        }
-    }
-}
+// ErrorCode_t _flag_handle(Config_t* config, char* flag) {
+//     switch(flag[1]) {
+//         case 'p': {
+//             int port_num = atoi(flag + 2);
+//             if (port_num == 0) {
+//                 // Make sure there is an error instead of just port number being
+//                 // 0
+//                 if (strlen(flag) != 3) {
+//                     // port number cannot be read
+//                     printf("Error in flag %s: can't read port number.\n", flag);
+//                     return Error;
+//                 }
+//             }
+//             config->open_socket = TRUE;
+//             config->port = port_num;
+//             return Success;
+//         }
+//         case 'm': {
+//             config->log_memory = TRUE;
+//             return Success;
+//         }
+//         case 'h': {
+//             return Error;
+//         }
+//         default: {
+//             assert(FALSE);
+//             return Success;
+//         }
+//     }
+// }
 
-void _interpreter_start(Config_t* config) {
-    printf("Initializing VM\n");
-    VM_t* vm = vm_init();
+// void _interpreter_start(Config_t* config) {
+//     printf("Initializing VM\n");
+//     // VM_t* vm = vm_init();
     
-    if (config->log_memory == TRUE) {
-        printf("Starting memory logger service\n");
-        init_logger();
-    }
+//     if (config->log_memory == TRUE) {
+//         printf("Starting memory logger service\n");
+//         init_logger();
+//     }
 
-    if (config->file_to_interpret != NULL) {
-        printf("Interpreting file %s\n", config->file_to_interpret);
-        Term_t* term = _interpret_file(vm, config->file_to_interpret);
-        term_print(term);
-        // term_free(term);
-    } else {
-        if (config->open_socket == TRUE) {
-            printf("Listening on port %d\n", config->port);
-            Connection_t client = network_listen(config->port);
-            _repl_start_remote(vm, client);
-        } else {
-            printf("Starting local session\n");
-            _repl_start_local(vm);
-        }
-    }
+//     if (config->file_to_interpret != NULL) {
+//         printf("Interpreting file %s\n", config->file_to_interpret);
+//         Term_t* term = _interpret_file(vm, config->file_to_interpret);
+//         term_print(term);
+//         // term_free(term);
+//     } else {
+//         if (config->open_socket == TRUE) {
+//             printf("Listening on port %d\n", config->port);
+//             Connection_t client = network_listen(config->port);
+//             _repl_start_remote(vm, client);
+//         } else {
+//             printf("Starting local session\n");
+//             _repl_start_local(vm);
+//         }
+//     }
 
-    // vm_free(vm);
-}
+//     // vm_free(vm);
+// }
 
-void _repl_start_local(VM_t* vm) {
-    // read in command
-    char buffer[1024];
-    Response_t* response = response_make_void();
+// void _repl_start_local(VM_t* vm) {
+//     // read in command
+//     char buffer[1024];
+//     Response_t* response = response_make_void();
     
-    while (response_get_type(response) != ExitResponse) {
-        printf("HASSLE> ");
-        gets(buffer);
-        response_free(response);
-        response = _execute_command(vm, buffer);
-        switch (response_get_type(response)) {
-            case EvalStateResponse: {
-                // TODO
-                break;
-            }
-            case TermResponse: {
-                // TODO
-                break;
-            }
-            case VMDataResponse: {
-                size_t size;
-                uint8_t* data = response_get_data(response, &size);
-                size_t i = 0;
-                uint8_t counter = 0;
-                while (i < size) {
-                    if (counter == 16) {
-                        counter = 0;
-                        printf("\n");
-                    }
-                    uint8_t byte = data[i];
-                    if (byte < 10) {
-                        printf(" ");
-                    }
-                    if (byte < 100) {
-                        printf(" ");
-                    }
-                    printf("%d ", data[i]);
-                    i++;
-                    counter++;
-                }
-                printf("\n");
-                break;
-            }
-            case VoidResponse: {
-                // TODO
-                break;
-            }
-            case InvalidCommandResponse: {
-                // TODO
-                break;
-            }
-            case ExitResponse: {
-                // TODO cleanup
-                break;
-            }
-        }
-    }
+//     while (response_get_type(response) != ExitResponse) {
+//         printf("HASSLE> ");
+//         gets(buffer);
+//         response_free(response);
+//         response = _execute_command(vm, buffer);
+//         switch (response_get_type(response)) {
+//             case EvalStateResponse: {
+//                 // TODO
+//                 break;
+//             }
+//             case TermResponse: {
+//                 // TODO
+//                 break;
+//             }
+//             case VMDataResponse: {
+//                 size_t size;
+//                 uint8_t* data = response_get_data(response, &size);
+//                 size_t i = 0;
+//                 uint8_t counter = 0;
+//                 while (i < size) {
+//                     if (counter == 16) {
+//                         counter = 0;
+//                         printf("\n");
+//                     }
+//                     uint8_t byte = data[i];
+//                     if (byte < 10) {
+//                         printf(" ");
+//                     }
+//                     if (byte < 100) {
+//                         printf(" ");
+//                     }
+//                     printf("%d ", data[i]);
+//                     i++;
+//                     counter++;
+//                 }
+//                 printf("\n");
+//                 break;
+//             }
+//             case VoidResponse: {
+//                 // TODO
+//                 break;
+//             }
+//             case InvalidCommandResponse: {
+//                 // TODO
+//                 break;
+//             }
+//             case ExitResponse: {
+//                 // TODO cleanup
+//                 break;
+//             }
+//         }
+//     }
 
-    response_free(response);
-}
+//     response_free(response);
+// }
 
-void _repl_start_remote(VM_t* vm, Connection_t conn) {
-    printf("Starting remote repl\n");
-    Response_t* response = response_make_void();
-    int size;
-    BOOL is_alive = TRUE;
-    while ((response_get_type(response) != ExitResponse) && (is_alive == TRUE))
-    {
-        uint8_t* buffer = network_receive(conn, &size, &is_alive);
-        // printf("[RECEIVED] %s\n", (char*)buffer);
-        response_free(response);
-        response = _execute_command(vm, (char*)buffer);
-        free_mem("_repl_start_remote", buffer);
-        size_t resp_data_size;
-        uint8_t* resp_data = response_get_data(response, &resp_data_size);
-        network_send(conn, resp_data, (int)resp_data_size);
-        // printf("Sent %d bytes\n", (int)resp_data_size);
-    }
-    response_free(response);
-    network_close(conn);
-}
+// void _repl_start_remote(VM_t* vm, Connection_t conn) {
+//     printf("Starting remote repl\n");
+//     Response_t* response = response_make_void();
+//     int size;
+//     BOOL is_alive = TRUE;
+//     while ((response_get_type(response) != ExitResponse) && (is_alive == TRUE))
+//     {
+//         uint8_t* buffer = network_receive(conn, &size, &is_alive);
+//         // printf("[RECEIVED] %s\n", (char*)buffer);
+//         response_free(response);
+//         response = _execute_command(vm, (char*)buffer);
+//         free_mem("_repl_start_remote", buffer);
+//         size_t resp_data_size;
+//         uint8_t* resp_data = response_get_data(response, &resp_data_size);
+//         network_send(conn, resp_data, (int)resp_data_size);
+//         // printf("Sent %d bytes\n", (int)resp_data_size);
+//     }
+//     response_free(response);
+//     network_close(conn);
+// }
 
-Response_t* _execute_command(VM_t* vm, char* cmd) {
-    int token_len = str_get_token_end(cmd);
-    char* cmds[] = {"file", "expr", "step", "run", "reset", "get", "exit"};
-    int cmd_count = sizeof(cmds) / sizeof(cmds[0]);
-    for (int i = 0; i < cmd_count; i++) {
-        if (strlen(cmds[i]) == token_len &&
-            strncmp(cmd, cmds[i], token_len) == 0)
-        {
-            switch(i) {
-                case 0: {
-                    // file
-                    char* arg = str_get_substr(cmd, 1, TRUE);
-                    if (arg != NULL) {
-                        _interpret_file(vm, arg);
-                    }
-                    free_mem("execute_command/file", arg);
-                    return response_make_void();
-                }
-                case 1: {
-                    // expr
-                    char* arg = str_get_substr(cmd, 1, TRUE);
-                    if (arg != NULL) {
-                        vm_set_control_to_expr(vm, parse_from_str(arg));
-                    }
-                    free_mem("execute_command/expr", arg);
-                    return response_make_void();
-                }
-                case 2: {
-                    // step
-                    return response_make_eval_state(vm_step(vm));
-                }
-                case 3: {
-                    // run
-                    return response_make_term(vm_run(vm));
-                }
-                case 4: {
-                    // reset
-                    vm_reset(vm);
-                    return response_make_void();
-                }
-                case 5: {
-                    // get word_size
-                    char* arg = str_get_substr(cmd, 1, FALSE);
-                    uint8_t word_size;
-                    if (arg == NULL) {
-                        word_size = sizeof(size_t);
-                    } else {
-                        word_size = atoi(arg);
-                    }
-                    free_mem("execute_command/get", arg);
-                    return response_make_vm_data(vm_serialize(vm, word_size));
-                }
-                case 6: {
-                    // exit
-                    return response_make_exit();
-                }
-            }
-        }
-    }
-    return response_make_invalid_command();
-}
+// Response_t* _execute_command(VM_t* vm, char* cmd) {
+//     int token_len = str_get_token_end(cmd);
+//     char* cmds[] = {"file", "expr", "step", "run", "reset", "get", "exit"};
+//     int cmd_count = sizeof(cmds) / sizeof(cmds[0]);
+//     for (int i = 0; i < cmd_count; i++) {
+//         if (strlen(cmds[i]) == token_len &&
+//             strncmp(cmd, cmds[i], token_len) == 0)
+//         {
+//             switch(i) {
+//                 case 0: {
+//                     // file
+//                     char* arg = str_get_substr(cmd, 1, TRUE);
+//                     if (arg != NULL) {
+//                         _interpret_file(vm, arg);
+//                     }
+//                     free_mem("execute_command/file", arg);
+//                     return response_make_void();
+//                 }
+//                 case 1: {
+//                     // expr
+//                     char* arg = str_get_substr(cmd, 1, TRUE);
+//                     if (arg != NULL) {
+//                         vm_set_control_to_expr(vm, parse_from_str(arg));
+//                     }
+//                     free_mem("execute_command/expr", arg);
+//                     return response_make_void();
+//                 }
+//                 case 2: {
+//                     // step
+//                     return response_make_eval_state(vm_step(vm));
+//                 }
+//                 case 3: {
+//                     // run
+//                     return response_make_term(vm_run(vm));
+//                 }
+//                 case 4: {
+//                     // reset
+//                     vm_reset(vm);
+//                     return response_make_void();
+//                 }
+//                 case 5: {
+//                     // get word_size
+//                     char* arg = str_get_substr(cmd, 1, FALSE);
+//                     uint8_t word_size;
+//                     if (arg == NULL) {
+//                         word_size = sizeof(size_t);
+//                     } else {
+//                         word_size = atoi(arg);
+//                     }
+//                     free_mem("execute_command/get", arg);
+//                     return response_make_vm_data(vm_serialize(vm, word_size));
+//                 }
+//                 case 6: {
+//                     // exit
+//                     return response_make_exit();
+//                 }
+//             }
+//         }
+//     }
+//     return response_make_invalid_command();
+// }
 
-void _print_help_message() {
-    printf("HASSLE\n");
-    printf("\n");
-    printf("USAGE\n");
-    printf("  hassle [-p[PORT_NUMBER]] [-m] [-h] [filename]\n");
-    printf("\n");
-    printf("DESCRIPTION\n");
-    printf(
-"  Hassle can interpret a file, or act as an interactive debugger. If a\n"
-"  filename is given, it will evaluate the file's content. If the -p switch\n"
-"  is specified, a listener port is opened, to which a debugger can connect.\n"
-"  The filename and the -p flag can be specified together, but at least one\n"
-"  of must be present.\n");
-    printf("\n");
-    printf("  -p[PORT_NUMBER]  Listens to a client on PORT_NUMBER\n");
-    printf("  -m               Turns on memory logging (useful for debugging)\n");
-    printf("  -h               Prints this message\n");
-}
+// void _print_help_message() {
+//     printf("HASSLE\n");
+//     printf("\n");
+//     printf("USAGE\n");
+//     printf("  hassle [-p[PORT_NUMBER]] [-m] [-h] [filename]\n");
+//     printf("\n");
+//     printf("DESCRIPTION\n");
+//     printf(
+// "  Hassle can interpret a file, or act as an interactive debugger. If a\n"
+// "  filename is given, it will evaluate the file's content. If the -p switch\n"
+// "  is specified, a listener port is opened, to which a debugger can connect.\n"
+// "  The filename and the -p flag can be specified together, but at least one\n"
+// "  of must be present.\n");
+//     printf("\n");
+//     printf("  -p[PORT_NUMBER]  Listens to a client on PORT_NUMBER\n");
+//     printf("  -m               Turns on memory logging (useful for debugging)\n");
+//     printf("  -h               Prints this message\n");
+// }
 
-Term_t* _interpret_file(VM_t* vm, char* file_name) {
-    Expr_t* expr = parse_from_file(file_name);
-    vm_set_control_to_expr(vm, expr);
-    return vm_run(vm);
-}
+// Term_t* _interpret_file(VM_t* vm, char* file_name) {
+//     Expr_t* expr = parse_from_file(file_name);
+//     vm_set_control_to_expr(vm, expr);
+//     return vm_run(vm);
+// }
 
+// // If called with a file, run it, else start a REPL
+// int main(int argc, char *argv[]) {
+//     printf("---------- Hassle ----------\n\n");
+//     setvbuf(stdout, (char *) NULL, _IONBF, 0); // make stdout line-buffered
+//     Config_t config = _config_init();
 
-// If called with a file, run it, else start a REPL
-int main(int argc, char *argv[]) {
-    printf("---------- Hassle ----------\n\n");
-    setvbuf(stdout, (char *) NULL, _IONBF, 0); // make stdout line-buffered
-    Config_t config = _config_init();
+//     for (int i = 1; i < argc; i++) {
+//         if (argv[i][0] == '-') {
+//             ErrorCode_t error_code = _flag_handle(&config, argv[i]);
+//             if (error_code == Error) {
+//                 _print_help_message();
+//                 return error_code;
+//             }
+//         } else {
+//             // Interpret the provided file
+//             config.file_to_interpret = argv[i];
+//         }
+//     }
 
-    for (int i = 1; i < argc; i++) {
-        if (argv[i][0] == '-') {
-            ErrorCode_t error_code = _flag_handle(&config, argv[i]);
-            if (error_code == Error) {
-                _print_help_message();
-                return error_code;
-            }
-        } else {
-            // Interpret the provided file
-            config.file_to_interpret = argv[i];
-        }
-    }
-
-    _interpreter_start(&config);
+//     _interpreter_start(&config);
     
-    return 0;
-}
-*/
+//     return 0;
+// }
 
-struct Tree* delta() {
-    return tree_make(0);
-}
-
-struct Tree* K() {
-    uint8_t data[] = {1, 0};
-    return tree_deserialize(data);
-}
-
-struct Tree* I() {
-    uint8_t data[] = {2, 1, 0, 1, 0};
-    return tree_deserialize(data);
-}
-
-struct Tree* D() {
-    uint8_t data[] = {2, 1, 0, 2, 0, 0};
-    return tree_deserialize(data);
-}
-
-struct Tree* true_tree() {
-    return K();
-}
-
-struct Tree* false_tree() {
-    return tree_apply(K(), I());
-}
-
-// d{x} = Δ(Δx)
-// d{K(K I)} = Δ(Δ(K(K I)))
-struct Tree* and_tree() {
-    return
-        tree_apply(delta(),
-            tree_apply(delta(),
-                tree_apply(K(),
-                    tree_apply(K(), I()))));
-}
-
-void test_and_true_false() {
-    struct Tree* and_true_false =
-        tree_apply(tree_apply(and_tree(), true_tree()), false_tree());
-    struct Tree* result = eval(and_true_false);
-    size_t size;
-    uint8_t* data = tree_serialize(result, &size);
-    for (size_t i = 0; i < size; i++) {
-        printf("%d ", data[i]);
-    }
-    printf("\n");
-}
+// void test_and_true_false() {
+//     struct Tree* and_true_false =
+//         tree_apply(tree_apply(and_tree(), true_tree()), false_tree());
+//     struct Tree* result = eval(and_true_false);
+//     size_t size;
+//     uint8_t* data = tree_serialize(result, &size);
+//     for (size_t i = 0; i < size; i++) {
+//         printf("%d ", data[i]);
+//     }
+//     printf("\n");
+// }
 
 int main(int argc, char *argv[]) {
     printf("+--------+\n| Hassle |\n+--------+\n\n");
 
-    test_and_true_false();
+    // \x. not x
+
+    struct Tree* not_x = nStar("x", tree_apply(not(), tree_make_sym("x")));
+        
+    Serializer_t* ser = serializer_init(sizeof(size_t));
+    tree_serialize(ser, not_x);
+    uint8_t* data = serializer_get_data(ser);
+    size_t data_size = serializer_get_data_size(ser);
+
+    for (size_t i = 0; i < data_size; i++) {
+        printf("%d, ", data[i]);
+    }
     
     return 0;
 }
