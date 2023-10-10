@@ -14,7 +14,7 @@
 #include "network.h"
 #include "memory.h"
 
-#include "tree/tree.h"
+#include "tree/term.h"
 #include "tree/eval.h"
 #include "tree/combinators.h"
 
@@ -300,11 +300,11 @@ struct Config {
 // }
 
 // void test_and_true_false() {
-//     struct Tree* and_true_false =
-//         tree_apply(tree_apply(and_tree(), true_tree()), false_tree());
-//     struct Tree* result = eval(and_true_false);
+//     struct Term* and_true_false =
+//         term_apply(term_apply(and_term(), true_tree()), false_tree());
+//     struct Term* result = eval(and_true_false);
 //     size_t size;
-//     uint8_t* data = tree_serialize(result, &size);
+//     uint8_t* data = term_serialize(result, &size);
 //     for (size_t i = 0; i < size; i++) {
 //         printf("%d ", data[i]);
 //     }
@@ -316,10 +316,13 @@ int main(int argc, char *argv[]) {
 
     // \x. not x
 
-    struct Tree* not_x = nStar("x", tree_apply(not(), tree_make_sym("x")));
+    char* x = malloc(2);
+    x[0] = 120; x[1] = 0;
+    struct Term* not_x = nStar("x", term_apply(not(), term_make_sym(x)));
+    // struct Term* not_x = term_apply(not(), term_make_sym("x"));
         
     Serializer_t* ser = serializer_init(sizeof(size_t));
-    tree_serialize(ser, not_x);
+    term_serialize(ser, not_x);
     uint8_t* data = serializer_get_data(ser);
     size_t data_size = serializer_get_data_size(ser);
 

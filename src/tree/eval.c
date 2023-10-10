@@ -5,53 +5,45 @@
 // Δ(Δx)yz     = yz(xz)    (S)
 // Δ(Δwx)yz    = zwx       (F)
 
-struct Tree* eval_step(struct Tree* tree) {
-    if (tree_child_count(tree) > 2) {
-        switch (tree_child_count(tree_get_child(tree, 0))) {
-            case 0: {
-                // printf("K rule\n");
-                // (K) rule
-                struct Tree* result = tree_get_child(tree, 1);
-                tree_free(tree_get_child(tree, 0));
-                tree_free(tree_get_child(tree, 2));
-                tree_free_toplevel(tree);
+struct Term* eval_step(struct Term* term) {
+    if (term_app_level(term) > 2) {
+        struct Term* z = term_child_right(term);
+        struct Term* y = term_child_right(term_child_left(term));
+        struct Term* first_apply = term_child_right(term_traverse(term, -2));
+        if (term_type(first_apply) != TERM_TYPE_FORK) {
+            // K rule
+            struct Term* result = term_copy(y);
+            term_free(term);
+            return result;
+        } else {
+            struct Term* x = term_child_right(first_apply);
+            if (term_type(term_child_left(term_child_right(first_apply))) !=
+                TERM_TYPE_FORK)
+            {
+                // S rule
+                struct Term* result =
+                    term_apply(term_apply(term_copy(y), term_copy(z)),
+                        term_apply(term_copy(x), term_copy(z)));
+                term_free(term);
                 return result;
-            }
-            case 1: {
-                // printf("S rule\n");
-                // (S) rule
-                struct Tree* x = tree_get_child(tree_get_child(tree, 0), 0);
-                struct Tree* y = tree_get_child(tree, 1);
-                struct Tree* z1 = tree_get_child(tree, 2);
-                struct Tree* z2 = tree_copy(z1);
-                tree_free_toplevel(tree);
-                return tree_apply(tree_apply(y, z1), tree_apply(x, z2));
-            }
-            case 2: {
-                // printf("F rule\n");
-                // (F) rule
-                struct Tree* w = tree_get_child(tree_get_child(tree, 0), 0);
-                struct Tree* x = tree_get_child(tree_get_child(tree, 0), 1);
-                struct Tree* z = tree_get_child(tree, 2);
-                tree_free(tree_get_child(tree, 1));
-                tree_free_toplevel(tree);
-                return tree_apply(tree_apply(z, w), x);
-            }
-            default: {
-                printf(
-                    "PANIC! First child of a combination has %d children!\n",
-                    tree_child_count(tree));
-                exit(1);
+            } else {
+                // F rule
+                struct Term* w = term_child_right(term_child_left(first_apply));
+                struct Term* result =
+                    term_apply(term_apply(term_copy(z), term_copy(w)),
+                        term_copy(x));
+                term_free(term);
+                return result;
             }
         }
     } else {
-        return tree;
+        return term;
     }
 }
 
-struct Tree* eval(struct Tree* tree) {
-    while (tree_child_count(tree) > 2) {
-        tree = eval_step(tree);
+struct Term* eval(struct Term* term) {
+    while (term_app_level(term) > 2) {
+        term = eval_step(term);
     }
-    return tree;
+    return term;
 }

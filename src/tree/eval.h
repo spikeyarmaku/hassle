@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "tree/tree.h"
+#include "tree/term.h"
 
-struct Tree* eval(struct Tree*);
+struct Term* eval(struct Term*);
 
 #endif

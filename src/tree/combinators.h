@@ -3,52 +3,52 @@
 
 #include <stdint.h>
 
-#include "tree/tree.h"
+#include "tree/term.h"
 
 // Notation
-struct Tree*    delta       ();
+struct Term*    delta       ();
 
 // Combinators
-struct Tree*    cK          ();
-struct Tree*    cI          ();
-struct Tree*    cD          ();
-struct Tree*    nD          (struct Tree*);
-struct Tree*    cS          ();
+struct Term*    cK          ();
+struct Term*    cI          ();
+struct Term*    cD          ();
+struct Term*    nD          (struct Term*);
+struct Term*    cS          ();
 
 // Boolean
-struct Tree*    true        ();
-struct Tree*    false       ();
-struct Tree*    and         ();
-struct Tree*    or          ();
-struct Tree*    not         ();
+struct Term*    true        ();
+struct Term*    false       ();
+struct Term*    and         ();
+struct Term*    or          ();
+struct Term*    not         ();
 // TODO cImplies, cNot, cIff - p. 32.
 
 // Pair
-struct Tree*    pair        ();
-struct Tree*    nFirst      (struct Tree*);
-struct Tree*    nSecond     (struct Tree*);
+struct Term*    pair        ();
+struct Term*    nFirst      (struct Term*);
+struct Term*    nSecond     (struct Term*);
 
 // Numbers
-struct Tree*    nNat        (size_t);
-struct Tree*    nPow        (struct Tree*, uint8_t);
-struct Tree*    is_zero     ();
-struct Tree*    nSucc       (struct Tree*);
-struct Tree*    nPred       (struct Tree*);
-struct Tree*    nQuery      (struct Tree*, struct Tree*, struct Tree*);
-struct Tree*    is_leaf     ();
-struct Tree*    is_stem     ();
-struct Tree*    is_fork     ();
+struct Term*    nNat        (size_t);
+struct Term*    nPow        (struct Term*, uint8_t);
+struct Term*    is_zero     ();
+struct Term*    nSucc       (struct Term*);
+struct Term*    nPred       (struct Term*);
+struct Term*    nQuery      (struct Term*, struct Term*, struct Term*);
+struct Term*    is_leaf     ();
+struct Term*    is_stem     ();
+struct Term*    is_fork     ();
 
 // Variable binding
-struct Tree*    nBracket    (char*, struct Tree*);
-BOOL            is_elem     (char*, struct Tree*);
-struct Tree*    nStar       (char*, struct Tree*);
-struct Tree*    nWait       (struct Tree*, struct Tree*);
-struct Tree*    nWait1      (struct Tree*);
-struct Tree*    self_apply  ();
-struct Tree*    nZ          (struct Tree*);
-struct Tree*    nSwap       (struct Tree*);
-struct Tree*    nY2         (struct Tree*);
+struct Term*    nBracket    (char*, struct Term*);
+BOOL            is_elem     (char*, struct Term*);
+struct Term*    nStar       (char*, struct Term*);
+struct Term*    nWait       (struct Term*, struct Term*);
+struct Term*    nWait1      (struct Term*);
+struct Term*    self_apply  ();
+struct Term*    nZ          (struct Term*);
+struct Term*    nSwap       (struct Term*);
+struct Term*    nY2         (struct Term*);
 
 // Intensional
 
