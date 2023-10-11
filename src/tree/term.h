@@ -19,6 +19,7 @@ struct Term*    term_make_sym       (char*);
 struct Term*    term_make_str       (char*);
 struct Term*    term_make_rat       (Rational_t*);
 struct Term*    term_apply          (struct Term*, struct Term*);
+void            term_set_children   (struct Term*, struct Term*, struct Term*);
 struct Term*    term_copy           (struct Term*);
 void            term_free           (struct Term*);
 void            term_free_toplevel  (struct Term*);

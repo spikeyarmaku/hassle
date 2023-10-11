@@ -1,7 +1,7 @@
 #include "response.h"
 
-#include "vm\term.h"
-#include "vm/vm.h"
+#include "tree/term.h"
+#include "tree/vm.h"
 
 // Return value of command execution
 
@@ -9,15 +9,6 @@ struct Response {
     size_t size;
     uint8_t* data;
 };
-
-// struct Response {
-//     enum ResponseType type;
-//     union {
-//         enum EvalState eval_state;
-//         Term_t* term;
-//         struct VMData vm_data;
-//     };
-// };
 
 Response_t* _allocate_response_data (size_t);
 
@@ -48,7 +39,7 @@ Response_t* response_make_vm_data(struct VMData vm_data) {
     return response;
 }
 
-Response_t* response_make_term(Term_t* term) {
+Response_t* response_make_term(struct Term* term) {
     // Serializer will append a byte signifying word size before the serialized
     // term. Since this response doesn't need it, that byte can be used to
     // mark the response type instead, saving a memcpy call.

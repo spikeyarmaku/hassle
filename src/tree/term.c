@@ -54,12 +54,17 @@ struct Term* term_apply(struct Term* term1, struct Term* term2) {
     }
 }
 
+void term_set_children(struct Term* term, struct Term* child_left,
+    struct Term* child_right)
+{
+    term->term_left = child_left;
+    term->term_right = child_right;
+}
+
 struct Term* term_copy(struct Term* term) {
     if (term->type == TERM_TYPE_FORK) {
-        struct Term* new_term = term_make_node();
-        new_term->term_left = term_copy(term->term_left);
-        new_term->term_right = term_copy(term->term_right);
-        return new_term;
+        return term_apply(term_copy(term->term_left),
+            term_copy(term->term_right));
     } else {
         switch (term->type) {
             case TERM_TYPE_LEAF: {

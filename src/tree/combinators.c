@@ -175,7 +175,6 @@ struct Term* nStar(char* symbol, struct Term* term) {
             if (is_elem(symbol, term_child_left(term)) == FALSE &&
                 term_is_symbol(symbol, term_child_right(term)) == TRUE)
             {
-                printf("SHOULD BE HERE\n");
                 struct Term* result = term_child_left(term);
                 term_free(term_child_right(term));
                 term_free_toplevel(term);
