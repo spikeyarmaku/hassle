@@ -1,5 +1,40 @@
 #include "term.h"
 
+/*
+Terms in tree calculus can be n-ary trees, but here we store them as full
+binary trees (each node has exactly 0 or 2 children), where only leafs can
+contain additional information.
+
+To convert from an n-ary tree, follow these steps:
+- Let's call the root node N, its left child L and its right child R
+- The new tree's root will be an empty node, whose right child be R, and
+  the left child will be N, whose left child in turn will be L
+- Repeat this step with every node that has at least one child
+
+Visually:
+
+    N                   ()
+   / \                 /  \
+  L   R     ====>     N    R
+                      |
+                      L
+
+To convert to an n-ary tree, follow these steps:
+- Let's call the root node N, its left child L and its right child R
+- The new tree will consist of L, with R grafted onto it as a child
+- Repeat the same for every empty node that has exactly two children
+
+Visually: (L1 and L2 are subtrees of L, they are included to better illustrate
+the grafting)
+
+      N                    L
+     / \                 / | \
+    L   R     ====>     L1 L2 R
+   / \
+  L1  L2
+
+*/
+
 struct Term {
     uint8_t type;
     union {
