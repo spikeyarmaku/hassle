@@ -176,6 +176,7 @@ struct Term* nStar(char* symbol, struct Term* term) {
                 term_is_symbol(symbol, term_child_right(term)) == TRUE)
             {
                 struct Term* result = term_child_left(term);
+                term_print(term_child_right(term));
                 term_free(term_child_right(term));
                 term_free_toplevel(term);
                 return result;

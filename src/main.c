@@ -16,6 +16,7 @@
 
 #include "tree/term.h"
 #include "tree/vm.h"
+#include "tree/primop.h"
 
 // DEBUG
 // #include "tree/eval.h"
@@ -191,6 +192,72 @@ void _repl_start_remote(struct VM* vm, Connection_t conn) {
     network_close(conn);
 }
 
+struct Term* test1() {
+    char* x = malloc(2);
+    x[0] = 120; x[1] = 0;
+    return term_apply(nStar("x", term_apply(not(), term_make_sym(x))), true());
+}
+
+struct Term* test2() {
+    char* numstr1 = malloc(3);
+    sprintf(numstr1, "12");
+    char* numstr2 = malloc(3);
+    sprintf(numstr2, "3");
+    struct Term* num1 = term_make_rat(rational_from_string(numstr1));
+    struct Term* num2 = term_make_rat(rational_from_string(numstr2));
+    struct Term* op = term_make_primop(Add);
+    return
+        term_apply(
+            term_apply(
+                term_apply(
+                    delta(),
+                    term_apply(
+                        term_apply(
+                            delta(),
+                            num1),
+                        num2)),
+                delta()),
+            op);
+}
+
+struct Term* test3() {
+    // \o. \x. \y. *(*xy)*o
+    // TODO add evals to x and y
+    char* varx = malloc(2);
+    sprintf(varx, "x");
+    char* vary = malloc(2);
+    sprintf(vary, "y");
+    char* varo = malloc(2);
+    sprintf(varo, "o");
+    printf("Defining apply_op\n");
+    struct Term* apply_op =
+        nStar("o", nStar("x", nStar("y",
+            term_apply(
+                term_apply(
+                    term_apply(
+                        delta(),
+                        term_apply(
+                            term_apply(
+                                delta(),
+                                term_make_sym(varx)
+                            ),
+                            term_make_sym(vary)
+                        )
+                    ),
+                    delta()),
+                term_make_sym(varo)))));
+    printf("Defining rators / rands\n");
+    char* numstr1 = malloc(3);
+    sprintf(numstr1, "12");
+    char* numstr2 = malloc(3);
+    sprintf(numstr2, "3");
+    struct Term* num1 = term_make_rat(rational_from_string(numstr1));
+    struct Term* num2 = term_make_rat(rational_from_string(numstr2));
+    struct Term* op = term_make_primop(Add);
+    printf("Defining term\n");
+    return term_apply(term_apply(term_apply(apply_op, op), num1), num2);
+}
+
 Response_t* _execute_command(struct VM* vm, char* cmd) {
     int token_len = str_get_token_end(cmd);
     char* cmds[] = {"file", "expr", "step", "run", "reset", "get", "exit"};
@@ -215,12 +282,7 @@ Response_t* _execute_command(struct VM* vm, char* cmd) {
                     if (arg != NULL) {
                         // vm_set_term(vm, parse_from_str(arg));
                         // TODO convert Expr_t* to struct Term*
-                        char* x = malloc(2);
-                        x[0] = 120; x[1] = 0;
-                        struct Term* not_x =
-                            term_apply(nStar("x", term_apply(not(),
-                                term_make_sym(x))), true());
-                        vm_set_term(vm, not_x);
+                        vm_set_term(vm, test3());
                     }
                     free_mem("execute_command/expr", arg);
                     return response_make_void();

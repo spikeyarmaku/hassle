@@ -1,5 +1,7 @@
 #include "eval.h"
 
+#include "primop.h"
+
 // Evaluation rules:
 // ΔΔyz        = y         (K)
 // Δ(Δx)yz     = yz(xz)    (S)
@@ -41,8 +43,19 @@ struct Term* _eval_step_3_branches(struct Term* term) {
             }
         }
     } else {
-        printf("No rules\n");
-        return term;
+        struct Term* op = term_traverse(term, -term_app_level(term));
+        if (term_type(op) == TERM_TYPE_PRIMOP) {
+            printf("Primop\n");
+            struct Term* term2 = term_child_right(term);
+            struct Term* term1 = term_child_right(term_child_left(term));
+            struct Term* result =
+                primop_apply(term_get_primop(op), term1, term2);
+            term_free(term);
+            return result;
+        } else {
+            printf("No rules\n");
+            return term;
+        }
     }
 }
 
@@ -52,12 +65,21 @@ struct Term* eval_step(struct Term* term) {
         struct Term* subterm_parent =
             term_traverse(term, -(term_app_level(term) - 4));
         struct Term* subterm = term_child_left(subterm_parent);
-        struct Term* new_subterm = _eval_step_3_branches(subterm);
+        struct Term* new_subterm = eval_step(subterm);
         term_set_children(subterm_parent, new_subterm,
             term_child_right(subterm_parent));
         return term;
     } else {
-        return _eval_step_3_branches(term);
+        // Check if the leftmost child has at most 2 branches
+        struct Term* leftmost = term_traverse(term, -term_app_level(term) + 1);
+        struct Term* leftmost_child = term_child_right(leftmost);
+        if (term_app_level(leftmost_child) > 2) {
+            struct Term* new_right = eval_step(leftmost_child);
+            term_set_children(leftmost, term_child_left(leftmost), new_right);
+            return term;
+        } else {
+            return _eval_step_3_branches(term);
+        }
     }
 }
 
@@ -69,5 +91,7 @@ struct Term* eval(struct Term* term) {
 }
 
 BOOL eval_done(struct Term* term) {
-    return term_app_level(term) > 2 ? FALSE : TRUE;
+    struct Term* leftmost = term_traverse(term, -term_app_level(term));
+    return (term_app_level(term) > 2 ||
+        term_type(leftmost) == TERM_TYPE_PRIMOP) ? FALSE : TRUE;
 }

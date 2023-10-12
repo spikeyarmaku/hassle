@@ -5,6 +5,13 @@ Terms in tree calculus can be n-ary trees, but here we store them as full
 binary trees (each node has exactly 0 or 2 children), where only leafs can
 contain additional information.
 
+The reason for this is twofold:
+- It makes it easier to apply trees without calling `realloc`
+- It makes it easier to express some combinators (like `nStar`)
+However, it has downsides:
+- It makes evaluation rules harder to express
+- It makes tree visualization algorithms more complex
+
 To convert from an n-ary tree, follow these steps:
 - Let's call the root node N, its left child L and its right child R
 - The new tree's root will be an empty node, whose right child be R, and
@@ -44,6 +51,7 @@ struct Term {
         };
         char* str_val;
         Rational_t* rat_val;
+        uint8_t primop;
     };
 };
 
@@ -74,6 +82,13 @@ struct Term* term_make_rat(Rational_t* rat) {
     struct Term* term = term_make_node();
     term->type = TERM_TYPE_RATIONAL;
     term->rat_val = rat;
+    return term;
+}
+
+struct Term* term_make_primop(uint8_t primop) {
+    struct Term* term = term_make_node();
+    term->type = TERM_TYPE_PRIMOP;
+    term->primop = primop;
     return term;
 }
 
@@ -113,6 +128,9 @@ struct Term* term_copy(struct Term* term) {
             }
             case TERM_TYPE_RATIONAL: {
                 return term_make_rat(rational_copy(term->rat_val));
+            }
+            case TERM_TYPE_PRIMOP: {
+                return term_make_primop(term->primop);
             }
             default: {
                 return NULL;
@@ -177,6 +195,9 @@ void term_serialize(Serializer_t* serializer, struct Term* term) {
                 rational_serialize(serializer, term->rat_val);
                 break;
             }
+            case TERM_TYPE_PRIMOP: {
+                serializer_write(serializer, term->primop);
+            }
         }
     }
 }
@@ -201,6 +222,9 @@ struct Term* term_deserialize(Serializer_t* serializer) {
         }
         case TERM_TYPE_RATIONAL: {
             return term_make_rat(rational_deserialize(serializer));
+        }
+        case TERM_TYPE_PRIMOP: {
+            return term_make_primop(serializer_read(serializer));
         }
         default: {
             return NULL;
@@ -233,6 +257,10 @@ char* term_get_str(struct Term* term) {
 
 Rational_t* term_get_rat(struct Term* term) {
     return term->rat_val;
+}
+
+uint8_t term_get_primop(struct Term* term) {
+    return term->primop;
 }
 
 struct Term* term_child_left(struct Term* term) {
