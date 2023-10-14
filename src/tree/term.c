@@ -1,66 +1,22 @@
 #include "term.h"
 
-/*
-Terms in tree calculus can be n-ary trees, but here we store them as full
-binary trees (each node has exactly 0 or 2 children), where only leafs can
-contain additional information.
-
-The reason for this is twofold:
-- It makes it easier to apply trees without calling `realloc`
-- It makes it easier to express some combinators (like `nStar`)
-However, it has downsides:
-- It makes evaluation rules harder to express
-- It makes tree visualization algorithms more complex
-
-To convert from an n-ary tree, follow these steps:
-- Let's call the root node N, its left child L and its right child R
-- The new tree's root will be an empty node, whose right child be R, and
-  the left child will be N, whose left child in turn will be L
-- Repeat this step with every node that has at least one child
-
-Visually:
-
-    N                   ()
-   / \                 /  \
-  L   R     ====>     N    R
-                      |
-                      L
-
-To convert to an n-ary tree, follow these steps:
-- Let's call the root node N, its left child L and its right child R
-- The new tree will consist of L, with R grafted onto it as a child
-- Repeat the same for every empty node that has exactly two children
-
-Visually: (L1 and L2 are subtrees of L, they are included to better illustrate
-the grafting)
-
-      N                    L
-     / \                 / | \
-    L   R     ====>     L1 L2 R
-   / \
-  L1  L2
-
-*/
-
 struct Term {
     uint8_t type;
     union {
-        struct {
-            struct Term* term_left;
-            struct Term* term_right;
-        };
         char* str_val;
         Rational_t* rat_val;
         uint8_t primop;
     };
+    uint8_t child_count;
+    struct Term** children;
 };
 
 struct Term* term_make_node() {
     struct Term* term = allocate_mem("term_make", NULL,
         sizeof(struct Term));
-    term->type = TERM_TYPE_LEAF;
-    term->term_left = NULL;
-    term->term_right = NULL;
+    term->type = TERM_TYPE_DELTA;
+    term->child_count = 0;
+    term->children = NULL;
     return term;
 }
 
@@ -93,64 +49,58 @@ struct Term* term_make_primop(uint8_t primop) {
 }
 
 struct Term* term_apply(struct Term* term1, struct Term* term2) {
-    if (term1->type == TERM_TYPE_LEAF || term1->type == TERM_TYPE_FORK) {
-        struct Term* term = term_make_node();
-        term->type = TERM_TYPE_FORK;
-        term->term_left = term1;
-        term->term_right = term2;
-        return term;
-    } else {
-        printf("term_apply: Trying to apply to a value\n"); exit(1);
-    }
-}
-
-void term_set_children(struct Term* term, struct Term* child_left,
-    struct Term* child_right)
-{
-    term->term_left = child_left;
-    term->term_right = child_right;
+    term1->child_count++;
+    term1->children = allocate_mem("term_apply", term1->children,
+        sizeof(struct Term) * term1->child_count);
+    term1->children[term1->child_count - 1] = term2;
+    return term1;
 }
 
 struct Term* term_copy(struct Term* term) {
-    if (term->type == TERM_TYPE_FORK) {
-        return term_apply(term_copy(term->term_left),
-            term_copy(term->term_right));
-    } else {
-        switch (term->type) {
-            case TERM_TYPE_LEAF: {
-                return term_make_node();
-            }
-            case TERM_TYPE_SYMBOL: {
-                return term_make_sym(str_cpy(term->str_val));
-            }
-            case TERM_TYPE_STRING: {
-                return term_make_str(str_cpy(term->str_val));
-            }
-            case TERM_TYPE_RATIONAL: {
-                return term_make_rat(rational_copy(term->rat_val));
-            }
-            case TERM_TYPE_PRIMOP: {
-                return term_make_primop(term->primop);
-            }
-            default: {
-                return NULL;
-            }
-        }
-    }
-}
-
-void term_free_toplevel(struct Term* term) {
-    free_mem("term_free", term);
-}
-
-void term_free(struct Term* term) {
+    assert(term != NULL);
+    struct Term* result;
     switch (term->type) {
-        case TERM_TYPE_LEAF: {
+        case TERM_TYPE_DELTA: {
+            result = term_make_node();
             break;
         }
-        case TERM_TYPE_FORK: {
-            term_free(term->term_left);
-            term_free(term->term_right);
+        case TERM_TYPE_SYMBOL: {
+            result = term_make_sym(str_cpy(term->str_val));
+            break;
+        }
+        case TERM_TYPE_STRING: {
+            result = term_make_str(str_cpy(term->str_val));
+            break;
+        }
+        case TERM_TYPE_RATIONAL: {
+            result = term_make_rat(rational_copy(term->rat_val));
+            break;
+        }
+        case TERM_TYPE_PRIMOP: {
+            result = term_make_primop(term->primop);
+            break;
+        }
+        default: {
+            break;
+        }
+    }
+    result->child_count = term->child_count;
+    if (term->child_count > 0) {
+        result->children = allocate_mem("term_copy", NULL,
+            sizeof(struct Term) * term->child_count);
+        for (uint8_t i = 0; i < term->child_count; i++) {
+            result->children[i] = term_copy(term->children[i]);
+        }
+    } else {
+        result->children = NULL;
+    }
+    return result;
+}
+
+// Free the value, the children array, and the pointer itself
+void term_free_node(struct Term* term) {
+    switch (term->type) {
+        case TERM_TYPE_DELTA: {
             break;
         }
         case TERM_TYPE_RATIONAL: {
@@ -165,76 +115,91 @@ void term_free(struct Term* term) {
             free_mem("term_free/str", term->str_val);
             break;
         }
+        case TERM_TYPE_PRIMOP: {
+            break;
+        }
         default: {
             break;
         }
     }
-    term_free_toplevel(term);
+    free_mem("term_free/children", term->children);
+    free_mem("term_free", term);
 }
 
+void term_free(struct Term* term) {
+    for (uint8_t i = 0; i < term->child_count; i++) {
+        term_free(term->children[i]);
+    }
+    term_free_node(term);
+}
+
+// Type, value, child count, children
 void term_serialize(Serializer_t* serializer, struct Term* term) {
     serializer_write(serializer, term->type);
-    if (term->type == TERM_TYPE_FORK) {
-        term_serialize(serializer, term->term_left);
-        term_serialize(serializer, term->term_right);
-    } else {
-        // Primval
-        switch(term->type) {
-            case TERM_TYPE_LEAF: {
-                break;
-            }
-            case TERM_TYPE_SYMBOL: {
-                serializer_write_string(serializer, term->str_val);
-                break;
-            }
-            case TERM_TYPE_STRING: {
-                serializer_write_string(serializer, term->str_val);
-                break;
-            }
-            case TERM_TYPE_RATIONAL: {
-                rational_serialize(serializer, term->rat_val);
-                break;
-            }
-            case TERM_TYPE_PRIMOP: {
-                serializer_write(serializer, term->primop);
-            }
+    switch(term->type) {
+        case TERM_TYPE_DELTA: {
+            break;
         }
+        case TERM_TYPE_SYMBOL: {
+            serializer_write_string(serializer, term->str_val);
+            break;
+        }
+        case TERM_TYPE_STRING: {
+            serializer_write_string(serializer, term->str_val);
+            break;
+        }
+        case TERM_TYPE_RATIONAL: {
+            rational_serialize(serializer, term->rat_val);
+            break;
+        }
+        case TERM_TYPE_PRIMOP: {
+            serializer_write(serializer, term->primop);
+        }
+    }
+    serializer_write(serializer, term->child_count);
+    for (uint8_t i = 0; i < term->child_count; i++) {
+        term_serialize(serializer, term->children[i]);
     }
 }
 
-// TODO
 struct Term* term_deserialize(Serializer_t* serializer) {
+    // Read node value
     uint8_t type = serializer_read(serializer);
+    struct Term* result;
     switch (type) {
-        case TERM_TYPE_FORK: {
-            struct Term* term1 = term_deserialize(serializer);
-            struct Term* term2 = term_deserialize(serializer);
-            return term_apply(term1, term2);
-        }
-        case TERM_TYPE_LEAF: {
-            return term_make_node();
+        case TERM_TYPE_DELTA: {
+            result = term_make_node();
         }
         case TERM_TYPE_SYMBOL: {
-            return term_make_sym(serializer_read_string(serializer));
+            result = term_make_sym(serializer_read_string(serializer));
         }
         case TERM_TYPE_STRING: {
-            return term_make_str(serializer_read_string(serializer));
+            result = term_make_str(serializer_read_string(serializer));
         }
         case TERM_TYPE_RATIONAL: {
-            return term_make_rat(rational_deserialize(serializer));
+            result = term_make_rat(rational_deserialize(serializer));
         }
         case TERM_TYPE_PRIMOP: {
-            return term_make_primop(serializer_read(serializer));
+            result = term_make_primop(serializer_read(serializer));
         }
         default: {
             return NULL;
         }
     }
-}
 
-BOOL term_is_value(struct Term* term) {
-    return (term->type == TERM_TYPE_LEAF || term->type == TERM_TYPE_FORK) ?
-        FALSE : TRUE;
+    // Read children
+    result->child_count = serializer_read(serializer);
+    if (result->child_count > 0) {
+        result->children = allocate_mem("term_deserialize", NULL,
+            sizeof(struct Term) * result->child_count);
+        for (uint8_t i = 0; i < result->child_count; i++) {
+            result->children[i] = term_deserialize(serializer);
+        }
+    } else {
+        result->children = NULL;
+    }
+
+    return result;
 }
 
 BOOL term_is_symbol(char* symbol, struct Term* term) {
@@ -245,6 +210,28 @@ BOOL term_is_symbol(char* symbol, struct Term* term) {
 
 uint8_t term_type(struct Term* term) {
     return term->type;
+}
+
+uint8_t term_child_count(struct Term* term) {
+    return term->child_count;
+}
+
+void term_set_child(struct Term* term, uint8_t index, struct Term* child) {
+    term->children[index] = child;
+}
+
+struct Term* term_detach_last(struct Term* term) {
+    assert(term->child_count > 0);
+    struct Term* child = term->children[term->child_count - 1];
+    term->child_count--;
+    if (term->child_count == 0) {
+        free_mem("term_detach_last", term->children);
+        term->children = NULL;
+    } else {
+        term->children = allocate_mem("term_detach_last", term->children,
+            sizeof(struct Term) * term->child_count);
+    }
+    return child;
 }
 
 char* term_get_sym(struct Term* term) {
@@ -263,61 +250,49 @@ uint8_t term_get_primop(struct Term* term) {
     return term->primop;
 }
 
-struct Term* term_child_left(struct Term* term) {
-    return term->term_left;
+struct Term* term_get_child(struct Term* term, uint8_t index) {
+    return term->children[index];
 }
 
-struct Term* term_child_right(struct Term* term) {
-    return term->term_right;
-}
-
-uint8_t term_app_level(struct Term* term) {
-    if (term->type == TERM_TYPE_FORK) {
-        return 1 + term_app_level(term->term_left);
-    } else {
-        return 0;
+void _term_print_node(struct Term* term) {
+    printf("[");
+    switch (term->type) {
+        case TERM_TYPE_DELTA: {
+            printf("*");
+            break;
+        }
+        case TERM_TYPE_RATIONAL: {
+            rational_print(term->rat_val);
+            break;
+        }
+        case TERM_TYPE_STRING: {
+            printf("\"%s\"", term->str_val);
+            break;
+        }
+        case TERM_TYPE_SYMBOL: {
+            printf("%s", term->str_val);
+            break;
+        }
+        case TERM_TYPE_PRIMOP: {
+            printf("OP %d", term->primop);
+            break;
+        }
+        default: {
+            break;
+        }
     }
-}
-
-// Traverses the tree in one direction for the amount specified
-// E.g. traverse(tree, 3) = tree->right->right->right
-// traverse(tree, -2) = tree->left->left
-struct Term* term_traverse(struct Term* term, int8_t dir) {
-    if (dir == 0) {
-        return term;
-    }
-    return (dir > 0) ?
-        term_traverse(term->term_right, dir - 1) :
-        term_traverse(term->term_left, dir + 1);
+    printf("]");
 }
 
 void term_print(struct Term* term) {
-    if (term->type != TERM_TYPE_FORK) {
-        printf("[");
-        switch (term->type) {
-            case TERM_TYPE_LEAF: {
-                printf("Δ");
-                break;
-            }
-            case TERM_TYPE_RATIONAL: {
-                rational_print(term->rat_val);
-                break;
-            }
-            case TERM_TYPE_STRING: {
-                printf("\"%s\"", term->str_val);
-                break;
-            }
-            case TERM_TYPE_SYMBOL: {
-                printf("%s", term->str_val);
-                break;
-            }
-        }
-        printf("]");
-    } else {
+    if (term->child_count > 0) {
         printf("(");
-        term_print(term->term_left);
-        printf(" ");
-        term_print(term->term_right);
+    }
+    _term_print_node(term);
+    if (term->child_count > 0) {
+        for (uint8_t i = 0; i < term->child_count; i++) {
+            term_print(term->children[i]);
+        }
         printf(")");
     }
 }

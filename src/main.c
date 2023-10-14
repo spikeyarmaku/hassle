@@ -221,31 +221,28 @@ struct Term* test2() {
 }
 
 struct Term* test3() {
-    // \o. \x. \y. *(*xy)*o
+    // \o. \x. \y. oxy
     // TODO add evals to x and y
+    printf("test3()\n");
     char* varx = malloc(2);
     sprintf(varx, "x");
+    char* varx2 = malloc(2);
+    sprintf(varx2, "x");
     char* vary = malloc(2);
     sprintf(vary, "y");
+    char* vary2 = malloc(2);
+    sprintf(vary2, "y");
     char* varo = malloc(2);
     sprintf(varo, "o");
+    char* varo2 = malloc(2);
+    sprintf(varo2, "o");
     printf("Defining apply_op\n");
     struct Term* apply_op =
-        nStar("o", nStar("x", nStar("y",
+        nStar(varo2, nStar(varx2, nStar(vary2,
             term_apply(
                 term_apply(
-                    term_apply(
-                        delta(),
-                        term_apply(
-                            term_apply(
-                                delta(),
-                                term_make_sym(varx)
-                            ),
-                            term_make_sym(vary)
-                        )
-                    ),
-                    delta()),
-                term_make_sym(varo)))));
+                    term_make_sym(varo), term_make_sym(varx)),
+                term_make_sym(vary)))));
     printf("Defining rators / rands\n");
     char* numstr1 = malloc(3);
     sprintf(numstr1, "12");

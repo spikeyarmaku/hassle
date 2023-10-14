@@ -138,12 +138,10 @@ struct Term* nBracket(char* symbol, struct Term* term) {
             return term_apply(cK(), term);
         }
     } else {
-        if (term_type(term) == TERM_TYPE_FORK) {
-            struct Term* left = term_child_left(term);
-            struct Term* right = term_child_right(term);
-            term_free_toplevel(term);
-            return term_apply(nD(nBracket(symbol, right)),
-                    nBracket(symbol, left));
+        if (term_child_count(term) > 0) {
+            struct Term* v = term_detach_last(term);
+            struct Term* u = term;
+            return term_apply(nD(nBracket(symbol, v)), nBracket(symbol, u));
         } else {
             return term_apply(cK(), term);
         }
@@ -151,15 +149,18 @@ struct Term* nBracket(char* symbol, struct Term* term) {
 }
 
 BOOL is_elem(char* symbol, struct Term* term) {
-    if (term_type(term) == TERM_TYPE_FORK) {
-        return is_elem(symbol, term_child_left(term)) ||
-            is_elem(symbol, term_child_right(term));
+    if (term_type(term) == TERM_TYPE_SYMBOL &&
+        strcmp(symbol, term_get_sym(term)) == 0)
+    {
+        return TRUE;
     } else {
-        if (term_type(term) == TERM_TYPE_SYMBOL) {
-            return strcmp(symbol, term_get_sym(term)) == 0 ? TRUE : FALSE;
-        } else {
-            return FALSE;
+        uint8_t child_count = term_child_count(term);
+        for (uint8_t i = 0; i < child_count; i++) {
+            if (is_elem(symbol, term_get_child(term, i)) == TRUE) {
+                return TRUE;
+            }
         }
+        return FALSE;
     }
 }
 
@@ -168,30 +169,28 @@ BOOL is_elem(char* symbol, struct Term* term) {
 // λ∗ x.x = I
 // λ∗ x.tu = d{λ∗ x.u}(λ∗ x.t) (otherwise).
 struct Term* nStar(char* symbol, struct Term* term) {
+    // printf("nStar %s - ", symbol); term_print(term); printf("\n");
     if (is_elem(symbol, term) == FALSE) {
+        // printf("\\x.t = Kt\n");
         return term_apply(cK(), term);
     } else {
-        if (term_type(term) == TERM_TYPE_FORK) {
-            if (is_elem(symbol, term_child_left(term)) == FALSE &&
-                term_is_symbol(symbol, term_child_right(term)) == TRUE)
-            {
-                struct Term* result = term_child_left(term);
-                term_print(term_child_right(term));
-                term_free(term_child_right(term));
-                term_free_toplevel(term);
-                return result;
-            } else {
-                struct Term* left = term_child_left(term);
-                struct Term* right = term_child_right(term);
-                term_free_toplevel(term);
-                return term_apply(nD(nStar(symbol, right)),
-                    nStar(symbol, left));
-            }
-        } else {
-            assert(term_type(term) == TERM_TYPE_SYMBOL &&
-                term_is_symbol(symbol, term));
+        if (term_type(term) == TERM_TYPE_SYMBOL && term_is_symbol(symbol, term))
+        {
+            // printf("\\x.x = I\n");
             term_free(term);
             return cI();
+        } else {
+            struct Term* last = term_detach_last(term);
+            if (term_type(last) == TERM_TYPE_SYMBOL &&
+                term_is_symbol(symbol, last))
+            {
+                // printf("\\x.t x = t\n");
+                term_free(last);
+                return term;
+            } else {
+                // printf("\\x.tu = d{\\x.u}(\\x.t)\n");
+                return term_apply(nD(nStar(symbol, last)), nStar(symbol, term));
+            }
         }
     }
 }
