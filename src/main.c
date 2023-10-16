@@ -199,12 +199,8 @@ struct Term* test1() {
 }
 
 struct Term* test2() {
-    char* numstr1 = malloc(3);
-    sprintf(numstr1, "12");
-    char* numstr2 = malloc(3);
-    sprintf(numstr2, "3");
-    struct Term* num1 = term_make_rat(rational_from_string(numstr1));
-    struct Term* num2 = term_make_rat(rational_from_string(numstr2));
+    struct Term* num1 = term_make_rat(rational_from_string(str_cpy("12")));
+    struct Term* num2 = term_make_rat(rational_from_string(str_cpy("3")));
     struct Term* op = term_make_primop(Add);
     return
         term_apply(
@@ -220,39 +216,35 @@ struct Term* test2() {
             op);
 }
 
+struct Term* test2a() {
+    struct Term* apply_op =
+        nBracket(str_cpy("x"),
+            nBracket(str_cpy("y"),
+                term_make_sym(str_cpy("x"))));
+    struct Term* num1 = term_make_rat(rational_from_string(str_cpy("12")));
+    struct Term* num2 = term_make_rat(rational_from_string(str_cpy("3")));
+    return term_apply(term_apply(apply_op, num1), num2);
+}
+
 struct Term* test3() {
     // \o. \x. \y. oxy
-    // TODO add evals to x and y
     printf("test3()\n");
-    char* varx = malloc(2);
-    sprintf(varx, "x");
-    char* varx2 = malloc(2);
-    sprintf(varx2, "x");
-    char* vary = malloc(2);
-    sprintf(vary, "y");
-    char* vary2 = malloc(2);
-    sprintf(vary2, "y");
-    char* varo = malloc(2);
-    sprintf(varo, "o");
-    char* varo2 = malloc(2);
-    sprintf(varo2, "o");
     printf("Defining apply_op\n");
     struct Term* apply_op =
-        nStar(varo2, nStar(varx2, nStar(vary2,
+        nBracket(str_cpy("o"), nBracket(str_cpy("x"),
+        nBracket(str_cpy("y"),
             term_apply(
                 term_apply(
-                    term_make_sym(varo), term_make_sym(varx)),
-                term_make_sym(vary)))));
+                    term_make_sym(str_cpy("o")), term_make_sym(str_cpy("x"))),
+                term_make_sym(str_cpy("y"))))));
+    // term_print(apply_op); printf("\n");
     printf("Defining rators / rands\n");
-    char* numstr1 = malloc(3);
-    sprintf(numstr1, "12");
-    char* numstr2 = malloc(3);
-    sprintf(numstr2, "3");
-    struct Term* num1 = term_make_rat(rational_from_string(numstr1));
-    struct Term* num2 = term_make_rat(rational_from_string(numstr2));
+    struct Term* num1 = term_make_rat(rational_from_string(str_cpy("12")));
+    struct Term* num2 = term_make_rat(rational_from_string(str_cpy("3")));
     struct Term* op = term_make_primop(Add);
     printf("Defining term\n");
     return term_apply(term_apply(term_apply(apply_op, op), num1), num2);
+    // return term_apply(apply_op, num1);
 }
 
 Response_t* _execute_command(struct VM* vm, char* cmd) {

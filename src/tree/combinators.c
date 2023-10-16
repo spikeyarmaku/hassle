@@ -130,21 +130,30 @@ struct Term* is_fork() {
 // [x]O = KO
 // [x]uv = d{[x]v}([x]u)
 struct Term* nBracket(char* symbol, struct Term* term) {
-    if (term_type(term) == TERM_TYPE_SYMBOL) {
-        if (term_is_symbol(symbol, term) == TRUE) {
-            term_free(term);
-            return cI();
+    // printf("nBracket(%s, ", symbol); term_print(term); printf("\n");
+    if (term_child_count(term) == 0) {
+        if (term_type(term) == TERM_TYPE_SYMBOL) {
+            if (term_is_symbol(symbol, term) == TRUE) {
+                // [x]x = I
+                // printf("[x]x = I\n");
+                term_free(term);
+                return cI();
+            } else {
+                // [x]y = K y (y =/= x)
+                // printf("[x]y = K y (y =/= x)\n");
+                return term_apply(cK(), term);
+            }
         } else {
+            // [x]O = KO
+            // printf("[x]O = KO\n");
             return term_apply(cK(), term);
         }
     } else {
-        if (term_child_count(term) > 0) {
-            struct Term* v = term_detach_last(term);
-            struct Term* u = term;
-            return term_apply(nD(nBracket(symbol, v)), nBracket(symbol, u));
-        } else {
-            return term_apply(cK(), term);
-        }
+        // [x]uv = d{[x]v}([x]u)
+        // printf("[x]uv = d{[x]v}([x]u)\n");
+        struct Term* v = term_detach_last(term);
+        struct Term* u = term;
+        return term_apply(nD(nBracket(symbol, v)), nBracket(symbol, u));
     }
 }
 
@@ -237,4 +246,172 @@ struct Term* nSwap(struct Term* term) {
 // Y2 { f } = Z {swap{ f }}
 struct Term* nY2(struct Term* term) {
     return nZ(nSwap(term));
+}
+
+// tag{t, f} = d{t}(d{ f }(KK))
+struct Term* nTag(struct Term* tag, struct Term* term) {
+    return term_apply(nD(tag), term_apply(nD(term), term_apply(cK(), cK())));
+}
+
+// getTag = λ∗ p.first{first{p}Δ}
+struct Term* getTag() {
+    return
+        nStar(str_cpy("p"),
+            nFirst(term_apply(nFirst(term_make_sym(str_cpy("p"))), delta())));
+}
+
+// tag_wait{t} = λ∗w.tag{t, wait{self_apply, w}} (w not in t).
+struct Term* nTagWait(struct Term* term) {
+    return
+        nStar(str_cpy("w"),
+            nTag(term, nWait(self_apply(), term_make_sym(str_cpy("w")))));
+}
+
+// Y2t {t, f } = tag{t, wait{self_apply, d{tag_wait{t}(K f )}}
+struct Term* nY2t(struct Term* tag, struct Term* term) {
+    return
+        nTag(tag,
+            nWait(self_apply(),
+                nD(term_apply(nTagWait(tag), term_apply(cK(), term)))));
+}
+
+// zero_rule = λ∗a.λ∗ y.λ∗ z.z
+struct Term* zero_rule() {
+    return
+        nStar(str_cpy("a"),
+            nStar(str_cpy("y"),
+                nStar(str_cpy("z"),
+                    term_make_sym(str_cpy("z")))));
+}
+
+// successor_rule = λ∗ x.λ∗a.λ∗ y.λ∗ z.yx
+struct Term* successor_rule() {
+    return
+        nStar(str_cpy("x"),
+            nStar(str_cpy("a"),
+                nStar(str_cpy("y"),
+                    nStar(str_cpy("z"),
+                        term_apply(term_make_sym(str_cpy("y")),
+                            term_make_sym(str_cpy("x")))))));
+}
+
+// application_rule = λ∗w.λ∗ x.λ∗a.λ∗ y.λ∗ z.yx
+struct Term* application_rule() {
+    return
+        nStar(str_cpy("w"),
+            nStar(str_cpy("x"),
+                nStar(str_cpy("a"),
+                    nStar(str_cpy("y"),
+                        nStar(str_cpy("z"),
+                            term_apply(term_make_sym(str_cpy("y")),
+                                term_make_sym(str_cpy("x"))))))));
+}
+
+// empty_rule = λ∗a.λ∗ y.λ∗ z.a
+struct Term* empty_rule() {
+    return
+        nStar(str_cpy("a"),
+            nStar(str_cpy("y"),
+                nStar(str_cpy("z"),
+                    term_make_sym(str_cpy("a")))));
+}
+
+// substitution_rule = λ∗ x.λ∗a.λ∗ y.λ∗ z.azxy
+struct Term* substitution_rule() {
+    return
+        nStar(str_cpy("x"),
+            nStar(str_cpy("a"),
+                nStar(str_cpy("y"),
+                    nStar(str_cpy("z"),
+                        term_apply(
+                            term_apply(
+                                term_apply(
+                                    term_make_sym(str_cpy("a")),
+                                    term_make_sym(str_cpy("z"))),
+                                term_make_sym(str_cpy("x"))),
+                            term_make_sym(str_cpy("y")))))));
+}
+
+// abstraction_rule = λ∗w.λ∗ x.λ∗a.λ∗ y.λ∗ z.aw(axyz)
+struct Term* abstraction_rule() {
+    return
+        nStar(str_cpy("w"),
+            nStar(str_cpy("x"),
+                nStar(str_cpy("a"),
+                    nStar(str_cpy("y"),
+                        nStar(str_cpy("z"),
+                            term_apply(
+                                term_apply(
+                                    term_make_sym(str_cpy("a")),
+                                    term_make_sym(str_cpy("w"))),
+                                term_apply(
+                                    term_apply(
+                                        term_apply(
+                                            term_make_sym(str_cpy("a")),
+                                            term_make_sym(str_cpy("x"))),
+                                        term_make_sym(str_cpy("y"))),
+                                    term_make_sym(str_cpy("z")))))))));
+}
+
+// Vt = Y2t {zero_rule,
+//      λ∗ x.λ∗a.tag{successor_rule x,
+//      λ∗ y.tag{application_rule x y,
+//          [z](a(axy)z)}}}
+struct Term* cV() {
+    return
+        nY2t(zero_rule(),
+            nStar(str_cpy("x"),
+                nStar(str_cpy("a"),
+                    nTag(
+                        term_apply(successor_rule(),
+                            term_make_sym(str_cpy("x"))),
+                        nStar(str_cpy("y"),
+                            nTag(
+                                term_apply(
+                                    term_apply(
+                                        application_rule(),
+                                        term_make_sym(str_cpy("x"))),
+                                    term_make_sym(str_cpy("y"))),
+                                nBracket(str_cpy("z"),
+                                    term_apply(
+                                        term_apply(
+                                            term_make_sym(str_cpy("a")),
+                                            term_apply(
+                                                term_apply(
+                                                    term_make_sym(str_cpy("a")),
+                                                    term_make_sym(str_cpy("x"))
+                                                ),
+                                                term_make_sym(str_cpy("y"))
+                                            )
+                                        ),
+                                        term_make_sym(str_cpy("z"))))))))));
+}
+
+// At = Y2t {empty_rule,
+//      λ∗ x.λ∗a.tag{substitution_rule x,
+//      λ∗ y.tag{abstraction_rule x y,
+//          getTag x a y}}}
+struct Term* cA() {
+    return
+        nY2t(empty_rule(),
+            nStar(str_cpy("x"),
+                nStar(str_cpy("a"),
+                    nTag(
+                        term_apply(substitution_rule(),
+                            term_make_sym(str_cpy("x"))),
+                        nStar(str_cpy("y"),
+                            nTag(
+                                term_apply(
+                                    term_apply(
+                                        abstraction_rule(),
+                                        term_make_sym(str_cpy("x"))
+                                    ),
+                                    term_make_sym(str_cpy("y"))),
+                                term_apply(
+                                    term_apply(
+                                        term_apply(
+                                            getTag(),
+                                            term_make_sym(str_cpy("x"))),
+                                        term_make_sym(str_cpy("a"))),
+                                    term_make_sym(str_cpy("y")))))))));
 }

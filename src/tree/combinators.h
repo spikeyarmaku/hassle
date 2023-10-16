@@ -51,5 +51,17 @@ struct Term*    nSwap       (struct Term*);
 struct Term*    nY2         (struct Term*);
 
 // Intensional
+struct Term*    nTag        (struct Term*, struct Term*);
+struct Term*    getTag      ();
+
+struct Term*    zero_rule           ();
+struct Term*    successor_rule      ();
+struct Term*    application_rule    ();
+struct Term*    empty_rule          ();
+struct Term*    substitution_rule   ();
+struct Term*    abstraction_rule    ();
+
+struct Term*    cV          ();
+struct Term*    cA          ();
 
 #endif

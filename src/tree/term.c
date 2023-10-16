@@ -255,7 +255,6 @@ struct Term* term_get_child(struct Term* term, uint8_t index) {
 }
 
 void _term_print_node(struct Term* term) {
-    printf("[");
     switch (term->type) {
         case TERM_TYPE_DELTA: {
             printf("*");
@@ -274,14 +273,13 @@ void _term_print_node(struct Term* term) {
             break;
         }
         case TERM_TYPE_PRIMOP: {
-            printf("OP %d", term->primop);
+            printf("<OP %d>", term->primop);
             break;
         }
         default: {
             break;
         }
     }
-    printf("]");
 }
 
 void term_print(struct Term* term) {
