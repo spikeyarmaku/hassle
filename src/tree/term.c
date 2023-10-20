@@ -254,6 +254,16 @@ struct Term* term_get_child(struct Term* term, uint8_t index) {
     return term->children[index];
 }
 
+size_t term_size(struct Term* term) {
+    size_t count = 1;
+    if (term != NULL) {
+        for (uint8_t i = 0; i < term_child_count(term); i++) {
+            count += term_size(term_get_child(term, i));
+        }
+    }
+    return count;
+}
+
 void _term_print_node(struct Term* term) {
     switch (term->type) {
         case TERM_TYPE_DELTA: {

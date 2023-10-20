@@ -35,6 +35,7 @@ char*           term_get_str        (struct Term*);
 Rational_t*     term_get_rat        (struct Term*);
 uint8_t         term_get_primop     (struct Term*);
 struct Term*    term_get_child      (struct Term*, uint8_t);
+size_t          term_size           (struct Term*);
 
 void            term_print          (struct Term*);
 

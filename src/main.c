@@ -226,25 +226,47 @@ struct Term* test2a() {
     return term_apply(term_apply(apply_op, num1), num2);
 }
 
-struct Term* test3() {
+struct Term* test3a() {
     // \o. \x. \y. oxy
-    printf("test3()\n");
-    printf("Defining apply_op\n");
     struct Term* apply_op =
-        nBracket(str_cpy("o"), nBracket(str_cpy("x"),
-        nBracket(str_cpy("y"),
+        nBracket(str_cpy("o"), nBracket(str_cpy("x"), nBracket(str_cpy("y"),
             term_apply(
                 term_apply(
                     term_make_sym(str_cpy("o")), term_make_sym(str_cpy("x"))),
                 term_make_sym(str_cpy("y"))))));
-    // term_print(apply_op); printf("\n");
-    printf("Defining rators / rands\n");
     struct Term* num1 = term_make_rat(rational_from_string(str_cpy("12")));
     struct Term* num2 = term_make_rat(rational_from_string(str_cpy("3")));
     struct Term* op = term_make_primop(Add);
-    printf("Defining term\n");
+    printf("Term size: %llu\n", term_size(apply_op));
     return term_apply(term_apply(term_apply(apply_op, op), num1), num2);
     // return term_apply(apply_op, num1);
+}
+
+struct Term* test3b() {
+    // \o. \x. \y. oxy
+    struct Term* apply_op =
+        nStar(str_cpy("o"), nStar(str_cpy("x"), nStar(str_cpy("y"),
+            term_apply(
+                term_apply(
+                    term_make_sym(str_cpy("o")), term_make_sym(str_cpy("x"))),
+                term_make_sym(str_cpy("y"))))));
+    struct Term* num1 = term_make_rat(rational_from_string(str_cpy("12")));
+    struct Term* num2 = term_make_rat(rational_from_string(str_cpy("3")));
+    struct Term* op = term_make_primop(Add);
+    printf("Term size: %llu\n", term_size(apply_op));
+    return term_apply(term_apply(term_apply(apply_op, op), num1), num2);
+    // return term_apply(apply_op, num1);
+}
+
+struct Term* test_va() {
+    // struct Term* term1 = cV();
+    // printf("Term size: %llu\n", term_size(term1)); // 909 in .v, 679 here
+    // struct Term* term2 = cA();
+    // printf("Term size: %llu\n", term_size(term2)); // 757 in .v, 563 here
+
+    struct Term* n = term_make_rat(rational_from_string(str_cpy("12")));
+    struct Term* term = term_apply(term_apply(term_apply(cA(), cV()), cA()), n);
+    return term;
 }
 
 Response_t* _execute_command(struct VM* vm, char* cmd) {
@@ -271,7 +293,7 @@ Response_t* _execute_command(struct VM* vm, char* cmd) {
                     if (arg != NULL) {
                         // vm_set_term(vm, parse_from_str(arg));
                         // TODO convert Expr_t* to struct Term*
-                        vm_set_term(vm, test3());
+                        vm_set_term(vm, test_va());
                     }
                     free_mem("execute_command/expr", arg);
                     return response_make_void();

@@ -11,28 +11,29 @@ struct Term* _eval_step_3_branches(struct Term* term) {
     switch (term_child_count(term_get_child(term, 0))) {
         case 0: {
             // (K) rule
-            printf("K Rule\n");
+            printf("K Rule");
             struct Term* y = term_get_child(term, 1);
-            struct Term* z = term_get_child(term, 2);
             term_free(term_get_child(term, 0));
-            term_free(z);
+            term_free(term_get_child(term, 2));
             term_free_node(term);
+            printf(".\n");
             return y;
         }
         case 1: {
             // (S) rule
-            printf("S Rule\n");
+            printf("S Rule");
             struct Term* x = term_get_child(term_get_child(term, 0), 0);
             struct Term* y = term_get_child(term, 1);
             struct Term* z1 = term_get_child(term, 2);
             struct Term* z2 = term_copy(z1);
             term_free_node(term_get_child(term, 0));
             term_free_node(term);
+            printf(".\n");
             return term_apply(term_apply(y, z1), term_apply(x, z2));
         }
         case 2: {
             // (F) rule
-            printf("F Rule\n");
+            printf("F Rule");
             struct Term* w = term_get_child(term_get_child(term, 0), 0);
             struct Term* x = term_get_child(term_get_child(term, 0), 1);
             struct Term* y = term_get_child(term, 1);
@@ -40,6 +41,7 @@ struct Term* _eval_step_3_branches(struct Term* term) {
             term_free_node(term_get_child(term, 0));
             term_free_node(term);
             term_free(y);
+            printf(".\n");
             return term_apply(term_apply(z, w), x);
         }
         default: {
@@ -68,7 +70,7 @@ struct Term* _eval_primop(struct Term* term) {
 struct Term* eval_step(struct Term* term) {
     // Check if it is an evaluable primop
     uint8_t child_count = term_child_count(term);
-    printf("child count: %d\n", child_count);
+    // printf("child count: %d\n", child_count);
     BOOL is_primop_eval = FALSE;
     if (term_type(term) == TERM_TYPE_PRIMOP && child_count == 2) {
         is_primop_eval = TRUE;
@@ -82,22 +84,22 @@ struct Term* eval_step(struct Term* term) {
     }
 
     if (is_primop_eval == TRUE) {
-        printf("Primop with two primitive children\n");
+        // printf("Primop with two primitive children\n");
         return _eval_primop(term);
     }
     else {
         // Check if it has at least 3 branches
         if (term_child_count(term) > 3) {
-            printf("More than three branches\n");
+            // printf("More than three branches\n");
             struct Term* last = term_detach_last(term);
             struct Term* result = eval_step(term);
             return term_apply(result, last);
         } else {
             if (term_child_count(term) == 3) {
-                printf("Exactly three branches\n");
+                // printf("Exactly three branches\n");
                 return _eval_step_3_branches(term);
             } else {
-                printf("Less than three branches, checking children\n");
+                // printf("Less than three branches, checking children\n");
                 for (uint8_t i = 0; i < term_child_count(term); i++) {
                     // Check if the leftmost child has at most 2 branches
                     struct Term* evaled_child =
