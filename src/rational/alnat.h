@@ -20,6 +20,8 @@ LSD - Least Significant Digit
 // Arbitrary Length NATural, least significant digit first
 // Each byte contains a digit in base 128, and each byte has its highest bit set
 // to one, except for the last byte, which has its highest bit set to 0.
+// TODO an alternative would be to represent numbers in base-254, and make 255
+// the sentinel
 typedef uint8_t Alnat_t;
 
 struct AlnatDiv {

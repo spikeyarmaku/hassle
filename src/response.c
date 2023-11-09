@@ -1,6 +1,6 @@
 #include "response.h"
 
-#include "tree/term.h"
+#include "tree/tree.h"
 #include "tree/vm.h"
 
 // Return value of command execution
@@ -39,13 +39,13 @@ Response_t* response_make_vm_data(struct VMData vm_data) {
     return response;
 }
 
-Response_t* response_make_term(struct Term* term) {
+Response_t* response_make_program(struct Program* program) {
     // Serializer will append a byte signifying word size before the serialized
-    // term. Since this response doesn't need it, that byte can be used to
+    // program. Since this response doesn't need it, that byte can be used to
     // mark the response type instead, saving a memcpy call.
 
-    Serializer_t* serializer = serializer_init(0); // 0 is fine for term
-    term_serialize(serializer, term);
+    Serializer_t* serializer = serializer_init(0); // 0 is fine for program
+    program_serialize(serializer, program);
     size_t data_size = serializer_get_data_size(serializer);
     uint8_t* buf = serializer_get_data(serializer);
 
@@ -55,7 +55,7 @@ Response_t* response_make_term(struct Term* term) {
     response->data[0] = (uint8_t)TermResponse;
     response->size = data_size;
 
-    // serializer_free_toplevel(serializer);
+    serializer_free_toplevel(serializer);
 
     return response;
 }

@@ -135,14 +135,14 @@ size_t serializer_get_data_size(Serializer_t* serializer) {
     return serializer->data_count;
 }
 
-// void serializer_free(Serializer_t* serializer) {
-//     free_mem("serializer_free/data", serializer->data);
-//     free_mem("serializer_free", serializer);
-// }
+void serializer_free(Serializer_t* serializer) {
+    free_mem("serializer_free/data", serializer->data);
+    free_mem("serializer_free", serializer);
+}
 
-// void serializer_free_toplevel(Serializer_t* serializer) {
-//     free_mem("serializer_free_toplevel", serializer);
-// }
+void serializer_free_toplevel(Serializer_t* serializer) {
+    free_mem("serializer_free_toplevel", serializer);
+}
 
 void serializer_print(Serializer_t* serializer) {
     uint8_t counter = 0;

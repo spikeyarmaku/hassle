@@ -27,6 +27,7 @@ enum ErrorCode {Success, Error};
 typedef enum ErrorCode ErrorCode_t;
 
 void    error           (const char* s, ...);
+void    fatal           (const char* s, ...);
 void    debug           (const char* s, ...);
 void    debug_start     (const char* s, ...);
 void    debug_end       (const char* s, ...);

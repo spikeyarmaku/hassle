@@ -3,11 +3,11 @@
 
 #include <stdint.h>
 
-#include "term.h"
+#include "tree.h"
 #include "combinators.h"
 
 enum Primop {Add, Sub, Mul, Div, Eq};
 
-struct Term*    primop_apply    (uint8_t, struct Term*, struct Term*);
+struct Tree*    primop_apply    (uint8_t, struct Tree*, struct Tree*);
 
 #endif

@@ -2,6 +2,7 @@
 #define _RESPONSE_H_
 
 #include "tree/vm.h"
+#include "tree/program.h"
 
 enum ResponseType {EvalStateResponse, TermResponse, VMDataResponse,
                     VoidResponse, InvalidCommandResponse, ExitResponse};
@@ -10,7 +11,7 @@ typedef struct Response Response_t;
 
 Response_t*         response_make_void              ();
 Response_t*         response_make_vm_data           (struct VMData);
-Response_t*         response_make_term              (struct Term*);
+Response_t*         response_make_program           (struct Program*);
 Response_t*         response_make_eval_state        (enum EvalState);
 Response_t*         response_make_invalid_command   ();
 Response_t*         response_make_exit              ();

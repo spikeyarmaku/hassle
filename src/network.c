@@ -133,6 +133,8 @@ uint8_t* network_receive(Connection_t sock, int* size, BOOL* is_alive) {
         }
     }
     *size = msg_buf.count;
-    msg_buf.data[msg_buf.count] = 0;
+    if (msg_buf.data != NULL) {
+        msg_buf.data[msg_buf.count] = 0;
+    }
     return msg_buf.data;
 }

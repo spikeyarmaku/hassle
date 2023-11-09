@@ -3,7 +3,8 @@
 
 #include "global.h"
 
-#include "tree/term.h"
+#include "tree.h"
+#include "program.h"
 
 struct VMData {
     uint8_t* data;
@@ -12,11 +13,12 @@ struct VMData {
 
 enum EvalState {EvalFinished, EvalRunning};
 
-struct VM*      vm_init         ();
-void            vm_set_term     (struct VM*, struct Term*);
+struct VM*      vm_make         ();
+void            vm_populate     (struct VM*, struct Tree*);
 enum EvalState  vm_step         (struct VM*);
-struct Term*    vm_run          (struct VM*);
+struct Program* vm_run          (struct VM*);
 struct VMData   vm_serialize    (struct VM*, uint8_t);
+struct VM*      vm_deserialize  (uint8_t*);
 void            vm_reset        (struct VM*);
 void            vm_free         (struct VM*);
 

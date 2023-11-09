@@ -1,6 +1,8 @@
 #include "global.h"
 
 #include <ctype.h>
+#include <stdio.h>
+#include <stdarg.h>
 
 #ifdef DEBUG_PRINTS
 uint64_t debug_level = 0;
@@ -14,6 +16,14 @@ void error(const char* s, ...) {
     vprintf(s, args);
     va_end(args);
     #endif
+}
+
+void fatal(const char* s, ...) {
+    va_list args;
+    va_start(args, s);
+    vprintf(s, args);
+    va_end(args);
+    exit(1);
 }
 
 void debug_print(const char* s, va_list args) {

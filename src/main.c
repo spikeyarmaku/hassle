@@ -14,7 +14,6 @@
 #include "network.h"
 #include "memory.h"
 
-#include "tree/term.h"
 #include "tree/vm.h"
 #include "tree/primop.h"
 
@@ -37,7 +36,7 @@ Config_t        _config_init        ();
 ErrorCode_t     _flag_handle        (Config_t*, char*);
 void            _interpreter_start  (Config_t*);
 void            _print_help_message ();
-struct Term*    _interpret_file     (struct VM*, char*);
+struct Program* _interpret_file     (struct VM*, char*);
 void            _repl_start_local   (struct VM*);
 void            _repl_start_remote  (struct VM*, Connection_t);
 Response_t*     _execute_command    (struct VM*, char*);
@@ -84,7 +83,7 @@ ErrorCode_t _flag_handle(Config_t* config, char* flag) {
 
 void _interpreter_start(Config_t* config) {
     printf("Initializing VM\n");
-    struct VM* vm = vm_init();
+    struct VM* vm = vm_make();
     
     if (config->log_memory == TRUE) {
         printf("Starting memory logger service\n");
@@ -93,9 +92,9 @@ void _interpreter_start(Config_t* config) {
 
     if (config->file_to_interpret != NULL) {
         printf("Interpreting file %s\n", config->file_to_interpret);
-        struct Term* term = _interpret_file(vm, config->file_to_interpret);
-        term_print(term);
-        // term_free(term);
+        struct Program* program = _interpret_file(vm, config->file_to_interpret);
+        program_print(program);
+        program_free(program);
     } else {
         if (config->open_socket == TRUE) {
             printf("Listening on port %d\n", config->port);
@@ -179,6 +178,9 @@ void _repl_start_remote(struct VM* vm, Connection_t conn) {
     while ((response_get_type(response) != ExitResponse) && (is_alive == TRUE))
     {
         uint8_t* buffer = network_receive(conn, &size, &is_alive);
+        if (buffer == NULL) {
+            break;
+        }
         printf("[RECEIVED] %s\n", (char*)buffer);
         response_free(response);
         response = _execute_command(vm, (char*)buffer);
@@ -192,82 +194,99 @@ void _repl_start_remote(struct VM* vm, Connection_t conn) {
     network_close(conn);
 }
 
-struct Term* test1() {
+struct Tree* test0() {
+    return delta();
+}
+
+struct Tree* test1() {
     char* x = malloc(2);
     x[0] = 120; x[1] = 0;
-    return term_apply(nStar("x", term_apply(not(), term_make_sym(x))), true());
+    struct Tree* t_true = true();
+    struct Tree* t_not = not();
+    // struct Tree* t_x =
+    //     tree_make_value(program_make(value_make_sym(x), NULL, NULL));
+    // struct Tree* app = tree_make_apply(t_not, t_x);
+    // return tree_make_apply(nStar("x", app), t_true);
+    return tree_make_apply(t_not, t_true);
 }
 
-struct Term* test2() {
-    struct Term* num1 = term_make_rat(rational_from_string(str_cpy("12")));
-    struct Term* num2 = term_make_rat(rational_from_string(str_cpy("3")));
-    struct Term* op = term_make_primop(Add);
-    return
-        term_apply(
-            term_apply(
-                term_apply(
-                    delta(),
-                    term_apply(
-                        term_apply(
-                            delta(),
-                            num1),
-                        num2)),
-                delta()),
-            op);
-}
+// struct Tree* test2() {
+//     struct Tree* num1 = term_make_rat(rational_from_string(str_cpy("12")));
+//     struct Tree* num2 = term_make_rat(rational_from_string(str_cpy("3")));
+//     struct Tree* op = term_make_primop(Add);
+//     return
+//         term_apply(
+//             term_apply(
+//                 term_apply(
+//                     delta(),
+//                     term_apply(
+//                         term_apply(
+//                             delta(),
+//                             num1),
+//                         num2)),
+//                 delta()),
+//             op);
+// }
 
-struct Term* test2a() {
-    struct Term* apply_op =
-        nBracket(str_cpy("x"),
-            nBracket(str_cpy("y"),
-                term_make_sym(str_cpy("x"))));
-    struct Term* num1 = term_make_rat(rational_from_string(str_cpy("12")));
-    struct Term* num2 = term_make_rat(rational_from_string(str_cpy("3")));
-    return term_apply(term_apply(apply_op, num1), num2);
-}
+// struct Tree* test2a() {
+//     struct Tree* apply_op =
+//         nBracket(str_cpy("x"),
+//             nBracket(str_cpy("y"),
+//                 term_make_sym(str_cpy("x"))));
+//     struct Tree* num1 = term_make_rat(rational_from_string(str_cpy("12")));
+//     struct Tree* num2 = term_make_rat(rational_from_string(str_cpy("3")));
+//     return term_apply(term_apply(apply_op, num1), num2);
+// }
 
-struct Term* test3a() {
-    // \o. \x. \y. oxy
-    struct Term* apply_op =
-        nBracket(str_cpy("o"), nBracket(str_cpy("x"), nBracket(str_cpy("y"),
-            term_apply(
-                term_apply(
-                    term_make_sym(str_cpy("o")), term_make_sym(str_cpy("x"))),
-                term_make_sym(str_cpy("y"))))));
-    struct Term* num1 = term_make_rat(rational_from_string(str_cpy("12")));
-    struct Term* num2 = term_make_rat(rational_from_string(str_cpy("3")));
-    struct Term* op = term_make_primop(Add);
-    printf("Term size: %llu\n", term_size(apply_op));
-    return term_apply(term_apply(term_apply(apply_op, op), num1), num2);
-    // return term_apply(apply_op, num1);
-}
+// struct Tree* test3a() {
+//     // \o. \x. \y. oxy
+//     struct Tree* apply_op =
+//         nBracket(str_cpy("o"), nBracket(str_cpy("x"), nBracket(str_cpy("y"),
+//             term_apply(
+//                 term_apply(
+//                     term_make_sym(str_cpy("o")), term_make_sym(str_cpy("x"))),
+//                 term_make_sym(str_cpy("y"))))));
+//     struct Tree* num1 = term_make_rat(rational_from_string(str_cpy("12")));
+//     struct Tree* num2 = term_make_rat(rational_from_string(str_cpy("3")));
+//     struct Tree* op = term_make_primop(Add);
+//     printf("Tree size: %llu\n", term_size(apply_op));
+//     return term_apply(term_apply(term_apply(apply_op, op), num1), num2);
+//     // return term_apply(apply_op, num1);
+// }
 
-struct Term* test3b() {
-    // \o. \x. \y. oxy
-    struct Term* apply_op =
-        nStar(str_cpy("o"), nStar(str_cpy("x"), nStar(str_cpy("y"),
-            term_apply(
-                term_apply(
-                    term_make_sym(str_cpy("o")), term_make_sym(str_cpy("x"))),
-                term_make_sym(str_cpy("y"))))));
-    struct Term* num1 = term_make_rat(rational_from_string(str_cpy("12")));
-    struct Term* num2 = term_make_rat(rational_from_string(str_cpy("3")));
-    struct Term* op = term_make_primop(Add);
-    printf("Term size: %llu\n", term_size(apply_op));
-    return term_apply(term_apply(term_apply(apply_op, op), num1), num2);
-    // return term_apply(apply_op, num1);
-}
+// struct Tree* test3b() {
+//     // \o. \x. \y. oxy
+//     struct Tree* apply_op =
+//         nStar(str_cpy("o"), nStar(str_cpy("x"), nStar(str_cpy("y"),
+//             term_apply(
+//                 term_apply(
+//                     term_make_sym(str_cpy("o")), term_make_sym(str_cpy("x"))),
+//                 term_make_sym(str_cpy("y"))))));
+//     struct Tree* num1 = term_make_rat(rational_from_string(str_cpy("12")));
+//     struct Tree* num2 = term_make_rat(rational_from_string(str_cpy("3")));
+//     struct Tree* op = term_make_primop(Add);
+//     printf("Tree size: %llu\n", term_size(apply_op));
+//     return term_apply(term_apply(term_apply(apply_op, op), num1), num2);
+//     // return term_apply(apply_op, num1);
+// }
 
-struct Term* test_va() {
-    // struct Term* term1 = cV();
-    // printf("Term size: %llu\n", term_size(term1)); // 909 in .v, 679 here
-    // struct Term* term2 = cA();
-    // printf("Term size: %llu\n", term_size(term2)); // 757 in .v, 563 here
+// struct Tree* test_va() {
+//     // struct Tree* term1 = cV();
+//     // printf("Tree size: %llu\n", term_size(term1)); // 909 in .v, 679 here
+//     // struct Tree* term2 = cA();
+//     // printf("Tree size: %llu\n", term_size(term2)); // 757 in .v, 563 here
 
-    struct Term* n = term_make_rat(rational_from_string(str_cpy("12")));
-    struct Term* term = term_apply(term_apply(term_apply(cA(), cV()), cA()), n);
-    return term;
-}
+//     struct Tree* n = term_make_rat(rational_from_string(str_cpy("12")));
+//     // struct Tree* term = term_apply(term_apply(term_apply(cA(), cV()), cA()), n);
+
+//     struct Tree* term00 = cA();
+//     struct Tree* term01 = cV();
+//     struct Tree* term0 = term_apply(term00, term01);
+//     struct Tree* term1 = term_apply(term0, cA());
+//     struct Tree* term = term_apply(term1, n);
+
+//     return term;
+// }
 
 Response_t* _execute_command(struct VM* vm, char* cmd) {
     int token_len = str_get_token_end(cmd);
@@ -292,8 +311,8 @@ Response_t* _execute_command(struct VM* vm, char* cmd) {
                     char* arg = str_get_substr(cmd, 1, TRUE);
                     if (arg != NULL) {
                         // vm_set_term(vm, parse_from_str(arg));
-                        // TODO convert Expr_t* to struct Term*
-                        vm_set_term(vm, test_va());
+                        // TODO convert Expr_t* to struct Tree*
+                        vm_populate(vm, test1());
                     }
                     free_mem("execute_command/expr", arg);
                     return response_make_void();
@@ -304,7 +323,7 @@ Response_t* _execute_command(struct VM* vm, char* cmd) {
                 }
                 case 3: {
                     // run
-                    return response_make_term(vm_run(vm));
+                    return response_make_program(vm_run(vm));
                 }
                 case 4: {
                     // reset
@@ -352,10 +371,10 @@ void _print_help_message() {
     printf("  -h               Prints this message\n");
 }
 
-struct Term* _interpret_file(struct VM* vm, char* file_name) {
-    // struct Term* term = parse_from_file(file_name);
-    struct Term* term = NULL; // TODO convert it from Expr_t*
-    vm_set_term(vm, term);
+struct Program* _interpret_file(struct VM* vm, char* file_name) {
+    // struct Tree* term = parse_from_file(file_name);
+    struct Tree* tree = NULL; // TODO convert it from Expr_t*
+    vm_populate(vm, tree);
     return vm_run(vm);
 }
 
@@ -390,9 +409,9 @@ int main(int argc, char *argv[]) {
 
 //     char* x = malloc(2);
 //     x[0] = 120; x[1] = 0;
-//     struct Term* not_x =
+//     struct Tree* not_x =
 //         term_apply(nStar("x", term_apply(not(), term_make_sym(x))), true());
-//     // struct Term* not_x = term_apply(not(), term_make_sym("x"));
+//     // struct Tree* not_x = term_apply(not(), term_make_sym("x"));
 
 //     Serializer_t* ser = serializer_init(sizeof(size_t));
 //     term_serialize(ser, not_x);
@@ -404,7 +423,7 @@ int main(int argc, char *argv[]) {
 //     }
 //     printf("\n");
 
-//     struct Term* result = eval(not_x);
+//     struct Tree* result = eval(not_x);
 
 //     ser = serializer_init(sizeof(size_t));
 //     term_serialize(ser, result);

@@ -30,12 +30,6 @@
 // How many bytes are allocated if an expr needs to be expanded
 #define EXPR_BUFFER_SIZE BUFFER_SIZE
 
-// If a dict has to be grown, enough space is allocated for this many elements
-#define DICT_BUFFER_SIZE BUFFER_SIZE
-
-// If a stack has to be grown, enough space is allocated for this many elements
 #define STACK_BUFFER_SIZE BUFFER_SIZE
-
-
 
 #endif
