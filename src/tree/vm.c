@@ -23,7 +23,8 @@ void vm_populate(struct VM* vm, struct Tree* tree) {
         vm->stack = stack_make();
     }
     while (tree_get_type(tree) == TREE_TYPE_APPLY) {
-        stack_push(vm->stack, tree_copy(tree_get_apply(tree, 1)));
+        struct Kin* kin = kin_make(FALSE, tree_copy(tree_get_apply(tree, 1)));
+        stack_push(vm->stack, kin);
         struct Tree* temp = tree_copy(tree_get_apply(tree, 0));
         tree_free(tree);
         tree = temp;
@@ -106,7 +107,8 @@ struct VMData vm_serialize(struct VM* vm, uint8_t word_size) {
     serializer_write_word(serializer, stack_count(vm->stack));
     for (size_t i = 0; i < stack_count(vm->stack); i++) {
         kin_serialize(serializer, stack_get_elem(vm->stack, i));
-        printf("Kin #%llu: ", i);
+        printf("Kin #%llu [%d]: ", i,
+            kin_is_parent(stack_get_elem(vm->stack, i)));
         tree_print(kin_get_tree(stack_get_elem(vm->stack, i))); printf("\n");
     }
 

@@ -255,9 +255,16 @@ BOOL program_apply(struct Program* prg1, struct Program* prg2) {
 }
 
 void program_print(struct Program* program) {
+    uint8_t type = program_get_type(program);
+    if (type > 0) {
+        printf("(");
+    }
     value_print(program->value);
-    for (uint8_t i = 0; i < program_get_type(program); i++) {
+    for (uint8_t i = 0; i < type; i++) {
         program_print(program_get_child(program, i));
+    }
+    if (type > 0) {
+        printf(")");
     }
 }
 
