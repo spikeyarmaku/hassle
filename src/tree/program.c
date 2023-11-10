@@ -161,11 +161,13 @@ void value_print(struct Value* value) {
             break;
         }
         case VALUE_TYPE_STRING: {
-            printf("%s", value->str_val);
+            printf("\"%s\"", value->str_val);
             break;
         }
         case VALUE_TYPE_RATIONAL: {
+            printf("<");
             rational_print(value->rat_val);
+            printf(">");
             break;
         }
         case VALUE_TYPE_PRIMOP: {

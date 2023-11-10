@@ -145,23 +145,31 @@ struct Tree* is_fork() {
 // [x]O = KO
 // [x]uv = d{[x]v}([x]u)
 struct Tree* nBracket(char* symbol, struct Tree* tree) {
+    // printf("nbracket %s\n", symbol);
     if (tree_get_type(tree) == TREE_TYPE_VALUE) {
+        // printf("tree type: VALUE\n");
         struct Value* val = program_get_value(tree_get_value(tree));
         if (value_get_type(val) == VALUE_TYPE_SYMBOL) {
+            // printf("value type: SYMBOL\n");
             if (strcmp(value_get_sym(val), symbol) == 0) {
+                // printf("symbol match %s\n", symbol);
                 tree_free(tree);
                 return cI();
             } else {
+                // printf("symbol NOT match %s\n", symbol);
                 return tree_make_apply(cK(), tree);
             }
         } else {
+            // printf("value type: %d\n", value_get_type(val));
             return tree_make_apply(cK(), tree);
         }
     } else {
+        // printf("tree type: APPLY\n");
         struct Tree* app0 = tree_copy(tree_get_apply(tree, 0));
         struct Tree* app1 = tree_copy(tree_get_apply(tree, 1));
         tree_free(tree);
-        return tree_make_apply(nD(app1), app0);
+        return
+            tree_make_apply(nD(nBracket(symbol, app1)), nBracket(symbol, app0));
     }
 }
 
