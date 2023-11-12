@@ -334,23 +334,63 @@ struct Tree* test3b() {
     // return term_apply(apply_op, num1);
 }
 
-// struct Tree* test_va() {
-//     // struct Tree* term1 = cV();
-//     // printf("Tree size: %llu\n", term_size(term1)); // 909 in .v, 679 here
-//     // struct Tree* term2 = cA();
-//     // printf("Tree size: %llu\n", term_size(term2)); // 757 in .v, 563 here
+struct Tree* test4() {
+    struct Tree* n_tag =
+        nTag(
+            tree_make_apply(
+                tree_make_apply(
+                    abstraction_rule(),
+                    _sym("x")),
+                _sym("y")),
+            tree_make_apply(
+                tree_make_apply(
+                    tree_make_apply(
+                        getTag(),
+                        _sym("x")),
+                    _sym("a")),
+                _sym("y")));
+    struct Tree* tree =
+        nStar("x",
+                nStar("a",
+                    nTag(
+                        tree_make_apply(substitution_rule(),
+                            _sym("x")),
+                        nStar("y", n_tag))));
+    struct Tree* n_d =
+        tree_make_apply(nTagWait(empty_rule()), tree_make_apply(cK(), tree));
+    struct Tree* n_wait = nWait(self_apply(), nD(n_d));
+    
+    return nTag(empty_rule(), n_wait);
+    
+    // return nTag(tag, nD(n_d));
+    // return nTag(tag, nStar("w", nTag(tag, nWait(self_apply(), _sym("w")))));
+    // return nTag(tag, nStar("w", nTag(tag, nWait(self_apply(), _sym("w")))));
+    // return nTag(tag, nTag(tag, nWait(self_apply(), _sym("w"))));
+    // return nTag(tag, nTag(tag, _sym("w")));
+    // return nTag(empty_rule(), nTag(empty_rule(), delta()));
+}
 
-//     struct Tree* n = term_make_rat(rational_from_string(str_cpy("12")));
-//     // struct Tree* term = term_apply(term_apply(term_apply(cA(), cV()), cA()), n);
+struct Tree* test_va() {
+    // struct Tree* term1 = cV();
+    // printf("Tree size: %llu\n", term_size(term1)); // 909 in .v, 679 here
+    // struct Tree* term2 = cA();
+    // printf("Tree size: %llu\n", term_size(term2)); // 757 in .v, 563 here
 
-//     struct Tree* term00 = cA();
-//     struct Tree* term01 = cV();
-//     struct Tree* term0 = term_apply(term00, term01);
-//     struct Tree* term1 = term_apply(term0, cA());
-//     struct Tree* term = term_apply(term1, n);
+    struct Tree* n =
+        tree_make_value(
+            program_make(
+                value_make_rat(rational_from_string(str_cpy("12"))), NULL,
+                NULL));
+    // struct Tree* term = term_apply(term_apply(term_apply(cA(), cV()), cA()), n);
 
-//     return term;
-// }
+    struct Tree* term00 = cA();
+    struct Tree* term01 = cV();
+    struct Tree* term0 = tree_make_apply(term00, term01);
+    struct Tree* term1 = tree_make_apply(term0, cA());
+    struct Tree* term = tree_make_apply(term1, n);
+
+    return term;
+}
 
 Response_t* _execute_command(struct VM* vm, char* cmd) {
     int token_len = str_get_token_end(cmd);
@@ -376,7 +416,7 @@ Response_t* _execute_command(struct VM* vm, char* cmd) {
                     if (arg != NULL) {
                         // vm_set_term(vm, parse_from_str(arg));
                         // TODO convert Expr_t* to struct Tree*
-                        vm_populate(vm, test2c());
+                        vm_populate(vm, test_va());
                     }
                     free_mem("execute_command/expr", arg);
                     return response_make_void();

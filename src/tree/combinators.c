@@ -106,8 +106,10 @@ struct Tree* nSucc(struct Tree* tree) {
 
 // predecessor n = ΔnΔ(K I)
 struct Tree* nPred(struct Tree* tree) {
-    return tree_make_apply(tree_make_apply(tree_make_apply(delta(), tree), delta()),
-        tree_make_apply(cK(), cI()));
+    return
+        tree_make_apply(
+            tree_make_apply(tree_make_apply(delta(), tree), delta()),
+            tree_make_apply(cK(), cI()));
 }
 
 // queries
@@ -115,7 +117,7 @@ struct Tree* nPred(struct Tree* tree) {
 struct Tree* nQuery(struct Tree* is0, struct Tree* is1, struct Tree* is2) {
     return
         tree_make_apply(
-            nD(tree_make_apply(cK(), is0)),
+            nD(tree_make_apply(cK(), is1)),
             tree_make_apply(
                 nD(tree_make_apply(nPow(cK(), 2), cI())),
                 tree_make_apply(
@@ -236,8 +238,11 @@ struct Tree* nStar(char* symbol, struct Tree* tree) {
 
 // wait{x, y} = d{I}(d{K y}(K x))
 struct Tree* nWait(struct Tree* term1, struct Tree* term2) {
-    return tree_make_apply(nD(cI()), tree_make_apply(nD(tree_make_apply(cK(), term2)),
-        tree_make_apply(cK(), term1)));
+    return
+        tree_make_apply(
+            nD(cI()),
+            tree_make_apply(nD(tree_make_apply(cK(), term2)),
+                tree_make_apply(cK(), term1)));
 }
 
 // wait1{x} = d{d{K(K x)} (d{d{K}(KΔ)} (KΔ))}   (K(d{ΔKK}))
@@ -263,7 +268,7 @@ struct Tree* nZ(struct Tree* tree) {
         tree_make_apply(cK(), tree)));
 }
 
-// swap{ f } = d{K f}d{d{K}(KΔ)}(KΔ)
+// swap{f} = d{K f}d{d{K}(KΔ)}(KΔ)
 struct Tree* nSwap(struct Tree* tree) {
     return
         tree_make_apply(
@@ -273,14 +278,16 @@ struct Tree* nSwap(struct Tree* tree) {
             tree_make_apply(cK(), delta()));
 }
 
-// Y2 { f } = Z {swap{ f }}
+// Y2 {f} = Z {swap{f}}
 struct Tree* nY2(struct Tree* tree) {
     return nZ(nSwap(tree));
 }
 
-// tag{t, f} = d{t}(d{ f }(KK))
+// tag{t, f} = d{t}(d{f}(KK))
 struct Tree* nTag(struct Tree* tag, struct Tree* tree) {
-    return tree_make_apply(nD(tag), tree_make_apply(nD(tree), tree_make_apply(cK(), cK())));
+    return
+        tree_make_apply(
+            nD(tag), tree_make_apply(nD(tree), tree_make_apply(cK(), cK())));
 }
 
 // getTag = λ∗ p.first{first{p}Δ}
@@ -295,12 +302,14 @@ struct Tree* nTagWait(struct Tree* tree) {
 
 // Y2t {t, f } = tag{t, wait{self_apply, d{tag_wait{t}(K f )}}
 struct Tree* nY2t(struct Tree* tag, struct Tree* tree) {
+    struct Tree* tag0 = tag;
+    struct Tree* tag1 = tree_copy(tag);
     return
-        nTag(tag,
+        nTag(tag0,
             nWait(self_apply(),
                 nD(
                     tree_make_apply(
-                        nTagWait(tag), tree_make_apply(cK(), tree)))));
+                        nTagWait(tag1), tree_make_apply(cK(), tree)))));
 }
 
 // zero_rule = λ∗a.λ∗ y.λ∗ z.z

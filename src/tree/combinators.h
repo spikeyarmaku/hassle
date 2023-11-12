@@ -63,4 +63,9 @@ struct Tree*    abstraction_rule    ();
 struct Tree*    cV          ();
 struct Tree*    cA          ();
 
+// Exposed for debug purposes
+struct Tree* _sym(char* symbol);
+struct Tree* nY2t(struct Tree* tag, struct Tree* tree);
+struct Tree* nTagWait(struct Tree* tree);
+
 #endif

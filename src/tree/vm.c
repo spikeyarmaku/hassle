@@ -90,9 +90,11 @@ enum EvalState vm_step(struct VM* vm) {
 }
 
 struct Program* vm_run(struct VM* vm) {
+    size_t step = 0; // DEBUG
     enum EvalState state = EvalRunning;
     while (state == EvalRunning) {
         state = vm_step(vm);
+        printf("Step %llu\n", step++);
     }
     return vm->control;
 }
