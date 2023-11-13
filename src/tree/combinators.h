@@ -26,6 +26,8 @@ struct Tree*    not         ();
 struct Tree*    pair        ();
 struct Tree*    nFirst      (struct Tree*);
 struct Tree*    nSecond     (struct Tree*);
+struct Tree*    fst         ();
+struct Tree*    snd         ();
 
 // Numbers
 struct Tree*    nNat        (size_t);

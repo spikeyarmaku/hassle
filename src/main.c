@@ -334,42 +334,6 @@ struct Tree* test3b() {
     // return term_apply(apply_op, num1);
 }
 
-struct Tree* test4() {
-    struct Tree* n_tag =
-        nTag(
-            tree_make_apply(
-                tree_make_apply(
-                    abstraction_rule(),
-                    _sym("x")),
-                _sym("y")),
-            tree_make_apply(
-                tree_make_apply(
-                    tree_make_apply(
-                        getTag(),
-                        _sym("x")),
-                    _sym("a")),
-                _sym("y")));
-    struct Tree* tree =
-        nStar("x",
-                nStar("a",
-                    nTag(
-                        tree_make_apply(substitution_rule(),
-                            _sym("x")),
-                        nStar("y", n_tag))));
-    struct Tree* n_d =
-        tree_make_apply(nTagWait(empty_rule()), tree_make_apply(cK(), tree));
-    struct Tree* n_wait = nWait(self_apply(), nD(n_d));
-    
-    return nTag(empty_rule(), n_wait);
-    
-    // return nTag(tag, nD(n_d));
-    // return nTag(tag, nStar("w", nTag(tag, nWait(self_apply(), _sym("w")))));
-    // return nTag(tag, nStar("w", nTag(tag, nWait(self_apply(), _sym("w")))));
-    // return nTag(tag, nTag(tag, nWait(self_apply(), _sym("w"))));
-    // return nTag(tag, nTag(tag, _sym("w")));
-    // return nTag(empty_rule(), nTag(empty_rule(), delta()));
-}
-
 struct Tree* test_va() {
     // struct Tree* term1 = cV();
     // printf("Tree size: %llu\n", term_size(term1)); // 909 in .v, 679 here
@@ -390,6 +354,10 @@ struct Tree* test_va() {
     struct Tree* term = tree_make_apply(term1, n);
 
     return term;
+}
+
+struct Tree* exercise() {
+    return nTag(_sym("Comment"), false());
 }
 
 Response_t* _execute_command(struct VM* vm, char* cmd) {
@@ -416,7 +384,7 @@ Response_t* _execute_command(struct VM* vm, char* cmd) {
                     if (arg != NULL) {
                         // vm_set_term(vm, parse_from_str(arg));
                         // TODO convert Expr_t* to struct Tree*
-                        vm_populate(vm, test_va());
+                        vm_populate(vm, exercise());
                     }
                     free_mem("execute_command/expr", arg);
                     return response_make_void();

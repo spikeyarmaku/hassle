@@ -21,7 +21,7 @@ struct Tree* cD() {
     return
         tree_make_apply(
             tree_make_apply(delta(), cK()),
-            tree_make_apply(cK(), delta()));
+            tree_make_apply(delta(), cK()));
 }
 
 // d{x} = Δ(Δx)
@@ -82,6 +82,22 @@ struct Tree* nSecond(struct Tree* tree) {
         tree_make_apply(
             tree_make_apply(tree_make_apply(delta(), tree), delta()),
             tree_make_apply(cK(), cI()));
+}
+
+// d(KK)(d(KΔ)Δ)
+struct Tree* fst() {
+    return
+        tree_make_apply(
+            nD(tree_make_apply(cK(), cK())),
+            tree_make_apply(nD(tree_make_apply(cK(), delta())), delta()));
+}
+
+// d(K(KI))(d(KΔ)Δ)
+struct Tree* snd() {
+    return
+        tree_make_apply(
+            nD(tree_make_apply(cK(), tree_make_apply(cK(), cI()))),
+            tree_make_apply(nD(tree_make_apply(cK(), delta())), delta()));
 }
 
 struct Tree* nNat(size_t n) {
