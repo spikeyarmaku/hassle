@@ -353,11 +353,64 @@ struct Tree* test_va() {
     struct Tree* term1 = tree_make_apply(term0, cA());
     struct Tree* term = tree_make_apply(term1, n);
 
+    printf("Size of V: %llu, size of A: %llu\n", tree_get_size(cV()),
+        tree_get_size(cA()));
+
     return term;
 }
 
+struct Tree* tree_count() {
+    // return nTag(_sym("Comment"), false());
+    struct Tree* tree0 = delta();
+    struct Tree* tree1 = cK();
+    struct Tree* tree2 = cI();
+    struct Tree* tree3 = cD();
+    struct Tree* tree4 = and();
+    struct Tree* tree5 = not();
+    // struct Tree* tree6 = ;
+    // struct Tree* tree7 = ;
+    // struct Tree* tree8 = ;
+    // struct Tree* tree9 = ;
+    // struct Tree* tree10 = ;
+    
+    struct Tree* trees[] = {tree0, tree1, tree2, tree3, tree4, tree5};
+
+    int tree_count = 6;
+    for (int i = 0; i < tree_count; i++) {
+        printf("Tree %d size: %llu\n", i, tree_get_size(trees[i]));
+    }
+
+    return delta();
+}
+
 struct Tree* exercise() {
-    return nTag(_sym("Comment"), false());
+    // return
+    //     nBracket("x",
+    //         tree_make_apply(tree_make_apply(cK(), _sym("x")), _sym("x")));
+    // return
+    //     tree_make_apply(fst(),
+    //         tree_apply(tree_apply(delta(), _sym("first")), _sym("second")));
+
+    // \"z" (\"f" (△ @ (Ref "z") @ I @ (K@KI) @ I @ (Ref "f") @ (Ref "z"))). 
+    // struct Tree* eager =
+    //     nStar("z", nStar("f",
+    //         tree_apply(
+    //             tree_apply(
+    //                 tree_apply(
+    //                     tree_apply(
+    //                         tree_apply(
+    //                             tree_apply(
+    //                                 delta(),
+    //                                 _sym("z")),
+    //                             cI()),
+    //                         tree_apply(cK(), tree_apply(cK(), cI()))),
+    //                     cI()),
+    //                 _sym("f")),
+    //             _sym("z"))));
+    // printf("eager size: %llu\n", tree_get_size(eager));
+    // return eager;
+    return
+        tree_make_apply(not(), tree_make_apply(not(), true()));
 }
 
 Response_t* _execute_command(struct VM* vm, char* cmd) {

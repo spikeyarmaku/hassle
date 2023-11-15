@@ -25,6 +25,22 @@ struct Tree* tree_make_apply(struct Tree* tree0, struct Tree* tree1) {
     return tree;
 }
 
+struct Tree* tree_apply(struct Tree* tree0, struct Tree* tree1) {
+    if (tree_get_type(tree0) != TREE_TYPE_VALUE ||
+        tree_get_type(tree1) != TREE_TYPE_VALUE)
+    {
+        return tree_make_apply(tree0, tree1);
+    } else {
+        struct Tree* result =
+            tree_apply_values(
+                program_copy(tree_get_value(tree0)),
+                program_copy(tree_get_value(tree1)));
+        tree_free(tree0);
+        tree_free(tree1);
+        return result;
+    }
+}
+
 // Evaluation rules:
 // ΔΔyz        = y         (K)
 // Δ(Δx)yz     = yz(xz)    (S)
@@ -169,6 +185,22 @@ void tree_print(struct Tree* tree) {
             tree_print(tree_get_apply(tree, 1));
             printf(")");
             break;
+        }
+    }
+}
+
+size_t tree_get_size(struct Tree* tree) {
+    switch (tree_get_type(tree)) {
+        case TREE_TYPE_VALUE: {
+            return program_get_size(tree_get_value(tree));
+        }
+        case TREE_TYPE_APPLY: {
+            return tree_get_size(tree_get_apply(tree, 0)) +
+                tree_get_size(tree_get_apply(tree, 1));
+        }
+        default: {
+            fatal("tree_get_size: invalid tree type %d\n", tree_get_type(tree));
+            return 0;
         }
     }
 }

@@ -256,6 +256,26 @@ BOOL program_apply(struct Program* prg1, struct Program* prg2) {
     }
 }
 
+size_t program_get_size(struct Program* program) {
+    switch (program_get_type(program)) {
+        case PROGRAM_TYPE_LEAF: {
+            return 1;
+        }
+        case PROGRAM_TYPE_STEM: {
+            return 1 + program_get_size(program_get_child(program, 0));
+        }
+        case PROGRAM_TYPE_FORK: {
+            return 1 + program_get_size(program_get_child(program, 0)) +
+                program_get_size(program_get_child(program, 1));
+        }
+        default: {
+            fatal("program_get_size: invalid program type %d\n",
+                program_get_type(program));
+            return 0;
+        }
+    }
+}
+
 void program_print(struct Program* program) {
     uint8_t type = program_get_type(program);
     if (type > 0) {

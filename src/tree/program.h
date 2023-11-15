@@ -37,6 +37,7 @@ struct Program* program_get_child   (struct Program*, uint8_t);
 void            program_free        (struct Program*);
 struct Program* program_copy        (struct Program*);
 BOOL            program_apply       (struct Program*, struct Program*);
+size_t          program_get_size    (struct Program*);
 
 void            program_print       (struct Program*);
 void            program_serialize   (Serializer_t*, struct Program*);
