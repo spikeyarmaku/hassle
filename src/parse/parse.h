@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #include "global.h"
-#include "parse\expr.h"
+#include "parse/expr.h"
 
 /*
 Parser usage:

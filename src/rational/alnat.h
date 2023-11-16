@@ -15,7 +15,7 @@ LSD - Least Significant Digit
 
 #include "global.h"
 
-#include "serialize\serialize.h"
+#include "serialize/serialize.h"
 
 // Arbitrary Length NATural, least significant digit first
 // Each byte contains a digit in base 128, and each byte has its highest bit set

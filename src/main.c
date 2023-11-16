@@ -8,8 +8,8 @@
 #include "config.h"
 #include "global.h"
 
-#include "parse\parse.h"
-#include "serialize\serialize.h"
+#include "parse/parse.h"
+#include "serialize/serialize.h"
 
 #include "network.h"
 #include "memory.h"
@@ -383,34 +383,30 @@ struct Tree* tree_count() {
     return delta();
 }
 
-struct Tree* exercise() {
-    // return
-    //     nBracket("x",
-    //         tree_make_apply(tree_make_apply(cK(), _sym("x")), _sym("x")));
-    // return
-    //     tree_make_apply(fst(),
-    //         tree_apply(tree_apply(delta(), _sym("first")), _sym("second")));
+struct Tree* tree_test() {
+// struct Tree* nY2t(struct Tree* tag, struct Tree* tree) {
+//     struct Tree* tag0 = tag;
+//     struct Tree* tag1 = tree_copy(tag);
+//     return
+//         nTag(tag0,
+//             nWait(self_apply(),
+//                 nD(
+//                     tree_apply(
+//                         nTagWait(tag1), tree_apply(cK(), nSwap(tree))))));
+// }
+    
+    // return nY2t(_sym("tag"), _sym("tree"));
+    // return zero_rule();
+    // return cV();
 
-    // \"z" (\"f" (△ @ (Ref "z") @ I @ (K@KI) @ I @ (Ref "f") @ (Ref "z"))). 
-    // struct Tree* eager =
-    //     nStar("z", nStar("f",
-    //         tree_apply(
+    return nStar("w", tree_apply(_sym("w"), _sym("w")));
+
+    // return
+    //     nWait(_sym("self_apply"), // self_apply(),
+    //         nD(
     //             tree_apply(
-    //                 tree_apply(
-    //                     tree_apply(
-    //                         tree_apply(
-    //                             tree_apply(
-    //                                 delta(),
-    //                                 _sym("z")),
-    //                             cI()),
-    //                         tree_apply(cK(), tree_apply(cK(), cI()))),
-    //                     cI()),
-    //                 _sym("f")),
-    //             _sym("z"))));
-    // printf("eager size: %llu\n", tree_get_size(eager));
-    // return eager;
-    return
-        tree_make_apply(not(), tree_make_apply(not(), true()));
+    //                 nTagWait(_sym("tag")),
+    //                     tree_apply(cK(), nSwap(_sym("tree"))))));
 }
 
 Response_t* _execute_command(struct VM* vm, char* cmd) {
@@ -437,7 +433,7 @@ Response_t* _execute_command(struct VM* vm, char* cmd) {
                     if (arg != NULL) {
                         // vm_set_term(vm, parse_from_str(arg));
                         // TODO convert Expr_t* to struct Tree*
-                        vm_populate(vm, exercise());
+                        vm_populate(vm, tree_test());
                     }
                     free_mem("execute_command/expr", arg);
                     return response_make_void();

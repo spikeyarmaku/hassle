@@ -6,8 +6,8 @@
 #include <stdio.h> // DEBUG
 #include <string.h>
 
-#include "rational\alnat.h"
-#include "serialize\serialize.h"
+#include "rational/alnat.h"
+#include "serialize/serialize.h"
 
 /*
 Rational_t usage:
