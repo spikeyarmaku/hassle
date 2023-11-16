@@ -10,8 +10,11 @@ struct Value {
 };
 
 struct Program {
-    struct Value* value;
-    struct Program* children[2];
+    uint8_t type;
+    union {
+        struct Value* value;
+        struct Program* children[2];
+    };
 };
 
 struct Value* value_make_sym(char* sym) {
@@ -179,45 +182,67 @@ void value_print(struct Value* value) {
 
 // -----------------------------------------------------------------------------
 
-struct Program* program_make(struct Value* value, struct Program* left,
-    struct Program* right)
+struct Program* program_make(uint8_t type, struct Value* value,
+    struct Program* left, struct Program* right)
 {
     struct Program* program = allocate_mem("program_make", NULL,
         sizeof(struct Program));
-    program->value = value;
-    program->children[0] = left;
-    program->children[1] = right;
+    program->type = type;
+    if (type == PROGRAM_TYPE_VALUE) {
+        program->value = value;
+    } else {
+        program->children[0] = left;
+        program->children[1] = right;
+    }
     return program;
 }
 
+struct Program* program_make_leaf() {
+    return program_make(PROGRAM_TYPE_LEAF, NULL, NULL, NULL);
+}
+
+struct Program* program_make_stem(struct Program* prg0) {
+    return program_make(PROGRAM_TYPE_STEM, NULL, prg0, NULL);
+}
+
+struct Program* program_make_fork(struct Program* prg0,struct Program* prg1) {
+    return program_make(PROGRAM_TYPE_FORK, NULL, prg0, prg1);
+}
+
+struct Program* program_make_value(struct Value* val) {
+    return program_make(PROGRAM_TYPE_VALUE, val, NULL, NULL);
+}
+
 uint8_t program_get_type(struct Program* program) {
-    if (program->children[1] != NULL) {
-        return PROGRAM_TYPE_FORK;
-    } else {
-        if (program->children[0] != NULL) {
-            return PROGRAM_TYPE_STEM;
-        } else {
-            return PROGRAM_TYPE_LEAF;
-        }
-    }
+    return program->type;
 }
 
 struct Value* program_get_value(struct Program* program) {
-    return program->value;
+    if (program->type == PROGRAM_TYPE_VALUE) {
+        return program->value;
+    } else {
+        return NULL;
+    }
 }
 
 struct Program* program_get_child(struct Program* program, uint8_t index) {
-    assert(index < 2);
-    return program->children[index];
+    if (index < program->type && program->type != PROGRAM_TYPE_VALUE) {
+        return program->children[index];
+    } else {
+        return NULL;
+    }
 }
 
 void program_free(struct Program* program) {
     if (program == NULL) {
         return;
     }
-    value_free(program->value);
-    program_free(program->children[0]);
-    program_free(program->children[1]);
+    if (program->type == PROGRAM_TYPE_VALUE) {
+        value_free(program->value);
+    } else {
+        program_free(program->children[0]);
+        program_free(program->children[1]);
+    }
     free_mem("program_free", program);
 }
 
@@ -226,54 +251,57 @@ struct Program* program_copy(struct Program* program) {
         return NULL;
     }
 
-    return
-        program_make(
-            value_copy(program->value),
-            program_copy(program->children[0]),
-            program_copy(program->children[1]));
+    if (program->type == PROGRAM_TYPE_VALUE) {
+        return
+            program_make(program->type, value_copy(program->value), NULL, NULL);
+    } else {
+        return
+            program_make(program->type,
+                NULL,
+                program_copy(program->children[0]),
+                program_copy(program->children[1]));
+    }
 }
 
-// Try to add prg2 as a child of prg1, return TRUE if successful (prg1 is leaf
+// Try to add prg1 as a child of prg0, return TRUE if successful (prg0 is leaf
 // or stem), FALSE otherwise
-BOOL program_apply(struct Program* prg1, struct Program* prg2) {
-    switch (program_get_type(prg1)) {
+BOOL program_apply(struct Program* prg0, struct Program* prg1) {
+    switch (program_get_type(prg0)) {
         case PROGRAM_TYPE_LEAF: {
-            prg1->children[0] = prg2;
+            prg0->children[0] = prg1;
+            prg0->type = PROGRAM_TYPE_STEM;
             return TRUE;
         }
         case PROGRAM_TYPE_STEM: {
-            prg1->children[1] = prg2;
+            prg0->children[1] = prg1;
+            prg0->type = PROGRAM_TYPE_FORK;
             return TRUE;
         }
         case PROGRAM_TYPE_FORK: {
             return FALSE;
         }
+        case PROGRAM_TYPE_VALUE: {
+            return FALSE;
+        }
         default: {
             fatal("program_apply: invalid program type %d\n",
-                program_get_type(prg1));
+                program_get_type(prg0));
             return FALSE;
         }
     }
 }
 
 size_t program_get_size(struct Program* program) {
-    switch (program_get_type(program)) {
-        case PROGRAM_TYPE_LEAF: {
-            return 1;
-        }
-        case PROGRAM_TYPE_STEM: {
-            return 1 + program_get_size(program_get_child(program, 0));
-        }
-        case PROGRAM_TYPE_FORK: {
-            return 1 + program_get_size(program_get_child(program, 0)) +
-                program_get_size(program_get_child(program, 1));
-        }
-        default: {
-            fatal("program_get_size: invalid program type %d\n",
-                program_get_type(program));
-            return 0;
-        }
+    if (program == NULL) {
+        return 0;
     }
+    
+    if (program->type == PROGRAM_TYPE_VALUE) {
+        return 1;
+    }
+
+    return 1 + program_get_size(program->children[0]) +
+        program_get_size(program->children[1]);
 }
 
 void program_print(struct Program* program) {
@@ -281,9 +309,12 @@ void program_print(struct Program* program) {
     if (type > 0) {
         printf("(");
     }
-    value_print(program->value);
-    for (uint8_t i = 0; i < type; i++) {
-        program_print(program_get_child(program, i));
+    if (program->type == PROGRAM_TYPE_VALUE) {
+        value_print(program->value);
+    } else {
+        for (uint8_t i = 0; i < type; i++) {
+            program_print(program_get_child(program, i));
+        }
     }
     if (type > 0) {
         printf(")");
@@ -295,10 +326,13 @@ void program_serialize(Serializer_t* serializer, struct Program* program) {
         return;
     }
 
-    value_serialize(serializer, program_get_value(program));
-    serializer_write(serializer, program_get_type(program));
-    program_serialize(serializer, program->children[0]);
-    program_serialize(serializer, program->children[1]);
+    serializer_write(serializer, program->type);
+    if (program->type == PROGRAM_TYPE_VALUE) {
+        value_serialize(serializer, program_get_value(program));
+    } else {
+        program_serialize(serializer, program->children[0]);
+        program_serialize(serializer, program->children[1]);
+    }
 }
 
 struct Program* program_deserialize(Serializer_t* serializer) {

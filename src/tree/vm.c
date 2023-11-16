@@ -29,8 +29,8 @@ void vm_populate(struct VM* vm, struct Tree* tree) {
         tree_free(tree);
         tree = temp;
     }
-    if (tree_get_type(tree) == TREE_TYPE_VALUE) {
-        vm->control = program_copy(tree_get_value(tree));
+    if (tree_get_type(tree) == TREE_TYPE_PROGRAM) {
+        vm->control = program_copy(tree_get_program(tree));
         tree_free(tree);
     } else {
         fatal("vm_populate: invalid tree type %d\n", tree_get_type(tree));
@@ -46,12 +46,12 @@ enum EvalState vm_step(struct VM* vm) {
     struct Kin* kin = (struct Kin*)stack_pop(vm->stack);
     if (kin_is_parent(kin) == TRUE) {
         switch (tree_get_type(kin_get_tree(kin))) {
-            case TREE_TYPE_VALUE: {
+            case TREE_TYPE_PROGRAM: {
                 // Swap control and top of stack
                 struct Program* new_control =
-                    program_copy(tree_get_value(kin_get_tree(kin)));
+                    program_copy(tree_get_program(kin_get_tree(kin)));
                 struct Kin* new_kin =
-                    kin_make(FALSE, tree_make_value(vm->control));
+                    kin_make(FALSE, tree_make_program(vm->control));
                 stack_push(vm->stack, new_kin);
                 vm->control = new_control;
                 kin_free(kin);
@@ -64,18 +64,18 @@ enum EvalState vm_step(struct VM* vm) {
         }
     } else {
         switch (tree_get_type(kin_get_tree(kin))) {
-            case TREE_TYPE_VALUE: {
+            case TREE_TYPE_PROGRAM: {
                 struct Tree* new_tree =
-                    tree_apply_values(vm->control,
-                        tree_get_value(kin_get_tree(kin)));
+                    tree_apply_programs(vm->control,
+                        tree_get_program(kin_get_tree(kin)));
                 vm_populate(vm, new_tree);
                 break;
             }
             case TREE_TYPE_APPLY: {
                 struct Kin* new_kin =
-                    kin_make(TRUE, tree_make_value(vm->control));
+                    kin_make(TRUE, tree_make_program(vm->control));
                 stack_push(vm->stack, new_kin);
-                vm->control = program_make(NULL, NULL, NULL);
+                vm->control = program_make_leaf();
                 vm_populate(vm, tree_copy(kin_get_tree(kin)));
                 kin_free(kin);
                 break;

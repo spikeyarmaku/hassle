@@ -6,15 +6,15 @@
 struct Tree* primop_apply(uint8_t primop, struct Tree* tree0,
     struct Tree* tree1)
 {
-    if (tree_get_type(tree0) != TREE_TYPE_VALUE ||
-        tree_get_type(tree1) != TREE_TYPE_VALUE)
+    if (tree_get_type(tree0) != TREE_TYPE_PROGRAM ||
+        tree_get_type(tree1) != TREE_TYPE_PROGRAM)
     {
         printf("primop_apply: one of the operands is not a program\n");
         exit(1);
     }
 
-    struct Program* prg0 = tree_get_value(tree0);
-    struct Program* prg1 = tree_get_value(tree1);
+    struct Program* prg0 = tree_get_program(tree0);
+    struct Program* prg1 = tree_get_program(tree1);
 
     if (program_get_type(prg0) != VALUE_TYPE_RATIONAL ||
         program_get_type(prg1) != VALUE_TYPE_RATIONAL)
@@ -28,23 +28,23 @@ struct Tree* primop_apply(uint8_t primop, struct Tree* tree0,
     switch (primop) {
         case Add: {
             return
-                tree_make_value(program_make(
-                    value_make_rat(rational_add(num0, num1)), NULL, NULL));
+                tree_make_program(program_make_value(
+                    value_make_rat(rational_add(num0, num1))));
         }
         case Sub: {
             return
-                tree_make_value(program_make(
-                    value_make_rat(rational_sub(num0, num1)), NULL, NULL));
+                tree_make_program(program_make_value(
+                    value_make_rat(rational_sub(num0, num1))));
         }
         case Mul: {
             return
-                tree_make_value(program_make(
-                    value_make_rat(rational_mul(num0, num1)), NULL, NULL));
+                tree_make_program(program_make_value(
+                    value_make_rat(rational_mul(num0, num1))));
         }
         case Div: {
             return
-                tree_make_value(program_make(
-                    value_make_rat(rational_div(num0, num1)), NULL, NULL));
+                tree_make_program(program_make_value(
+                    value_make_rat(rational_div(num0, num1))));
         }
         case Eq: {
             return rational_is_equal(num0, num1) == TRUE ? true() : false();

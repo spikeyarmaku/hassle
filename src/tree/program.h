@@ -10,10 +10,13 @@
 #define PROGRAM_TYPE_LEAF   0
 #define PROGRAM_TYPE_STEM   1
 #define PROGRAM_TYPE_FORK   2
+#define PROGRAM_TYPE_VALUE  3
 
 #include <stdint.h>
 
+#include "global.h"
 #include "rational/rational.h"
+#include "serialize/serialize.h"
 
 struct Value*   value_make_sym      (char*);
 struct Value*   value_make_str      (char*);
@@ -29,8 +32,12 @@ struct Value*   value_copy          (struct Value*);
 void            value_serialize     (Serializer_t*, struct Value*);
 void            value_print         (struct Value*);
 
-struct Program* program_make
-    (struct Value*, struct Program*, struct Program*);
+// struct Program* program_make
+//     (struct Value*, struct Program*, struct Program*);
+struct Program* program_make_leaf   ();
+struct Program* program_make_stem   (struct Program*);
+struct Program* program_make_fork   (struct Program*,struct Program*);
+struct Program* program_make_value  (struct Value*);
 uint8_t         program_get_type    (struct Program*);
 struct Value*   program_get_value   (struct Program*);
 struct Program* program_get_child   (struct Program*, uint8_t);

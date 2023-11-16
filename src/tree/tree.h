@@ -1,19 +1,19 @@
 #ifndef _TREE_H_
 #define _TREE_H_
 
-#define TREE_TYPE_VALUE 0
-#define TREE_TYPE_APPLY 1
+#define TREE_TYPE_PROGRAM   0
+#define TREE_TYPE_APPLY     1
 
 #include <stdint.h>
 
 #include "program.h"
 
-struct Tree*    tree_make_value     (struct Program*);
+struct Tree*    tree_make_program   (struct Program*);
 struct Tree*    tree_make_apply     (struct Tree*, struct Tree*);
 struct Tree*    tree_apply          (struct Tree*, struct Tree*);
-struct Tree*    tree_apply_values   (struct Program*, struct Program*);
+struct Tree*    tree_apply_programs (struct Program*, struct Program*);
 uint8_t         tree_get_type       (struct Tree*);
-struct Program* tree_get_value      (struct Tree*);
+struct Program* tree_get_program    (struct Tree*);
 struct Tree*    tree_get_apply      (struct Tree*, uint8_t);
 struct Tree*    tree_copy           (struct Tree*);
 void            tree_free           (struct Tree*);

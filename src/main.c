@@ -204,7 +204,7 @@ struct Tree* test1() {
     struct Tree* t_true = true();
     struct Tree* t_not = not();
     // struct Tree* t_x =
-    //     tree_make_value(program_make(value_make_sym(x), NULL, NULL));
+    //     tree_make_program(program_make(value_make_sym(x), NULL, NULL));
     // struct Tree* app = tree_make_apply(t_not, t_x);
     // return tree_make_apply(nStar("x", app), t_true);
     return tree_make_apply(t_not, t_true);
@@ -212,18 +212,15 @@ struct Tree* test1() {
 
 struct Tree* test2() {
     struct Tree* num1 =
-        tree_make_value(
-            program_make(
-                value_make_rat(rational_from_string(str_cpy("12"))), NULL,
-                NULL));
+        tree_make_program(
+            program_make_value(
+                value_make_rat(rational_from_string(str_cpy("12")))));
     struct Tree* num2 =
-        tree_make_value(
-            program_make(
-                value_make_rat(rational_from_string(str_cpy("3"))), NULL,
-                NULL));
+        tree_make_program(
+            program_make_value(
+                value_make_rat(rational_from_string(str_cpy("3")))));
     struct Tree* op =
-        tree_make_value(
-            program_make(value_make_primop(Add), NULL, NULL));
+        tree_make_program(program_make_value(value_make_primop(Add)));
     return
         tree_make_apply(
             tree_make_apply(
@@ -241,31 +238,28 @@ struct Tree* test2() {
 struct Tree* test2a() {
     return
         nBracket(str_cpy("x"),
-            tree_make_value(program_make(value_make_sym("x"), NULL, NULL)));
+            tree_make_program(program_make_value(value_make_sym("x"))));
 }
 
 struct Tree* test2b() {
     return
         nBracket(str_cpy("x"),
-            tree_make_value(program_make(value_make_sym("y"), NULL, NULL)));
+            tree_make_program(program_make_value(value_make_sym("y"))));
 }
 
 struct Tree* test2c() {
     struct Tree* apply_op =
         nBracket(str_cpy("x"),
             nBracket(str_cpy("y"),
-                tree_make_value(program_make(value_make_sym("x"), NULL,
-                        NULL))));
+                tree_make_program(program_make_value(value_make_sym("x")))));
     struct Tree* num1 =
-        tree_make_value(
-            program_make(
-                value_make_rat(rational_from_string(str_cpy("12"))), NULL,
-                NULL));
+        tree_make_program(
+            program_make_value(
+                value_make_rat(rational_from_string(str_cpy("12")))));
     struct Tree* num2 =
-        tree_make_value(
-            program_make(
-                value_make_rat(rational_from_string(str_cpy("3"))), NULL,
-                NULL));
+        tree_make_program(
+            program_make_value(
+                value_make_rat(rational_from_string(str_cpy("3")))));
     return tree_make_apply(tree_make_apply(apply_op, num1), num2);
     // return apply_op;
 }
@@ -276,25 +270,20 @@ struct Tree* test3a() {
         nBracket(str_cpy("o"), nBracket(str_cpy("x"), nBracket(str_cpy("y"),
             tree_make_apply(
                 tree_make_apply(
-                    tree_make_value(program_make(value_make_sym("o"), NULL,
-                        NULL)),
-                    tree_make_value(program_make(value_make_sym("x"), NULL,
-                        NULL))),
-                tree_make_value(program_make(value_make_sym("y"), NULL,
-                    NULL))))));
+                    tree_make_program(program_make_value(value_make_sym("o"))),
+                    tree_make_program(program_make_value(value_make_sym("x")))),
+                tree_make_program(program_make_value(value_make_sym("y")))))));
     struct Tree* num1 =
-        tree_make_value(
-            program_make(
-                value_make_rat(rational_from_string(str_cpy("12"))), NULL,
-                NULL));
+        tree_make_program(
+            program_make_value(
+                value_make_rat(rational_from_string(str_cpy("12")))));
     struct Tree* num2 =
-        tree_make_value(
-            program_make(
-                value_make_rat(rational_from_string(str_cpy("3"))), NULL,
-                NULL));
+        tree_make_program(
+            program_make_value(
+                value_make_rat(rational_from_string(str_cpy("3")))));
     struct Tree* op =
-        tree_make_value(
-            program_make(value_make_primop(Add), NULL, NULL));
+        tree_make_program(
+            program_make_value(value_make_primop(Add)));
     // printf("Tree size: %llu\n", term_size(apply_op));
     return
         tree_make_apply(tree_make_apply(tree_make_apply(apply_op, op), num1),
@@ -308,25 +297,20 @@ struct Tree* test3b() {
         nStar(str_cpy("o"), nStar(str_cpy("x"), nStar(str_cpy("y"),
             tree_make_apply(
                 tree_make_apply(
-                    tree_make_value(program_make(value_make_sym("o"), NULL,
-                        NULL)),
-                    tree_make_value(program_make(value_make_sym("x"), NULL,
-                        NULL))),
-                tree_make_value(program_make(value_make_sym("y"), NULL,
-                    NULL))))));
+                    tree_make_program(program_make_value(value_make_sym("o"))),
+                    tree_make_program(program_make_value(value_make_sym("x")))),
+                tree_make_program(program_make_value(value_make_sym("y")))))));
     struct Tree* num1 =
-        tree_make_value(
-            program_make(
-                value_make_rat(rational_from_string(str_cpy("12"))), NULL,
-                NULL));
+        tree_make_program(
+            program_make_value(
+                value_make_rat(rational_from_string(str_cpy("12")))));
     struct Tree* num2 =
-        tree_make_value(
-            program_make(
-                value_make_rat(rational_from_string(str_cpy("3"))), NULL,
-                NULL));
+        tree_make_program(
+            program_make_value(
+                value_make_rat(rational_from_string(str_cpy("3")))));
     struct Tree* op =
-        tree_make_value(
-            program_make(value_make_primop(Add), NULL, NULL));
+        tree_make_program(
+            program_make_value(value_make_primop(Add)));
     // printf("Tree size: %llu\n", term_size(apply_op));
     return
         tree_make_apply(tree_make_apply(tree_make_apply(apply_op, op), num1),
@@ -341,10 +325,9 @@ struct Tree* test_va() {
     // printf("Tree size: %llu\n", term_size(term2)); // 757 in .v, 563 here
 
     struct Tree* n =
-        tree_make_value(
-            program_make(
-                value_make_rat(rational_from_string(str_cpy("12"))), NULL,
-                NULL));
+        tree_make_program(
+            program_make_value(
+                value_make_rat(rational_from_string(str_cpy("12")))));
     // struct Tree* term = term_apply(term_apply(term_apply(cA(), cV()), cA()), n);
 
     struct Tree* term00 = cA();
@@ -399,14 +382,20 @@ struct Tree* tree_test() {
     // return zero_rule();
     // return cV();
 
-    return nStar("w", tree_apply(_sym("w"), _sym("w")));
+    // return tree_make_apply(_sym("w"), _sym("w"));
+    // return nStar("w", tree_make_apply(_sym("w"), _sym("w")));
+    // return self_apply();
 
     // return
-    //     nWait(_sym("self_apply"), // self_apply(),
+    //     nWait(self_apply(),
     //         nD(
     //             tree_apply(
     //                 nTagWait(_sym("tag")),
     //                     tree_apply(cK(), nSwap(_sym("tree"))))));
+    
+    // return nTagWait(_sym("tag"));
+    // return nStar("w", nTag(_sym("tag"), nWait(self_apply(), _sym("w"))));
+    return nTag(_sym("tag"), nWait(self_apply(), _sym("w")));
 }
 
 Response_t* _execute_command(struct VM* vm, char* cmd) {

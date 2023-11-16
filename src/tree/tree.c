@@ -3,21 +3,21 @@
 struct Tree {
     uint8_t type;
     union {
-        struct Program* value;
+        struct Program* program;
         struct Tree* apply[2];
     };
 };
 
-struct Tree* tree_make_value(struct Program* value) {
-    struct Tree* tree = allocate_mem("tree_make_value", NULL,
+struct Tree* tree_make_program(struct Program* program) {
+    struct Tree* tree = allocate_mem("tree_make_program", NULL,
         sizeof(struct Tree));
-    tree->type = TREE_TYPE_VALUE;
-    tree->value = value;
+    tree->type = TREE_TYPE_PROGRAM;
+    tree->program = program;
     return tree;
 }
 
 struct Tree* tree_make_apply(struct Tree* tree0, struct Tree* tree1) {
-    struct Tree* tree = allocate_mem("tree_make_value", NULL,
+    struct Tree* tree = allocate_mem("tree_make_program", NULL,
         sizeof(struct Tree));
     tree->type = TREE_TYPE_APPLY;
     tree->apply[0] = tree0;
@@ -26,18 +26,25 @@ struct Tree* tree_make_apply(struct Tree* tree0, struct Tree* tree1) {
 }
 
 struct Tree* tree_apply(struct Tree* tree0, struct Tree* tree1) {
-    if (tree_get_type(tree0) != TREE_TYPE_VALUE ||
-        tree_get_type(tree1) != TREE_TYPE_VALUE)
+    if (tree_get_type(tree0) != TREE_TYPE_PROGRAM ||
+        tree_get_type(tree1) != TREE_TYPE_PROGRAM)
     {
+        // If one of the children is not program, make an explicit application
         return tree_make_apply(tree0, tree1);
     } else {
-        struct Tree* result =
-            tree_apply_values(
-                program_copy(tree_get_value(tree0)),
-                program_copy(tree_get_value(tree1)));
-        tree_free(tree0);
-        tree_free(tree1);
-        return result;
+        if (program_get_type(tree_get_program(tree0)) == PROGRAM_TYPE_VALUE) {
+            // If the first program is a value, make an explicit application
+            return tree_make_apply(tree0, tree1);
+        } else {
+            // Otherwise, try to apply one program to the other
+            struct Tree* result =
+                tree_apply_programs(
+                    program_copy(tree_get_program(tree0)),
+                    program_copy(tree_get_program(tree1)));
+            tree_free(tree0);
+            tree_free(tree1);
+            return result;
+        }
     }
 }
 
@@ -45,15 +52,15 @@ struct Tree* tree_apply(struct Tree* tree0, struct Tree* tree1) {
 // ΔΔyz        = y         (K)
 // Δ(Δx)yz     = yz(xz)    (S)
 // Δ(Δwx)yz    = zwx       (F)
-struct Tree* tree_apply_values(struct Program* prg0, struct Program* prg1) {
+struct Tree* tree_apply_programs(struct Program* prg0, struct Program* prg1) {
     if (program_apply(prg0, prg1) == TRUE) {
-        return tree_make_value(prg0);
+        return tree_make_program(prg0);
     } else {
         switch (program_get_type(program_get_child(prg0, 0))) {
             case PROGRAM_TYPE_LEAF: {
                 // K rule - ΔΔyz = y
                 struct Tree* result =
-                    tree_make_value(program_copy(program_get_child(prg0, 1)));
+                    tree_make_program(program_copy(program_get_child(prg0, 1)));
                 program_free(prg0);
                 program_free(prg1);
                 return result;
@@ -72,9 +79,9 @@ struct Tree* tree_apply_values(struct Program* prg0, struct Program* prg1) {
                 return
                     tree_make_apply(
                         tree_make_apply(
-                            tree_make_value(y), tree_make_value(z0)),
+                            tree_make_program(y), tree_make_program(z0)),
                         tree_make_apply(
-                            tree_make_value(x), tree_make_value(z1)));
+                            tree_make_program(x), tree_make_program(z1)));
             }
             case PROGRAM_TYPE_FORK: {
                 // F rule - Δ(Δwx)yz = zwx
@@ -88,11 +95,15 @@ struct Tree* tree_apply_values(struct Program* prg0, struct Program* prg1) {
                 program_free(prg0);
                 return
                     tree_make_apply(tree_make_apply(
-                        tree_make_value(z), tree_make_value(w)),
-                        tree_make_value(x));
+                        tree_make_program(z), tree_make_program(w)),
+                        tree_make_program(x));
+            }
+            case PROGRAM_TYPE_VALUE: {
+                fatal("tree_apply_programs: Trying to apply to a program\n");
+                return NULL;
             }
             default: {
-                fatal("tree_apply_values: Invalid program type: %d\n",
+                fatal("tree_apply_programs: Invalid program type: %d\n",
                     program_get_type(prg0));
                 return NULL;
             }
@@ -104,8 +115,8 @@ uint8_t tree_get_type(struct Tree* tree) {
     return tree->type;
 }
 
-struct Program* tree_get_value(struct Tree* tree) {
-    return tree->value;
+struct Program* tree_get_program(struct Tree* tree) {
+    return tree->program;
 }
 
 struct Tree* tree_get_apply(struct Tree* tree, uint8_t index) {
@@ -114,8 +125,8 @@ struct Tree* tree_get_apply(struct Tree* tree, uint8_t index) {
 
 struct Tree* tree_copy(struct Tree* tree) {
     switch (tree->type) {
-        case TREE_TYPE_VALUE: {
-            return tree_make_value(program_copy(tree->value));
+        case TREE_TYPE_PROGRAM: {
+            return tree_make_program(program_copy(tree->program));
         }
         case TREE_TYPE_APPLY: {
             return tree_make_apply(
@@ -133,8 +144,8 @@ void tree_free(struct Tree* tree) {
         return;
     }
     switch (tree->type) {
-        case TREE_TYPE_VALUE: {
-            program_free(tree->value);
+        case TREE_TYPE_PROGRAM: {
+            program_free(tree->program);
             break;
         }
         case TREE_TYPE_APPLY: {
@@ -152,8 +163,8 @@ void tree_free(struct Tree* tree) {
 void tree_serialize(Serializer_t* serializer, struct Tree* tree) {
     serializer_write(serializer, tree->type);
     switch (tree->type) {
-        case TREE_TYPE_VALUE: {
-            program_serialize(serializer, tree->value);
+        case TREE_TYPE_PROGRAM: {
+            program_serialize(serializer, tree->program);
             break;
         }
         case TREE_TYPE_APPLY: {
@@ -174,8 +185,8 @@ struct Tree* tree_deserialize(Serializer_t* serializer) {
 
 void tree_print(struct Tree* tree) {
     switch (tree_get_type(tree)) {
-        case TREE_TYPE_VALUE: {
-            program_print(tree_get_value(tree));
+        case TREE_TYPE_PROGRAM: {
+            program_print(tree_get_program(tree));
             break;
         }
         case TREE_TYPE_APPLY: {
@@ -191,8 +202,8 @@ void tree_print(struct Tree* tree) {
 
 size_t tree_get_size(struct Tree* tree) {
     switch (tree_get_type(tree)) {
-        case TREE_TYPE_VALUE: {
-            return program_get_size(tree_get_value(tree));
+        case TREE_TYPE_PROGRAM: {
+            return program_get_size(tree_get_program(tree));
         }
         case TREE_TYPE_APPLY: {
             return tree_get_size(tree_get_apply(tree, 0)) +

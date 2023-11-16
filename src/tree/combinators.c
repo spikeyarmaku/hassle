@@ -2,11 +2,11 @@
 
 // Helper function for making symbols
 struct Tree* _sym(char* symbol) {
-    return tree_make_value(program_make(value_make_sym(symbol), NULL, NULL));
+    return tree_make_program(program_make_value(value_make_sym(symbol)));
 }
 
 struct Tree* delta() {
-    return tree_make_value(program_make(NULL, NULL, NULL));
+    return tree_make_program(program_make_leaf());
 }
 
 struct Tree* cK() {
@@ -164,9 +164,9 @@ struct Tree* is_fork() {
 // [x]uv = d{[x]v}([x]u)
 struct Tree* nBracket(char* symbol, struct Tree* tree) {
     // printf("nbracket %s\n", symbol);
-    if (tree_get_type(tree) == TREE_TYPE_VALUE) {
+    if (tree_get_type(tree) == TREE_TYPE_PROGRAM) {
         // printf("tree type: VALUE\n");
-        struct Value* val = program_get_value(tree_get_value(tree));
+        struct Value* val = program_get_value(tree_get_program(tree));
         if (value_get_type(val) == VALUE_TYPE_SYMBOL) {
             // printf("value type: SYMBOL\n");
             if (strcmp(value_get_sym(val), symbol) == 0) {
@@ -192,8 +192,8 @@ struct Tree* nBracket(char* symbol, struct Tree* tree) {
 }
 
 BOOL is_elem(char* symbol, struct Tree* tree) {
-    if (tree_get_type(tree) == TREE_TYPE_VALUE) {
-        struct Value* val = program_get_value(tree_get_value(tree));
+    if (tree_get_type(tree) == TREE_TYPE_PROGRAM) {
+        struct Value* val = program_get_value(tree_get_program(tree));
         if (value_get_type(val) == VALUE_TYPE_SYMBOL) {
             if (strcmp(value_get_sym(val), symbol) == 0) {
                 return TRUE;
@@ -215,8 +215,8 @@ BOOL is_elem(char* symbol, struct Tree* tree) {
 // λ∗x.x = I
 // λ∗x.tu = d{λ∗x.u}(λ∗x.t) (otherwise).
 struct Tree* nStar(char* symbol, struct Tree* tree) {
-    if (tree_get_type(tree) == TREE_TYPE_VALUE) {
-        struct Value* val = program_get_value(tree_get_value(tree));
+    if (tree_get_type(tree) == TREE_TYPE_PROGRAM) {
+        struct Value* val = program_get_value(tree_get_program(tree));
         if (value_get_type(val) == VALUE_TYPE_SYMBOL &&
             strcmp(value_get_sym(val), symbol) == 0)
         {
@@ -230,8 +230,8 @@ struct Tree* nStar(char* symbol, struct Tree* tree) {
     } else {
         struct Tree* child1 = tree_get_apply(tree, 1);
         struct Value* val = NULL;
-        if (tree_get_type(child1) == TREE_TYPE_VALUE) {
-            val = program_get_value(tree_get_value(child1));
+        if (tree_get_type(child1) == TREE_TYPE_PROGRAM) {
+            val = program_get_value(tree_get_program(child1));
         }
         if (val != NULL &&
             value_get_type(val) == VALUE_TYPE_SYMBOL &&
@@ -247,12 +247,12 @@ struct Tree* nStar(char* symbol, struct Tree* tree) {
             struct Tree* app0 = tree_copy(tree_get_apply(tree, 0));
             struct Tree* app1 = tree_copy(tree_get_apply(tree, 1));
             tree_free(tree);
-            return tree_apply(nD(app1), app0);
+            return tree_apply(nD(nStar(symbol, app1)), nStar(symbol, app0));
         }
     }
 }
 
-// wait{x, y} = d{I}(d{K y}(K x))
+// wait{x, y} = d{I}(d{Ky}(Kx))
 struct Tree* nWait(struct Tree* term1, struct Tree* term2) {
     return
         tree_apply(
@@ -275,14 +275,14 @@ struct Tree* nWait1(struct Tree* tree) {
                 nD(tree_apply(tree_apply(delta(), cK()), cK()))));
 }
 
-// in the book: self_apply = λ∗w.ww = d{I}I
+// in the book:   self_apply = λ∗w.ww = d{I}I
 // in the proofs: self_apply = \*x.xx
 struct Tree* self_apply() {
-    return nStar("x", tree_apply(_sym("x"), _sym("x")));
+    return nStar("x", tree_make_apply(_sym("x"), _sym("x")));
     // return tree_apply(nD(cI()), cI());
 }
 
-// Z{f} = wait{self_apply, d{wait1{self_apply}(K f)}
+// Z{f} = wait{self_apply, d{wait1{self_apply}(Kf)}
 struct Tree* nZ(struct Tree* tree) {
     return
         nWait(
@@ -292,14 +292,14 @@ struct Tree* nZ(struct Tree* tree) {
                 tree_apply(cK(), tree)));
 }
 
-// swap{f} = d{K f}d{d{K}(KΔ)}(KΔ)
+// swap{f} = d{Kf}(d{d{K}(KΔ)}(KΔ))
 struct Tree* nSwap(struct Tree* tree) {
     return
         tree_apply(
+            nD(tree_apply(cK(), tree)),
             tree_apply(
-                nD(tree_apply(cK(), tree)),
-                nD(tree_apply(nD(cK()), tree_apply(cK(), delta())))),
-            tree_apply(cK(), delta()));
+                nD(tree_apply(nD(cK()), tree_apply(cK(), delta()))),
+                tree_apply(cK(), delta())));
 }
 
 // Y2{f} = Z{swap{f}}
@@ -324,17 +324,17 @@ struct Tree* nTagWait(struct Tree* tree) {
     return nStar("w", nTag(tree, nWait(self_apply(), _sym("w"))));
 }
 
-// in the book: Y2t{t, f} = tag{t, wait{self_apply, d{tag_wait{t}(K f)}}
-// in the proofs: Y2t{t, f} = tag{t, wait{self_apply, d{tag_wait{t}(K (swap f))}}
+// in the book:   Y2t{t, f} = tag{t, wait{self_apply, d{tag_wait{t}(Kf)}}
+// in the proofs: Y2t{t, f} = tag{t, wait{self_apply, d{tag_wait{t}}(K (swap f))}
 struct Tree* nY2t(struct Tree* tag, struct Tree* tree) {
     struct Tree* tag0 = tag;
     struct Tree* tag1 = tree_copy(tag);
     return
         nTag(tag0,
             nWait(self_apply(),
-                nD(
-                    tree_apply(
-                        nTagWait(tag1), tree_apply(cK(), nSwap(tree))))));
+                tree_apply(
+                    nD(nTagWait(tag1)),
+                    tree_apply(cK(), nSwap(tree)))));
 }
 
 // zero_rule = λ∗a.λ∗y.λ∗z.z
@@ -343,7 +343,7 @@ struct Tree* zero_rule() {
         nStar("a", nStar("y", nStar("z", _sym("z"))));
 }
 
-// in the book: successor_rule = λ∗x.λ∗a.λ∗y.λ∗z.yx
+// in the book:   successor_rule = λ∗x.λ∗a.λ∗y.λ∗z.yx
 // in the proofs: successor_rule = λ∗x.λ∗a.λ∗y.[z].yx
 struct Tree* successor_rule() {
     return
@@ -358,7 +358,7 @@ struct Tree* successor_rule() {
     //                 nStar("z", tree_apply(_sym("y"), _sym("x"))))));
 }
 
-// in the book: application_rule = λ∗w.λ∗x.λ∗a.λ∗y.λ∗z.yx
+// in the book:   application_rule = λ∗w.λ∗x.λ∗a.λ∗y.λ∗z.yx
 // in the proofs: application_rule = λ∗w.λ∗x.λ∗a.λ∗y.λ∗z.awyz(axyz)
 struct Tree* application_rule() {
     return
@@ -399,47 +399,27 @@ struct Tree* empty_rule() {
 
 // substitution_rule = λ∗x.λ∗a.λ∗y.λ∗z.azxy
 struct Tree* substitution_rule() {
-    struct Tree* tree = tree_apply(
-                            tree_apply(
-                                tree_apply(
-                                    _sym("a"),
-                                    _sym("z")),
-                                _sym("x")),
-                            _sym("y"));
+    struct Tree* tree =
+        tree_apply(tree_apply(tree_apply(_sym("a"), _sym("z")), _sym("x")),
+            _sym("y"));
     return nStar("x", nStar("a", nStar("y", nStar("z", tree))));
-    // return
-    //     nStar("x",
-    //         nStar("a",
-    //             nStar("y",
-    //                 nStar("z",
-    //                     tree_apply(
-    //                         tree_apply(
-    //                             tree_apply(
-    //                                 _sym("a"),
-    //                                 _sym("z")),
-    //                             _sym("x")),
-    //                         _sym("y"))))));
 }
 
 // abstraction_rule = λ∗w.λ∗x.λ∗a.λ∗y.λ∗z.aw(axyz)
 struct Tree* abstraction_rule() {
     return
-        nStar("w",
-            nStar("x",
-                nStar("a",
-                    nStar("y",
-                        nStar("z",
-                            tree_apply(
-                                tree_apply(
-                                    _sym("a"),
-                                    _sym("w")),
-                                tree_apply(
-                                    tree_apply(
-                                        tree_apply(
-                                            _sym("a"),
-                                            _sym("x")),
-                                        _sym("y")),
-                                    _sym("z"))))))));
+        nStar("w", nStar("x", nStar("a", nStar("y", nStar("z",
+            tree_apply(
+                tree_apply(
+                    _sym("a"),
+                    _sym("w")),
+                tree_apply(
+                    tree_apply(
+                        tree_apply(
+                            _sym("a"),
+                            _sym("x")),
+                        _sym("y")),
+                    _sym("z"))))))));
 }
 
 // Vt = Y2t {zero_rule,
