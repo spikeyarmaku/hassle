@@ -72,16 +72,16 @@ struct Tree* pair() {
 // first{p} = ΔpΔK
 struct Tree* nFirst(struct Tree* tree) {
     return
-        tree_apply(
-            tree_apply(tree_apply(delta(), tree), delta()), cK());
+        tree_make_apply(
+            tree_make_apply(tree_make_apply(delta(), tree), delta()), cK());
 }
 
 // second{p} = ΔpΔ(K I)
 struct Tree* nSecond(struct Tree* tree) {
     return
-        tree_apply(
-            tree_apply(tree_apply(delta(), tree), delta()),
-            tree_apply(cK(), cI()));
+        tree_make_apply(
+            tree_make_apply(tree_make_apply(delta(), tree), delta()),
+            tree_make_apply(cK(), cI()));
 }
 
 // d(KK)(d(KΔ)Δ)
@@ -163,37 +163,51 @@ struct Tree* is_fork() {
 // [x]O = KO
 // [x]uv = d{[x]v}([x]u)
 struct Tree* nBracket(char* symbol, struct Tree* tree) {
-    // printf("nbracket %s\n", symbol);
-    if (tree_get_type(tree) == TREE_TYPE_PROGRAM) {
-        // printf("tree type: VALUE\n");
-        struct Value* val = program_get_value(tree_get_program(tree));
-        if (value_get_type(val) == VALUE_TYPE_SYMBOL) {
-            // printf("value type: SYMBOL\n");
-            if (strcmp(value_get_sym(val), symbol) == 0) {
-                // printf("symbol match %s\n", symbol);
-                tree_free(tree);
-                return cI();
-            } else {
-                // printf("symbol NOT match %s\n", symbol);
-                return tree_apply(cK(), tree);
-            }
+    // Ref y => if eqb x y then I else (K@ (Ref y))
+    if (tree_is_symbol(tree) == TRUE) {
+        if (strcmp(symbol, tree_get_symbol(tree)) == 0) {
+            tree_free(tree);
+            return cI();
         } else {
-            // printf("value type: %d\n", value_get_type(val));
-            return tree_apply(cK(), tree);
+            return tree_make_apply(cK(), tree);
         }
+    }
+
+    struct Tree* extracted = tree_extract(tree);
+    // △ => K@△
+    if (tree_get_type(extracted) == TREE_TYPE_PROGRAM) {
+        return tree_make_apply(cK(), tree);
+    }
+    
+    struct Tree* child0 = tree_copy(tree_get_apply(extracted, 0));
+    struct Tree* child1 = tree_copy(tree_get_apply(extracted, 1));
+    tree_free(extracted);
+
+    // App M1 M2 => d (bracket x M2) @ (bracket x M1)
+    return tree_make_apply(nD(nBracket(symbol, child1)), nBracket(symbol, child0));
+}
+
+BOOL occurs_t(char* symbol, struct Tree* tree) {
+    if (tree == NULL) {
+        return FALSE;
+    }
+
+    if (tree_get_type(tree) == TREE_TYPE_PROGRAM) {
+        return occurs_p(symbol, tree_get_program(tree));
     } else {
-        // printf("tree type: APPLY\n");
-        struct Tree* app0 = tree_copy(tree_get_apply(tree, 0));
-        struct Tree* app1 = tree_copy(tree_get_apply(tree, 1));
-        tree_free(tree);
         return
-            tree_apply(nD(nBracket(symbol, app1)), nBracket(symbol, app0));
+            occurs_t(symbol, tree_get_apply(tree, 0)) ||
+            occurs_t(symbol, tree_get_apply(tree, 1));
     }
 }
 
-BOOL is_elem(char* symbol, struct Tree* tree) {
-    if (tree_get_type(tree) == TREE_TYPE_PROGRAM) {
-        struct Value* val = program_get_value(tree_get_program(tree));
+BOOL occurs_p(char* symbol, struct Program* prg) {
+    if (prg == NULL) {
+        return FALSE;
+    }
+
+    if (program_get_type(prg) == PROGRAM_TYPE_VALUE) {
+        struct Value* val = program_get_value(prg);
         if (value_get_type(val) == VALUE_TYPE_SYMBOL) {
             if (strcmp(value_get_sym(val), symbol) == 0) {
                 return TRUE;
@@ -205,8 +219,8 @@ BOOL is_elem(char* symbol, struct Tree* tree) {
         }
     } else {
         return
-            is_elem(symbol, tree_get_apply(tree, 0)) ||
-            is_elem(symbol, tree_get_apply(tree, 1));
+            occurs_p(symbol, program_get_child(prg, 0)) ||
+            occurs_p(symbol, program_get_child(prg, 1));
     }
 }
 
@@ -215,39 +229,55 @@ BOOL is_elem(char* symbol, struct Tree* tree) {
 // λ∗x.x = I
 // λ∗x.tu = d{λ∗x.u}(λ∗x.t) (otherwise).
 struct Tree* nStar(char* symbol, struct Tree* tree) {
-    if (tree_get_type(tree) == TREE_TYPE_PROGRAM) {
-        struct Value* val = program_get_value(tree_get_program(tree));
-        if (value_get_type(val) == VALUE_TYPE_SYMBOL &&
-            strcmp(value_get_sym(val), symbol) == 0)
-        {
-            // λ∗ x.x = I
+    // Ref y => if eqb x y then I else (K@ (Ref y))
+    if (tree_is_symbol(tree) == TRUE) {
+        if (strcmp(symbol, tree_get_symbol(tree)) == 0) {
             tree_free(tree);
             return cI();
         } else {
-            // λ∗ x.t = Kt (x not in t)
-            return tree_apply(cK(), tree);
+            return tree_make_apply(cK(), tree);
+        }
+    }
+
+    struct Tree* extracted = tree_extract(tree);
+    // △ => K@△
+    if (tree_get_type(extracted) == TREE_TYPE_PROGRAM) {
+        return tree_make_apply(cK(), tree);
+    }
+
+    struct Tree* child0 = tree_copy(tree_get_apply(extracted, 0));
+    struct Tree* child1 = tree_copy(tree_get_apply(extracted, 1));
+    tree_free(extracted);
+
+    if (tree_is_symbol(child1) == TRUE) {
+        // App M1 (Ref y) => ...
+        BOOL x_in_child_0 = occurs_t(symbol, child0);
+        if (strcmp(symbol, tree_get_symbol(child1)) == 0) {
+            tree_free(child1);
+            if (x_in_child_0 == TRUE) {
+                return tree_make_apply(nD(cI()), nStar(symbol, child0));
+            } else {
+                return child0;
+            }
+        } else {
+            if (x_in_child_0) {
+                // d (K@ (Ref y)) @ (star x M1)
+                return
+                    tree_make_apply(
+                        nD(tree_make_apply(cK(), child1)), nStar(symbol, child0));
+            } else {
+                // K@ (M1 @ (Ref y))
+                return tree_make_apply(cK(), tree_make_apply(child0, child1));
+            }
         }
     } else {
-        struct Tree* child1 = tree_get_apply(tree, 1);
-        struct Value* val = NULL;
-        if (tree_get_type(child1) == TREE_TYPE_PROGRAM) {
-            val = program_get_value(tree_get_program(child1));
-        }
-        if (val != NULL &&
-            value_get_type(val) == VALUE_TYPE_SYMBOL &&
-            strcmp(value_get_sym(val), symbol) == 0 &&
-            !is_elem(symbol, tree_get_apply(tree, 0)))
-        {
-            // λ∗ x.t x = t (x not in t)
-            struct Tree* result = tree_copy(tree_get_apply(tree, 0));
-            tree_free(tree);
-            return result;
+        // App M1 M2 => ...
+        if (occurs_t(symbol, child0) || occurs_t(symbol, child1)) {
+            // Node @ (Node @ (star x M2)) @ (star x M1)
+            return tree_make_apply(nD(nStar(symbol, child1)), nStar(symbol, child0));
         } else {
-            // λ∗ x.tu = d{λ∗ x.u}(λ∗ x.t)
-            struct Tree* app0 = tree_copy(tree_get_apply(tree, 0));
-            struct Tree* app1 = tree_copy(tree_get_apply(tree, 1));
-            tree_free(tree);
-            return tree_apply(nD(nStar(symbol, app1)), nStar(symbol, app0));
+            // K@ (M1 @ M2)
+            return tree_make_apply(cK(), tree_make_apply(child0, child1));
         }
     }
 }
@@ -314,9 +344,9 @@ struct Tree* nTag(struct Tree* tag, struct Tree* tree) {
             nD(tag), tree_apply(nD(tree), tree_apply(cK(), cK())));
 }
 
-// getTag = λ∗p.first{first{p}Δ}
-struct Tree* getTag() {
-    return nStar("p", nFirst(tree_apply(nFirst(_sym("p")), delta())));
+// get_tag = λ∗p.first{first{p}Δ}
+struct Tree* get_tag() {
+    return nStar("p", nFirst(tree_make_apply(nFirst(_sym("p")), delta())));
 }
 
 // tag_wait{t} = λ∗w.tag{t, wait{self_apply, w}} (w not in t).
@@ -432,21 +462,19 @@ struct Tree* cV() {
             nStar("x",
                 nStar("a",
                     nTag(
-                        tree_apply(successor_rule(),
-                            _sym("x")),
+                        tree_make_apply(successor_rule(), _sym("x")),
                         nStar("y",
                             nTag(
-                                tree_apply(
-                                    tree_apply(
-                                        application_rule(),
-                                        _sym("x")),
+                                tree_make_apply(
+                                    tree_make_apply(
+                                        application_rule(), _sym("x")),
                                     _sym("y")),
                                 nBracket("z",
-                                    tree_apply(
-                                        tree_apply(
+                                    tree_make_apply(
+                                        tree_make_apply(
                                             _sym("a"),
-                                            tree_apply(
-                                                tree_apply(
+                                            tree_make_apply(
+                                                tree_make_apply(
                                                     _sym("a"),
                                                     _sym("x")),
                                                 _sym("y"))),
@@ -456,27 +484,23 @@ struct Tree* cV() {
 // At = Y2t {empty_rule,
 //      λ∗x.λ∗a.tag{substitution_rule x,
 //      λ∗y.tag{abstraction_rule x y,
-//          getTag x a y}}}
+//          get_tag x a y}}}
 struct Tree* cA() {
     return
         nY2t(empty_rule(),
             nStar("x",
                 nStar("a",
                     nTag(
-                        tree_apply(substitution_rule(),
-                            _sym("x")),
+                        tree_make_apply(substitution_rule(), _sym("x")),
                         nStar("y",
                             nTag(
-                                tree_apply(
-                                    tree_apply(
-                                        abstraction_rule(),
-                                        _sym("x")),
+                                tree_make_apply(
+                                    tree_make_apply(
+                                        abstraction_rule(), _sym("x")),
                                     _sym("y")),
-                                tree_apply(
-                                    tree_apply(
-                                        tree_apply(
-                                            getTag(),
-                                            _sym("x")),
+                                tree_make_apply(
+                                    tree_make_apply(
+                                        tree_make_apply(get_tag(), _sym("x")),
                                         _sym("a")),
                                     _sym("y"))))))));
 }

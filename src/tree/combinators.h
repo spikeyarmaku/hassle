@@ -42,7 +42,8 @@ struct Tree*    is_fork     ();
 
 // Variable binding
 struct Tree*    nBracket    (char*, struct Tree*);
-BOOL            is_elem     (char*, struct Tree*);
+BOOL            occurs_t    (char*, struct Tree*);
+BOOL            occurs_p    (char*, struct Program*);
 struct Tree*    nStar       (char*, struct Tree*);
 struct Tree*    nWait       (struct Tree*, struct Tree*);
 struct Tree*    nWait1      (struct Tree*);
@@ -53,7 +54,7 @@ struct Tree*    nY2         (struct Tree*);
 
 // Intensional
 struct Tree*    nTag        (struct Tree*, struct Tree*);
-struct Tree*    getTag      ();
+struct Tree*    get_tag     ();
 
 struct Tree*    zero_rule           ();
 struct Tree*    successor_rule      ();

@@ -17,6 +17,7 @@ struct VM*      vm_make         ();
 void            vm_populate     (struct VM*, struct Tree*);
 enum EvalState  vm_step         (struct VM*);
 struct Program* vm_run          (struct VM*);
+enum EvalState  vm_run_steps    (struct VM*, size_t);
 struct VMData   vm_serialize    (struct VM*, uint8_t);
 struct VM*      vm_deserialize  (uint8_t*);
 void            vm_reset        (struct VM*);

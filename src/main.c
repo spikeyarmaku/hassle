@@ -320,24 +320,25 @@ struct Tree* test3b() {
 
 struct Tree* test_va() {
     // struct Tree* term1 = cV();
-    // printf("Tree size: %llu\n", term_size(term1)); // 909 in .v, 679 here
+    // printf("Tree size: %llu\n", term_size(term1)); // 909 in .v
     // struct Tree* term2 = cA();
-    // printf("Tree size: %llu\n", term_size(term2)); // 757 in .v, 563 here
-
-    struct Tree* n =
-        tree_make_program(
-            program_make_value(
-                value_make_rat(rational_from_string(str_cpy("12")))));
-    // struct Tree* term = term_apply(term_apply(term_apply(cA(), cV()), cA()), n);
-
-    struct Tree* term00 = cA();
-    struct Tree* term01 = cV();
-    struct Tree* term0 = tree_make_apply(term00, term01);
-    struct Tree* term1 = tree_make_apply(term0, cA());
-    struct Tree* term = tree_make_apply(term1, n);
+    // printf("Tree size: %llu\n", term_size(term2)); // 757 in .v
 
     printf("Size of V: %llu, size of A: %llu\n", tree_get_size(cV()),
         tree_get_size(cA()));
+    
+    // struct Tree* n =
+    //     tree_make_program(
+    //         program_make_value(
+    //             value_make_rat(rational_from_string(str_cpy("12")))));
+    struct Tree* term =
+        tree_apply(tree_apply(tree_apply(cA(), cV()), cA()), not());
+
+    // struct Tree* term00 = cA();
+    // struct Tree* term01 = cV();
+    // struct Tree* term0 = tree_make_apply(term00, term01);
+    // struct Tree* term1 = tree_make_apply(term0, cA());
+    // struct Tree* term = tree_make_apply(term1, n);
 
     return term;
 }
@@ -366,36 +367,31 @@ struct Tree* tree_count() {
     return delta();
 }
 
-struct Tree* tree_test() {
-// struct Tree* nY2t(struct Tree* tag, struct Tree* tree) {
-//     struct Tree* tag0 = tag;
-//     struct Tree* tag1 = tree_copy(tag);
-//     return
-//         nTag(tag0,
-//             nWait(self_apply(),
-//                 nD(
-//                     tree_apply(
-//                         nTagWait(tag1), tree_apply(cK(), nSwap(tree))))));
-// }
-    
-    // return nY2t(_sym("tag"), _sym("tree"));
-    // return zero_rule();
-    // return cV();
-
-    // return tree_make_apply(_sym("w"), _sym("w"));
-    // return nStar("w", tree_make_apply(_sym("w"), _sym("w")));
-    // return self_apply();
-
+struct Tree* exercise() {
     // return
-    //     nWait(self_apply(),
-    //         nD(
-    //             tree_apply(
-    //                 nTagWait(_sym("tag")),
-    //                     tree_apply(cK(), nSwap(_sym("tree"))))));
-    
-    // return nTagWait(_sym("tag"));
-    // return nStar("w", nTag(_sym("tag"), nWait(self_apply(), _sym("w"))));
-    return nTag(_sym("tag"), nWait(self_apply(), _sym("w")));
+    // nStar("x",
+    //     nStar("a",
+    //         nStar("y",
+    //             nBracket("z",
+    //                 tree_make_apply(
+    //                     tree_make_apply(
+    //                         _sym("a"),
+    //                         tree_make_apply(
+    //                             tree_make_apply(
+    //                                 _sym("a"),
+    //                                 _sym("x")),
+    //                             _sym("y"))),
+    //                     _sym("z"))))));
+    // return
+    // nStar("x",
+    //     nStar("a",
+    //         nStar("y",
+    //             tree_make_apply(
+    //                 tree_make_apply(
+    //                     tree_make_apply(get_tag(), _sym("x")),
+    //                     _sym("a")),
+    //                 _sym("y")))));
+    return test_va();
 }
 
 Response_t* _execute_command(struct VM* vm, char* cmd) {
@@ -422,7 +418,7 @@ Response_t* _execute_command(struct VM* vm, char* cmd) {
                     if (arg != NULL) {
                         // vm_set_term(vm, parse_from_str(arg));
                         // TODO convert Expr_t* to struct Tree*
-                        vm_populate(vm, tree_test());
+                        vm_populate(vm, exercise());
                     }
                     free_mem("execute_command/expr", arg);
                     return response_make_void();
@@ -433,7 +429,17 @@ Response_t* _execute_command(struct VM* vm, char* cmd) {
                 }
                 case 3: {
                     // run
-                    return response_make_program(vm_run(vm));
+                    char* arg = str_get_substr(cmd, 1, FALSE);
+                    if (arg == NULL) {
+                        printf("Arg is null\n");
+                        return response_make_program(vm_run(vm));
+                    } else {
+                        printf("Arg is not null\n");
+                        size_t step_count = atoi(arg);
+                        return
+                            response_make_eval_state(
+                                vm_run_steps(vm, step_count));
+                    }
                 }
                 case 4: {
                     // reset

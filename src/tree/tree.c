@@ -99,8 +99,13 @@ struct Tree* tree_apply_programs(struct Program* prg0, struct Program* prg1) {
                         tree_make_program(x));
             }
             case PROGRAM_TYPE_VALUE: {
-                fatal("tree_apply_programs: Trying to apply to a program\n");
-                return NULL;
+                // fatal("tree_apply_programs: Trying to apply to a value\n");
+                // return NULL;
+                struct Tree* result =
+                    tree_make_program(program_copy(program_get_child(prg0, 1)));
+                program_free(prg0);
+                program_free(prg1);
+                return result;
             }
             default: {
                 fatal("tree_apply_programs: Invalid program type: %d\n",
@@ -212,6 +217,71 @@ size_t tree_get_size(struct Tree* tree) {
         default: {
             fatal("tree_get_size: invalid tree type %d\n", tree_get_type(tree));
             return 0;
+        }
+    }
+}
+
+BOOL tree_is_symbol(struct Tree* tree) {
+    if (tree->type == TREE_TYPE_PROGRAM) {
+        if (program_get_type(tree->program) == PROGRAM_TYPE_VALUE) {
+            return
+                value_get_type(program_get_value(tree->program)) ==
+                    VALUE_TYPE_SYMBOL ? TRUE : FALSE;
+        }
+    }
+    return FALSE;
+}
+
+char* tree_get_symbol(struct Tree* tree) {
+    if (tree->type == TREE_TYPE_PROGRAM) {
+        if (program_get_type(tree->program) == PROGRAM_TYPE_VALUE) {
+            struct Value* val = program_get_value(tree->program);
+            if (value_get_type(val) == VALUE_TYPE_SYMBOL) {
+                return value_get_sym(val);
+            }
+        }
+    }
+    return NULL;
+}
+
+// If the tree is an application, leave it, otherwise make it an application if
+// possible
+struct Tree* tree_extract(struct Tree* tree) {
+    if (tree->type == TREE_TYPE_APPLY) {
+        return tree;
+    } else {
+        switch (program_get_type(tree->program)) {
+            case PROGRAM_TYPE_LEAF: {
+                return tree;
+            }
+            case PROGRAM_TYPE_STEM: {
+                struct Program* child0 = program_make_leaf();
+                struct Program* child1 =
+                    program_copy(program_get_child(tree->program, 0));
+                tree_free(tree);
+                return
+                    tree_make_apply(
+                        tree_make_program(child0), tree_make_program(child1));
+            }
+            case PROGRAM_TYPE_FORK: {
+                struct Program* child0 =
+                    program_make_stem(
+                        program_copy(program_get_child(tree->program, 0)));
+                struct Program* child1 =
+                    program_copy(program_get_child(tree->program, 1));
+                tree_free(tree);
+                return
+                    tree_make_apply(
+                        tree_make_program(child0), tree_make_program(child1));
+            }
+            case PROGRAM_TYPE_VALUE: {
+                return tree;
+            }
+            default: {
+                fatal("tree_get_child: invalid program type %d\n",
+                    program_get_type(tree->program));
+                return NULL;
+            }
         }
     }
 }

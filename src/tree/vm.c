@@ -99,6 +99,16 @@ struct Program* vm_run(struct VM* vm) {
     return vm->control;
 }
 
+enum EvalState vm_run_steps(struct VM* vm, size_t step_count) {
+    size_t step = 0;
+    enum EvalState state = EvalRunning;
+    while (state == EvalRunning && step < step_count) {
+        state = vm_step(vm);
+        printf("Step %llu / %llu\n", step++, step_count);
+    }
+    return state;
+}
+
 struct VMData vm_serialize(struct VM* vm, uint8_t word_size) {
     assert(word_size <= sizeof(size_t));
     printf("Serializing VM\n");
