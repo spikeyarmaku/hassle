@@ -1,3 +1,12 @@
+// Evaluation: first evaluate recursively the first three children, then add
+// them to a node, and evaluate the resulting tree. In pseudocode:
+// eval expr =
+// let c0 = eval (get_child expr 0)
+//     c1 = eval (get_child expr 1)
+//     c2 = eval (get_child expr 2)
+// in  eval (tree_make c0 c1 c2)
+// For an example, see "doc/not_true_raw.gif" or "doc/not_true_annotated.gif"
+
 #include "vm.h"
 
 #include "stack.h"

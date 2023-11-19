@@ -391,7 +391,7 @@ struct Tree* exercise() {
     //                     tree_make_apply(get_tag(), _ref("x")),
     //                     _ref("a")),
     //                 _ref("y")))));
-    return test_va();
+    return tree_apply(not(), true());
 }
 
 Response_t* _execute_command(struct VM* vm, char* cmd) {
