@@ -23,8 +23,8 @@ void            tree_print          (struct Tree*);
 size_t          tree_get_size       (struct Tree*);
 
 // Stuff usd in nStar
-BOOL            tree_is_symbol      (struct Tree*);
-char*           tree_get_symbol     (struct Tree*);
+BOOL            tree_is_reference   (struct Tree*);
+char*           tree_get_reference  (struct Tree*);
 struct Tree*    tree_extract        (struct Tree*);
 
 #endif

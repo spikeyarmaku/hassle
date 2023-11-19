@@ -67,8 +67,8 @@ struct Tree*    cV          ();
 struct Tree*    cA          ();
 
 // Exposed for debug purposes
-struct Tree* _sym(char* symbol);
-struct Tree* nY2t(struct Tree* tag, struct Tree* tree);
-struct Tree* nTagWait(struct Tree* tree);
+struct Tree*    _ref        (char*);
+struct Tree*    nY2t        (struct Tree*, struct Tree*);
+struct Tree*    nTagWait    (struct Tree*);
 
 #endif

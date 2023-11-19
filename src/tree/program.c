@@ -17,11 +17,11 @@ struct Program {
     };
 };
 
-struct Value* value_make_sym(char* sym) {
+struct Value* value_make_ref(char* ref) {
     struct Value* value =
         allocate_mem("_value_make", NULL, sizeof(struct Value));
-    value->type = VALUE_TYPE_SYMBOL;
-    value->str_val = str_cpy(sym);
+    value->type = VALUE_TYPE_REFERENCE;
+    value->str_val = str_cpy(ref);
     return value;
 }
 
@@ -60,7 +60,7 @@ char* value_get_str(struct Value* value) {
     return value->str_val;
 }
 
-char* value_get_sym(struct Value* value) {
+char* value_get_ref(struct Value* value) {
     return value->str_val;
 }
 
@@ -77,7 +77,7 @@ void value_free(struct Value* value) {
         return;
     }
     switch (value->type) {
-        case VALUE_TYPE_SYMBOL: {
+        case VALUE_TYPE_REFERENCE: {
             free_mem("value_free", value->str_val);
             break;
         }
@@ -104,8 +104,8 @@ struct Value* value_copy(struct Value* value) {
         return NULL;
     }
     switch (value->type) {
-        case VALUE_TYPE_SYMBOL: {
-            return value_make_sym(str_cpy(value->str_val));
+        case VALUE_TYPE_REFERENCE: {
+            return value_make_ref(str_cpy(value->str_val));
         }
         case VALUE_TYPE_STRING: {
             return value_make_str(str_cpy(value->str_val));
@@ -129,7 +129,7 @@ void value_serialize(Serializer_t* serializer, struct Value* value) {
     } else {
         serializer_write(serializer, value->type);
         switch (value->type) {
-            case VALUE_TYPE_SYMBOL: {
+            case VALUE_TYPE_REFERENCE: {
                 serializer_write_string(serializer, value->str_val);
                 break;
             }
@@ -159,7 +159,7 @@ void value_print(struct Value* value) {
             printf("Δ");
             break;
         }
-        case VALUE_TYPE_SYMBOL: {
+        case VALUE_TYPE_REFERENCE: {
             printf("%s", value->str_val);
             break;
         }

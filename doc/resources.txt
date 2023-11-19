@@ -45,3 +45,4 @@ Is interactive REPL-based development in conflict with the functional discipline
 relation to interaction nets:
 From Functional Programs to Interaction Nets via the Rewriting Calculus - https://sci-hub.se/10.1016/j.entcs.2007.02.046
 Interaction Nets vs. the ρ-calculus: Introducing Bigraphical Nets - https://sci-hub.se/10.1016/j.entcs.2006.05.004
+Interaction nets and term-rewriting systems - https://core.ac.uk/download/pdf/82175465.pdf

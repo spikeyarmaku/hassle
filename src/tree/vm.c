@@ -75,7 +75,7 @@ enum EvalState vm_step(struct VM* vm) {
                 struct Kin* new_kin =
                     kin_make(TRUE, tree_make_program(vm->control));
                 stack_push(vm->stack, new_kin);
-                vm->control = program_make_leaf();
+                vm->control = NULL;
                 vm_populate(vm, tree_copy(kin_get_tree(kin)));
                 kin_free(kin);
                 break;

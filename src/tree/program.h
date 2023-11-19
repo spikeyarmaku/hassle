@@ -1,16 +1,16 @@
 #ifndef _PROGRAM_H_
 #define _PROGRAM_H_
 
-#define VALUE_TYPE_DELTA    0
-#define VALUE_TYPE_SYMBOL   1
-#define VALUE_TYPE_STRING   2
-#define VALUE_TYPE_RATIONAL 3
-#define VALUE_TYPE_PRIMOP   4
+#define VALUE_TYPE_DELTA        0
+#define VALUE_TYPE_REFERENCE    1
+#define VALUE_TYPE_STRING       2
+#define VALUE_TYPE_RATIONAL     3
+#define VALUE_TYPE_PRIMOP       4
 
-#define PROGRAM_TYPE_LEAF   0
-#define PROGRAM_TYPE_STEM   1
-#define PROGRAM_TYPE_FORK   2
-#define PROGRAM_TYPE_VALUE  3
+#define PROGRAM_TYPE_LEAF       0
+#define PROGRAM_TYPE_STEM       1
+#define PROGRAM_TYPE_FORK       2
+#define PROGRAM_TYPE_VALUE      3
 
 #include <stdint.h>
 
@@ -18,13 +18,13 @@
 #include "rational/rational.h"
 #include "serialize/serialize.h"
 
-struct Value*   value_make_sym      (char*);
+struct Value*   value_make_ref      (char*);
 struct Value*   value_make_str      (char*);
 struct Value*   value_make_rat      (Rational_t*);
 struct Value*   value_make_primop   (uint8_t);
 uint8_t         value_get_type      (struct Value*);
 char*           value_get_str       (struct Value*);
-char*           value_get_sym       (struct Value*);
+char*           value_get_ref       (struct Value*);
 Rational_t*     value_get_rat       (struct Value*);
 uint8_t         value_get_primop    (struct Value*);
 void            value_free          (struct Value*);

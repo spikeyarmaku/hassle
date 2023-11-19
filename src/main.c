@@ -204,7 +204,7 @@ struct Tree* test1() {
     struct Tree* t_true = true();
     struct Tree* t_not = not();
     // struct Tree* t_x =
-    //     tree_make_program(program_make(value_make_sym(x), NULL, NULL));
+    //     tree_make_program(program_make(value_make_ref(x), NULL, NULL));
     // struct Tree* app = tree_make_apply(t_not, t_x);
     // return tree_make_apply(nStar("x", app), t_true);
     return tree_make_apply(t_not, t_true);
@@ -238,20 +238,20 @@ struct Tree* test2() {
 struct Tree* test2a() {
     return
         nBracket(str_cpy("x"),
-            tree_make_program(program_make_value(value_make_sym("x"))));
+            tree_make_program(program_make_value(value_make_ref("x"))));
 }
 
 struct Tree* test2b() {
     return
         nBracket(str_cpy("x"),
-            tree_make_program(program_make_value(value_make_sym("y"))));
+            tree_make_program(program_make_value(value_make_ref("y"))));
 }
 
 struct Tree* test2c() {
     struct Tree* apply_op =
         nBracket(str_cpy("x"),
             nBracket(str_cpy("y"),
-                tree_make_program(program_make_value(value_make_sym("x")))));
+                tree_make_program(program_make_value(value_make_ref("x")))));
     struct Tree* num1 =
         tree_make_program(
             program_make_value(
@@ -270,9 +270,9 @@ struct Tree* test3a() {
         nBracket(str_cpy("o"), nBracket(str_cpy("x"), nBracket(str_cpy("y"),
             tree_make_apply(
                 tree_make_apply(
-                    tree_make_program(program_make_value(value_make_sym("o"))),
-                    tree_make_program(program_make_value(value_make_sym("x")))),
-                tree_make_program(program_make_value(value_make_sym("y")))))));
+                    tree_make_program(program_make_value(value_make_ref("o"))),
+                    tree_make_program(program_make_value(value_make_ref("x")))),
+                tree_make_program(program_make_value(value_make_ref("y")))))));
     struct Tree* num1 =
         tree_make_program(
             program_make_value(
@@ -297,9 +297,9 @@ struct Tree* test3b() {
         nStar(str_cpy("o"), nStar(str_cpy("x"), nStar(str_cpy("y"),
             tree_make_apply(
                 tree_make_apply(
-                    tree_make_program(program_make_value(value_make_sym("o"))),
-                    tree_make_program(program_make_value(value_make_sym("x")))),
-                tree_make_program(program_make_value(value_make_sym("y")))))));
+                    tree_make_program(program_make_value(value_make_ref("o"))),
+                    tree_make_program(program_make_value(value_make_ref("x")))),
+                tree_make_program(program_make_value(value_make_ref("y")))))));
     struct Tree* num1 =
         tree_make_program(
             program_make_value(
@@ -344,7 +344,7 @@ struct Tree* test_va() {
 }
 
 struct Tree* tree_count() {
-    // return nTag(_sym("Comment"), false());
+    // return nTag(_ref("Comment"), false());
     struct Tree* tree0 = delta();
     struct Tree* tree1 = cK();
     struct Tree* tree2 = cI();
@@ -375,22 +375,22 @@ struct Tree* exercise() {
     //             nBracket("z",
     //                 tree_make_apply(
     //                     tree_make_apply(
-    //                         _sym("a"),
+    //                         _ref("a"),
     //                         tree_make_apply(
     //                             tree_make_apply(
-    //                                 _sym("a"),
-    //                                 _sym("x")),
-    //                             _sym("y"))),
-    //                     _sym("z"))))));
+    //                                 _ref("a"),
+    //                                 _ref("x")),
+    //                             _ref("y"))),
+    //                     _ref("z"))))));
     // return
     // nStar("x",
     //     nStar("a",
     //         nStar("y",
     //             tree_make_apply(
     //                 tree_make_apply(
-    //                     tree_make_apply(get_tag(), _sym("x")),
-    //                     _sym("a")),
-    //                 _sym("y")))));
+    //                     tree_make_apply(get_tag(), _ref("x")),
+    //                     _ref("a")),
+    //                 _ref("y")))));
     return test_va();
 }
 

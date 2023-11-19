@@ -221,23 +221,23 @@ size_t tree_get_size(struct Tree* tree) {
     }
 }
 
-BOOL tree_is_symbol(struct Tree* tree) {
+BOOL tree_is_reference(struct Tree* tree) {
     if (tree->type == TREE_TYPE_PROGRAM) {
         if (program_get_type(tree->program) == PROGRAM_TYPE_VALUE) {
             return
                 value_get_type(program_get_value(tree->program)) ==
-                    VALUE_TYPE_SYMBOL ? TRUE : FALSE;
+                    VALUE_TYPE_REFERENCE ? TRUE : FALSE;
         }
     }
     return FALSE;
 }
 
-char* tree_get_symbol(struct Tree* tree) {
+char* tree_get_reference(struct Tree* tree) {
     if (tree->type == TREE_TYPE_PROGRAM) {
         if (program_get_type(tree->program) == PROGRAM_TYPE_VALUE) {
             struct Value* val = program_get_value(tree->program);
-            if (value_get_type(val) == VALUE_TYPE_SYMBOL) {
-                return value_get_sym(val);
+            if (value_get_type(val) == VALUE_TYPE_REFERENCE) {
+                return value_get_ref(val);
             }
         }
     }
