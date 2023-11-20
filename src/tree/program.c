@@ -312,12 +312,9 @@ void program_print(struct Program* program) {
     if (program->type == PROGRAM_TYPE_VALUE) {
         value_print(program->value);
     } else {
-        if (type == 0) {
-            printf("Δ");
-        } else {
-            for (uint8_t i = 0; i < type; i++) {
-                program_print(program_get_child(program, i));
-            }
+        printf("Δ");
+        for (uint8_t i = 0; i < type; i++) {
+            program_print(program_get_child(program, i));
         }
     }
     if (type > 0) {

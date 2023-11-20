@@ -367,31 +367,17 @@ struct Tree* tree_count() {
     return delta();
 }
 
+// ((+ x) 1)
 struct Tree* exercise() {
-    // return
-    // nStar("x",
-    //     nStar("a",
-    //         nStar("y",
-    //             nBracket("z",
-    //                 tree_make_apply(
-    //                     tree_make_apply(
-    //                         _ref("a"),
-    //                         tree_make_apply(
-    //                             tree_make_apply(
-    //                                 _ref("a"),
-    //                                 _ref("x")),
-    //                             _ref("y"))),
-    //                     _ref("z"))))));
-    // return
-    // nStar("x",
-    //     nStar("a",
-    //         nStar("y",
-    //             tree_make_apply(
-    //                 tree_make_apply(
-    //                     tree_make_apply(get_tag(), _ref("x")),
-    //                     _ref("a")),
-    //                 _ref("y")))));
-    return tree_apply(not(), true());
+    // struct Tree* plus = nTag(_ref("+"), delta());
+    // struct Tree* x = nTag(_ref("x"), delta());
+    // struct Tree* one = nTag(_ref("1"), delta());
+    return
+        tree_make_apply(
+            tree_make_apply(
+                nTag(_ref("+"), delta()),
+                nTag(_ref("x"), delta())),
+            nTag(_ref("1"), delta()));
 }
 
 Response_t* _execute_command(struct VM* vm, char* cmd) {
