@@ -343,6 +343,30 @@ struct Tree* nY2(struct Tree* tree) {
     return nZ(nSwap(tree));
 }
 
+
+// plus = Y2 {λ∗m.λ∗p.ΔmI(K(λ∗x.λ∗n.(K(pxn))))}
+struct Tree* plus() {
+    return
+        nY2(
+            nStar("m",
+                nStar("p",
+                    tree_make_apply(
+                        tree_make_apply(
+                            tree_make_apply(delta(), _ref("m")),
+                            cI()),
+                        tree_make_apply(
+                            cK(),
+                            nStar("x",
+                                nStar("n",
+                                    tree_make_apply(
+                                        cK(),
+                                        tree_make_apply(
+                                            tree_make_apply(
+                                                _ref("p"),
+                                                _ref("x")),
+                                            _ref("n"))))))))));
+}
+
 // tag{t, f} = d{t}(d{f}(KK))
 struct Tree* nTag(struct Tree* tag, struct Tree* tree) {
     return
@@ -514,4 +538,9 @@ struct Tree* cA() {
                                         tree_make_apply(get_tag(), _ref("x")),
                                         _ref("a")),
                                     _ref("y"))))))));
+}
+
+struct Tree* inc() {
+    // d{I}(KK)
+    return tree_apply(nD(cI()), tree_apply(cK(), cK()));
 }

@@ -51,6 +51,7 @@ struct Tree*    self_apply  ();
 struct Tree*    nZ          (struct Tree*);
 struct Tree*    nSwap       (struct Tree*);
 struct Tree*    nY2         (struct Tree*);
+struct Tree*    plus        ();
 
 // Intensional
 struct Tree*    nTag        (struct Tree*, struct Tree*);
@@ -65,6 +66,9 @@ struct Tree*    abstraction_rule    ();
 
 struct Tree*    cV          ();
 struct Tree*    cA          ();
+
+// Own experiments
+struct Tree*    inc         ();
 
 // Exposed for debug purposes
 struct Tree*    _ref        (char*);

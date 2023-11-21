@@ -309,7 +309,10 @@ struct Tree* tree_count() {
 }
 
 struct Tree* exercise() {
-    return test3a();
+    // return tree_apply(tree_apply(plus(), nNat(2)), nNat(3)); // 630 steps
+    return tree_apply(plus(), nNat(1));
+    // printf("%llu", tree_get_size(plus()));
+    // return tree_apply(inc(), nNat(4));
 }
 
 Response_t* _execute_command(struct VM* vm, char* cmd) {
