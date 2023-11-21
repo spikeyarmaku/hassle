@@ -2,8 +2,13 @@
 
 // Helper function for making references
 struct Tree* _ref(char* reference) {
-    return tree_make_program(program_make_value(value_make_ref(reference)));
+    return
+        tree_make_program(program_with_label(reference, program_make_leaf()));
 }
+
+// struct Tree* _str(char* string) {
+//     return tree_make_program(program_make_value(value_make_str(string)));
+// }
 
 struct Tree* delta() {
     return tree_make_program(program_make_leaf());
@@ -165,28 +170,28 @@ struct Tree* is_fork() {
 struct Tree* nBracket(char* reference, struct Tree* tree) {
     // Ref y => if eqb x y then I else (K@ (Ref y))
     if (tree_is_reference(tree) == TRUE) {
-        if (strcmp(reference, tree_get_reference(tree)) == 0) {
+        if (strcmp(reference, tree_get_label(tree)) == 0) {
             tree_free(tree);
             return cI();
         } else {
             return tree_make_apply(cK(), tree);
         }
-    }
+    } else {
+        struct Tree* extracted = tree_extract(tree);
+        // △ => K@△
+        if (tree_get_type(extracted) == TREE_TYPE_PROGRAM) {
+            return tree_make_apply(cK(), tree);
+        }
 
-    struct Tree* extracted = tree_extract(tree);
-    // △ => K@△
-    if (tree_get_type(extracted) == TREE_TYPE_PROGRAM) {
-        return tree_make_apply(cK(), tree);
-    }
-    
-    struct Tree* child0 = tree_copy(tree_get_apply(extracted, 0));
-    struct Tree* child1 = tree_copy(tree_get_apply(extracted, 1));
-    tree_free(extracted);
+        struct Tree* child0 = tree_copy(tree_get_apply(extracted, 0));
+        struct Tree* child1 = tree_copy(tree_get_apply(extracted, 1));
+        tree_free(extracted);
 
-    // App M1 M2 => d (bracket x M2) @ (bracket x M1)
-    return
-        tree_make_apply(
-            nD(nBracket(reference, child1)), nBracket(reference, child0));
+        // App M1 M2 => d (bracket x M2) @ (bracket x M1)
+        return
+            tree_make_apply(
+                nD(nBracket(reference, child1)), nBracket(reference, child0));
+    }
 }
 
 BOOL occurs_t(char* reference, struct Tree* tree) {
@@ -208,17 +213,13 @@ BOOL occurs_p(char* reference, struct Program* prg) {
         return FALSE;
     }
 
-    if (program_get_type(prg) == PROGRAM_TYPE_VALUE) {
-        struct Value* val = program_get_value(prg);
-        if (value_get_type(val) == VALUE_TYPE_REFERENCE) {
-            if (strcmp(value_get_ref(val), reference) == 0) {
+    if (program_get_type(prg) == PROGRAM_TYPE_LEAF) {
+        if (program_get_label(prg) != NULL) {
+            if (strcmp(program_get_label(prg), reference) == 0) {
                 return TRUE;
-            } else {
-                return FALSE;
             }
-        } else {
-            return FALSE;
         }
+        return FALSE;
     } else {
         return
             occurs_p(reference, program_get_child(prg, 0)) ||
@@ -233,7 +234,7 @@ BOOL occurs_p(char* reference, struct Program* prg) {
 struct Tree* nStar(char* reference, struct Tree* tree) {
     // Ref y => if eqb x y then I else (K@ (Ref y))
     if (tree_is_reference(tree) == TRUE) {
-        if (strcmp(reference, tree_get_reference(tree)) == 0) {
+        if (strcmp(reference, tree_get_label(tree)) == 0) {
             tree_free(tree);
             return cI();
         } else {
@@ -254,7 +255,7 @@ struct Tree* nStar(char* reference, struct Tree* tree) {
     if (tree_is_reference(child1) == TRUE) {
         // App M1 (Ref y) => ...
         BOOL x_in_child_0 = occurs_t(reference, child0);
-        if (strcmp(reference, tree_get_reference(child1)) == 0) {
+        if (strcmp(reference, tree_get_label(child1)) == 0) {
             tree_free(child1);
             if (x_in_child_0 == TRUE) {
                 return tree_make_apply(nD(cI()), nStar(reference, child0));
@@ -385,7 +386,7 @@ struct Tree* successor_rule() {
         nStar("x",
             nStar("a",
                 nStar("y",
-                    nBracket("z", tree_apply(_ref("y"), _ref("x"))))));
+                    nBracket("z", tree_make_apply(_ref("y"), _ref("x"))))));
     // return
     //     nStar("x",
     //         nStar("a",
@@ -402,17 +403,17 @@ struct Tree* application_rule() {
                 nStar("a",
                     nStar("y",
                         nStar("z",
-                            tree_apply(
-                                tree_apply(
-                                    tree_apply(
-                                        tree_apply(
+                            tree_make_apply(
+                                tree_make_apply(
+                                    tree_make_apply(
+                                        tree_make_apply(
                                             _ref("a"),
                                             _ref("w")),
                                         _ref("y")),
                                     _ref("z")),
-                                tree_apply(
-                                    tree_apply(
-                                        tree_apply(
+                                tree_make_apply(
+                                    tree_make_apply(
+                                        tree_make_apply(
                                             _ref("a"),
                                             _ref("x")),
                                         _ref("y")),
@@ -435,7 +436,12 @@ struct Tree* empty_rule() {
 // substitution_rule = λ∗x.λ∗a.λ∗y.λ∗z.azxy
 struct Tree* substitution_rule() {
     struct Tree* tree =
-        tree_apply(tree_apply(tree_apply(_ref("a"), _ref("z")), _ref("x")),
+        tree_make_apply(
+            tree_make_apply(
+                tree_make_apply(
+                    _ref("a"),
+                    _ref("z")),
+                _ref("x")),
             _ref("y"));
     return nStar("x", nStar("a", nStar("y", nStar("z", tree))));
 }
@@ -444,13 +450,13 @@ struct Tree* substitution_rule() {
 struct Tree* abstraction_rule() {
     return
         nStar("w", nStar("x", nStar("a", nStar("y", nStar("z",
-            tree_apply(
-                tree_apply(
+            tree_make_apply(
+                tree_make_apply(
                     _ref("a"),
                     _ref("w")),
-                tree_apply(
-                    tree_apply(
-                        tree_apply(
+                tree_make_apply(
+                    tree_make_apply(
+                        tree_make_apply(
                             _ref("a"),
                             _ref("x")),
                         _ref("y")),

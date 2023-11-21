@@ -68,6 +68,7 @@ struct Tree*    cA          ();
 
 // Exposed for debug purposes
 struct Tree*    _ref        (char*);
+// struct Tree*    _str        (char*);
 struct Tree*    nY2t        (struct Tree*, struct Tree*);
 struct Tree*    nTagWait    (struct Tree*);
 

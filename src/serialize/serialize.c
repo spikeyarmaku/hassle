@@ -69,10 +69,12 @@ void serializer_write(Serializer_t* serializer, uint8_t byte) {
 }
 
 void serializer_write_string(Serializer_t* serializer, char* string) {
-    size_t counter = 0;
-    while (*(string + counter) != 0) {
-        serializer_write(serializer, *(string + counter));
-        counter++;
+    if (string != NULL) {
+        size_t counter = 0;
+        while (*(string + counter) != 0) {
+            serializer_write(serializer, *(string + counter));
+            counter++;
+        }
     }
     serializer_write(serializer, 0);
 }

@@ -8,3 +8,5 @@ Inspirations:
 **John Shutt's Kernel** - for uniting macros, special forms and functions    
 **[Barry Jay's Tree Calculus](https://github.com/barry-jay-personal/tree-calculus)** - for its baked-in reflection capabilities    
 **SICP chapter 4 footnote 33** - for the name of the language
+
+It is still work in progress. A lot of things need to be figured out before it can be used as a language.

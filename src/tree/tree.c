@@ -32,19 +32,14 @@ struct Tree* tree_apply(struct Tree* tree0, struct Tree* tree1) {
         // If one of the children is not program, make an explicit application
         return tree_make_apply(tree0, tree1);
     } else {
-        if (program_get_type(tree_get_program(tree0)) == PROGRAM_TYPE_VALUE) {
-            // If the first program is a value, make an explicit application
-            return tree_make_apply(tree0, tree1);
-        } else {
-            // Otherwise, try to apply one program to the other
-            struct Tree* result =
-                tree_apply_programs(
-                    program_copy(tree_get_program(tree0)),
-                    program_copy(tree_get_program(tree1)));
-            tree_free(tree0);
-            tree_free(tree1);
-            return result;
-        }
+        // Otherwise, try to apply one program to the other
+        struct Tree* result =
+            tree_apply_programs(
+                program_copy(tree_get_program(tree0)),
+                program_copy(tree_get_program(tree1)));
+        tree_free(tree0);
+        tree_free(tree1);
+        return result;
     }
 }
 
@@ -56,61 +51,61 @@ struct Tree* tree_apply_programs(struct Program* prg0, struct Program* prg1) {
     if (program_apply(prg0, prg1) == TRUE) {
         return tree_make_program(prg0);
     } else {
-        switch (program_get_type(program_get_child(prg0, 0))) {
-            case PROGRAM_TYPE_LEAF: {
-                // K rule - ΔΔyz = y
-                struct Tree* result =
-                    tree_make_program(program_copy(program_get_child(prg0, 1)));
-                program_free(prg0);
-                program_free(prg1);
-                return result;
+        if (program_get_label(program_get_child(prg0, 0)) != NULL) {
+            struct Tree* result =
+                tree_make_program(program_copy(program_get_child(prg0, 1)));
+            program_free(prg0);
+            program_free(prg1);
+            return result;
+        } else {
+            switch (program_get_type(program_get_child(prg0, 0))) {
+                case PROGRAM_TYPE_LEAF: {
+                    // K rule - ΔΔyz = y
+                    struct Tree* result =
+                        tree_make_program(
+                            program_copy(program_get_child(prg0, 1)));
+                    program_free(prg0);
+                    program_free(prg1);
+                    return result;
 
-            }
-            case PROGRAM_TYPE_STEM: {
-                // S rule - Δ(Δx)yz = yz(xz)
-                struct Program* x =
-                    program_copy(
-                        program_get_child(program_get_child(prg0, 0), 0));
-                struct Program* y =
-                    program_copy(program_get_child(prg0, 1));
-                struct Program* z0 = prg1;
-                struct Program* z1 = program_copy(z0);
-                program_free(prg0);
-                return
-                    tree_make_apply(
+                }
+                case PROGRAM_TYPE_STEM: {
+                    // S rule - Δ(Δx)yz = yz(xz)
+                    struct Program* x =
+                        program_copy(
+                            program_get_child(program_get_child(prg0, 0), 0));
+                    struct Program* y =
+                        program_copy(program_get_child(prg0, 1));
+                    struct Program* z0 = prg1;
+                    struct Program* z1 = program_copy(z0);
+                    program_free(prg0);
+                    return
                         tree_make_apply(
-                            tree_make_program(y), tree_make_program(z0)),
-                        tree_make_apply(
-                            tree_make_program(x), tree_make_program(z1)));
-            }
-            case PROGRAM_TYPE_FORK: {
-                // F rule - Δ(Δwx)yz = zwx
-                struct Program* x =
-                    program_copy(
-                        program_get_child(program_get_child(prg0, 0), 1));
-                struct Program* z = prg1;
-                struct Program* w =
-                    program_copy(
-                        program_get_child(program_get_child(prg0, 0), 0));
-                program_free(prg0);
-                return
-                    tree_make_apply(tree_make_apply(
-                        tree_make_program(z), tree_make_program(w)),
-                        tree_make_program(x));
-            }
-            case PROGRAM_TYPE_VALUE: {
-                // fatal("tree_apply_programs: Trying to apply to a value\n");
-                // return NULL;
-                struct Tree* result =
-                    tree_make_program(program_copy(program_get_child(prg0, 1)));
-                program_free(prg0);
-                program_free(prg1);
-                return result;
-            }
-            default: {
-                fatal("tree_apply_programs: Invalid program type: %d\n",
-                    program_get_type(prg0));
-                return NULL;
+                            tree_make_apply(
+                                tree_make_program(y), tree_make_program(z0)),
+                            tree_make_apply(
+                                tree_make_program(x), tree_make_program(z1)));
+                }
+                case PROGRAM_TYPE_FORK: {
+                    // F rule - Δ(Δwx)yz = zwx
+                    struct Program* x =
+                        program_copy(
+                            program_get_child(program_get_child(prg0, 0), 1));
+                    struct Program* z = prg1;
+                    struct Program* w =
+                        program_copy(
+                            program_get_child(program_get_child(prg0, 0), 0));
+                    program_free(prg0);
+                    return
+                        tree_make_apply(tree_make_apply(
+                            tree_make_program(z), tree_make_program(w)),
+                            tree_make_program(x));
+                }
+                default: {
+                    fatal("tree_apply_programs: Invalid program type: %d\n",
+                        program_get_type(prg0));
+                    return NULL;
+                }
             }
         }
     }
@@ -223,23 +218,16 @@ size_t tree_get_size(struct Tree* tree) {
 
 BOOL tree_is_reference(struct Tree* tree) {
     if (tree->type == TREE_TYPE_PROGRAM) {
-        if (program_get_type(tree->program) == PROGRAM_TYPE_VALUE) {
-            return
-                value_get_type(program_get_value(tree->program)) ==
-                    VALUE_TYPE_REFERENCE ? TRUE : FALSE;
+        if (program_get_type(tree->program) == PROGRAM_TYPE_LEAF) {
+            return program_get_label(tree->program) != NULL ? TRUE : FALSE;
         }
     }
     return FALSE;
 }
 
-char* tree_get_reference(struct Tree* tree) {
+char* tree_get_label(struct Tree* tree) {
     if (tree->type == TREE_TYPE_PROGRAM) {
-        if (program_get_type(tree->program) == PROGRAM_TYPE_VALUE) {
-            struct Value* val = program_get_value(tree->program);
-            if (value_get_type(val) == VALUE_TYPE_REFERENCE) {
-                return value_get_ref(val);
-            }
-        }
+        return program_get_label(tree_get_program(tree));
     }
     return NULL;
 }
@@ -250,37 +238,40 @@ struct Tree* tree_extract(struct Tree* tree) {
     if (tree->type == TREE_TYPE_APPLY) {
         return tree;
     } else {
-        switch (program_get_type(tree->program)) {
-            case PROGRAM_TYPE_LEAF: {
-                return tree;
-            }
-            case PROGRAM_TYPE_STEM: {
-                struct Program* child0 = program_make_leaf();
-                struct Program* child1 =
-                    program_copy(program_get_child(tree->program, 0));
-                tree_free(tree);
-                return
-                    tree_make_apply(
-                        tree_make_program(child0), tree_make_program(child1));
-            }
-            case PROGRAM_TYPE_FORK: {
-                struct Program* child0 =
-                    program_make_stem(
-                        program_copy(program_get_child(tree->program, 0)));
-                struct Program* child1 =
-                    program_copy(program_get_child(tree->program, 1));
-                tree_free(tree);
-                return
-                    tree_make_apply(
-                        tree_make_program(child0), tree_make_program(child1));
-            }
-            case PROGRAM_TYPE_VALUE: {
-                return tree;
-            }
-            default: {
-                fatal("tree_get_child: invalid program type %d\n",
-                    program_get_type(tree->program));
-                return NULL;
+        if (tree_is_reference(tree) == TRUE) {
+            return tree;
+        } else {
+            switch (program_get_type(tree->program)) {
+                case PROGRAM_TYPE_LEAF: {
+                    return tree;
+                }
+                case PROGRAM_TYPE_STEM: {
+                    struct Program* child0 = program_make_leaf();
+                    struct Program* child1 =
+                        program_copy(program_get_child(tree->program, 0));
+                    tree_free(tree);
+                    return
+                        tree_make_apply(
+                            tree_make_program(child0),
+                            tree_make_program(child1));
+                }
+                case PROGRAM_TYPE_FORK: {
+                    struct Program* child0 =
+                        program_make_stem(
+                            program_copy(program_get_child(tree->program, 0)));
+                    struct Program* child1 =
+                        program_copy(program_get_child(tree->program, 1));
+                    tree_free(tree);
+                    return
+                        tree_make_apply(
+                            tree_make_program(child0),
+                            tree_make_program(child1));
+                }
+                default: {
+                    fatal("tree_get_child: invalid program type %d\n",
+                        program_get_type(tree->program));
+                    return NULL;
+                }
             }
         }
     }
