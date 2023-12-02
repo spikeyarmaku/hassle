@@ -36,3 +36,9 @@ struct Kin* kin_deserialize(Serializer_t* serializer) {
     struct Tree* tree = tree_deserialize(serializer);
     return kin_make(is_parent, tree);
 }
+
+struct Tree* kin_extract_tree(struct Kin* kin) {
+    struct Tree* result = kin->tree;
+    free_mem("kin_extract_tree", kin);
+    return result;
+}

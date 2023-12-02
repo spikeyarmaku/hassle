@@ -18,6 +18,11 @@
 #include "rational/rational.h"
 #include "serialize/serialize.h"
 
+struct ProgramPair {
+    struct Program* prg0;
+    struct Program* prg1;
+};
+
 // struct Value*   value_make_ref      (char*);
 // struct Value*   value_make_str      (char*);
 // struct Value*   value_make_rat      (Rational_t*);
@@ -34,23 +39,22 @@
 
 // struct Program* program_make
 //     (struct Value*, struct Program*, struct Program*);
-struct Program* program_with_label  (char*, struct Program*);
-struct Program* program_make_leaf   ();
-struct Program* program_make_stem   (struct Program*);
-struct Program* program_make_fork   (struct Program*,struct Program*);
-void            program_set_label   (struct Program*, char*);
-char*           program_get_label   (struct Program*);
-// struct Program* program_make_value  (struct Value*);
-uint8_t         program_get_type    (struct Program*);
-// struct Value*   program_get_value   (struct Program*);
-struct Program* program_get_child   (struct Program*, uint8_t);
-void            program_free        (struct Program*);
-struct Program* program_copy        (struct Program*);
-BOOL            program_apply       (struct Program*, struct Program*);
-size_t          program_get_size    (struct Program*);
+struct Program*     program_with_label  (char*, struct Program*);
+struct Program*     program_make_leaf   ();
+struct Program*     program_make_stem   (struct Program*);
+struct Program*     program_make_fork   (struct Program*,struct Program*);
+void                program_set_label   (struct Program*, char*);
+char*               program_get_label   (struct Program*);
+uint8_t             program_get_type    (struct Program*);
+struct Program*     program_get_child   (struct Program*, uint8_t);
+void                program_free        (struct Program*);
+struct Program*     program_copy        (struct Program*);
+BOOL                program_apply       (struct Program*, struct Program*);
+size_t              program_get_size    (struct Program*);
+struct ProgramPair  program_extract_subprograms (struct Program*);
 
-void            program_print       (struct Program*);
-void            program_serialize   (Serializer_t*, struct Program*);
-struct Program* program_deserialize (Serializer_t*);
+void                program_print       (struct Program*);
+void                program_serialize   (Serializer_t*, struct Program*);
+struct Program*     program_deserialize (Serializer_t*);
 
 #endif

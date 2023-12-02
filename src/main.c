@@ -194,125 +194,23 @@ void _repl_start_remote(struct VM* vm, Connection_t conn) {
     network_close(conn);
 }
 
-struct Tree* test0() {
-    return delta();
-}
-
-struct Tree* test1() {
-    return tree_make_apply(not(), true());
-}
-
-// struct Tree* test2() {
-//     struct Tree* num1 =
-//         tree_make_program(
-//             program_make_value(
-//                 value_make_rat(rational_from_string(str_cpy("12")))));
-//     struct Tree* num2 =
-//         tree_make_program(
-//             program_make_value(
-//                 value_make_rat(rational_from_string(str_cpy("3")))));
-//     struct Tree* op =
-//         tree_make_program(program_make_value(value_make_primop(Add)));
-//     return
-//         tree_make_apply(
-//             tree_make_apply(
-//                 tree_make_apply(
-//                     delta(),
-//                     tree_make_apply(
-//                         tree_make_apply(
-//                             delta(),
-//                             num1),
-//                         num2)),
-//                 delta()),
-//             op);
-// }
-
-struct Tree* test2a() {
-    return nBracket("x", _ref("x"));
-}
-
-struct Tree* test2b() {
-    return nBracket("x", _ref("y"));
-}
-
-struct Tree* test3a() {
-    // \o. \x. \y. oxy
-    struct Tree* apply_op =
-        nBracket("o", nBracket("x", nBracket("y",
-            tree_make_apply(
-                tree_make_apply(_ref("o"), _ref("x")),
-                _ref("y")))));
-    return
-        tree_make_apply(
-            tree_make_apply(tree_make_apply(apply_op, and()), true()), false());
-}
-
-struct Tree* test3b() {
-    // \o. \x. \y. oxy
-    struct Tree* apply_op =
-        nStar("o", nBracket("x", nBracket("y",
-            tree_make_apply(
-                tree_make_apply(_ref("o"), _ref("x")),
-                _ref("y")))));
-    return
-        tree_make_apply(
-            tree_make_apply(tree_make_apply(apply_op, and()), true()), false());
-}
-
 struct Tree* test_va() {
-    // struct Tree* term1 = cV();
-    // printf("Tree size: %llu\n", term_size(term1)); // 909 in .v
-    // struct Tree* term2 = cA();
-    // printf("Tree size: %llu\n", term_size(term2)); // 757 in .v
-
-    printf("Size of V: %llu, size of A: %llu\n", tree_get_size(cV()),
-        tree_get_size(cA()));
-    
-    // struct Tree* n =
-    //     tree_make_program(
-    //         program_make_value(
-    //             value_make_rat(rational_from_string(str_cpy("12")))));
-    struct Tree* term =
-        tree_apply(tree_apply(tree_apply(cA(), cV()), cA()), not());
-
-    // struct Tree* term00 = cA();
-    // struct Tree* term01 = cV();
-    // struct Tree* term0 = tree_make_apply(term00, term01);
-    // struct Tree* term1 = tree_make_apply(term0, cA());
-    // struct Tree* term = tree_make_apply(term1, n);
-
-    return term;
-}
-
-struct Tree* tree_count() {
-    // return nTag(_ref("Comment"), false());
-    struct Tree* tree0 = delta();
-    struct Tree* tree1 = cK();
-    struct Tree* tree2 = cI();
-    struct Tree* tree3 = cD();
-    struct Tree* tree4 = and();
-    struct Tree* tree5 = not();
-    // struct Tree* tree6 = ;
-    // struct Tree* tree7 = ;
-    // struct Tree* tree8 = ;
-    // struct Tree* tree9 = ;
-    // struct Tree* tree10 = ;
-
-    struct Tree* trees[] = {tree0, tree1, tree2, tree3, tree4, tree5};
-
-    int tree_count = 6;
-    for (int i = 0; i < tree_count; i++) {
-        printf("Tree %d size: %llu\n", i, tree_get_size(trees[i]));
-    }
-
-    return delta();
-}
-
-struct Tree* exercise() {
-    // return tree_apply(tree_apply(plus(), nNat(2)), nNat(3)); // 630 steps
-    return tree_apply(plus(), nNat(1));
-    // printf("%llu", tree_get_size(plus()));
-    // return tree_apply(inc(), nNat(4));
+    // K combinator in VA-calculus:
+    // (A((V((V(VA))((V(VV))V)))(V((AV)A))))((AV)A)
+    struct Tree* cK =
+        tree_apply(
+            tree_apply(cA(),
+                tree_apply(
+                    tree_apply(
+                        cV(),
+                        tree_apply(
+                            tree_apply(cV(), tree_apply(cV(), cA())),
+                            tree_apply(tree_apply(cV(), tree_apply(cV(), cV())),
+                                cV()))),
+                    tree_apply(cV(),
+                        tree_apply(tree_apply(cA(), cV()), cA())))),
+            tree_apply(tree_apply(cA(), cV()), cA()));
+    return tree_apply(tree_apply(cK, nNat(3)), nNat(5));
 }
 
 Response_t* _execute_command(struct VM* vm, char* cmd) {
@@ -339,7 +237,7 @@ Response_t* _execute_command(struct VM* vm, char* cmd) {
                     if (arg != NULL) {
                         // vm_set_term(vm, parse_from_str(arg));
                         // TODO convert Expr_t* to struct Tree*
-                        vm_populate(vm, exercise());
+                        vm_populate(vm, test_va());
                     }
                     free_mem("execute_command/expr", arg);
                     return response_make_void();

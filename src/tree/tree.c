@@ -33,13 +33,16 @@ struct Tree* tree_apply(struct Tree* tree0, struct Tree* tree1) {
         return tree_make_apply(tree0, tree1);
     } else {
         // Otherwise, try to apply one program to the other
-        struct Tree* result =
-            tree_apply_programs(
-                program_copy(tree_get_program(tree0)),
-                program_copy(tree_get_program(tree1)));
-        tree_free(tree0);
-        tree_free(tree1);
-        return result;
+        // struct Tree* result =
+        //     tree_apply_programs(
+        //         program_copy(tree_get_program(tree0)),
+        //         program_copy(tree_get_program(tree1)));
+        // tree_free(tree0);
+        // tree_free(tree1);
+        // return result;
+        struct Program* prg0 = tree_extract_program(tree0);
+        struct Program* prg1 = tree_extract_program(tree1);
+        return tree_apply_programs(prg0, prg1);
     }
 }
 
@@ -52,54 +55,100 @@ struct Tree* tree_apply_programs(struct Program* prg0, struct Program* prg1) {
         return tree_make_program(prg0);
     } else {
         if (program_get_label(program_get_child(prg0, 0)) != NULL) {
-            struct Tree* result =
-                tree_make_program(program_copy(program_get_child(prg0, 1)));
-            program_free(prg0);
+            // struct Tree* result =
+            //     tree_make_program(program_copy(program_get_child(prg0, 1)));
+            // program_free(prg0);
+            // program_free(prg1);
+            // return result;
+            struct ProgramPair subprograms = program_extract_subprograms(prg0);
+            struct Tree* result = tree_make_program(subprograms.prg1);
+            program_free(subprograms.prg0);
             program_free(prg1);
             return result;
         } else {
             switch (program_get_type(program_get_child(prg0, 0))) {
                 case PROGRAM_TYPE_LEAF: {
                     // K rule - ΔΔyz = y
-                    struct Tree* result =
-                        tree_make_program(
-                            program_copy(program_get_child(prg0, 1)));
-                    program_free(prg0);
+                    // struct Tree* result =
+                    //     tree_make_program(
+                    //         program_copy(program_get_child(prg0, 1)));
+                    // program_free(prg0);
+                    // program_free(prg1);
+                    // return result;
+                    printf("K rule\n");
+                    struct ProgramPair subprograms =
+                        program_extract_subprograms(prg0);
+                    struct Tree* result = tree_make_program(subprograms.prg1);
+                    program_free(subprograms.prg0);
                     program_free(prg1);
                     return result;
-
                 }
                 case PROGRAM_TYPE_STEM: {
                     // S rule - Δ(Δx)yz = yz(xz)
-                    struct Program* x =
-                        program_copy(
-                            program_get_child(program_get_child(prg0, 0), 0));
-                    struct Program* y =
-                        program_copy(program_get_child(prg0, 1));
+                    // struct Program* x =
+                    //     program_copy(
+                    //         program_get_child(program_get_child(prg0, 0), 0));
+                    // struct Program* y =
+                    //     program_copy(program_get_child(prg0, 1));
+                    // struct Program* z0 = prg1;
+                    // struct Program* z1 = program_copy(z0);
+                    // program_free(prg0);
+                    // return
+                    //     tree_make_apply(
+                    //         tree_make_apply(
+                    //             tree_make_program(y), tree_make_program(z0)),
+                    //         tree_make_apply(
+                    //             tree_make_program(x), tree_make_program(z1)));
+                    printf("S rule\n");
+                    struct ProgramPair subprograms =
+                        program_extract_subprograms(prg0);
+                    struct ProgramPair sub_subprograms =
+                        program_extract_subprograms(subprograms.prg0);
+                    struct Program* x = sub_subprograms.prg0;
+                    struct Program* y = subprograms.prg1;
                     struct Program* z0 = prg1;
-                    struct Program* z1 = program_copy(z0);
-                    program_free(prg0);
+                    printf("Copying...");
+                    struct Program* z1 = program_copy(prg1);
+                    printf("finished\n");
                     return
                         tree_make_apply(
-                            tree_make_apply(
-                                tree_make_program(y), tree_make_program(z0)),
-                            tree_make_apply(
-                                tree_make_program(x), tree_make_program(z1)));
+                            tree_apply_programs(y, z0),
+                            tree_apply_programs(x, z1));
+                        // tree_make_apply(
+                        //     tree_make_apply(
+                        //         tree_make_program(y), tree_make_program(z0)),
+                        //     tree_make_apply(
+                        //         tree_make_program(x), tree_make_program(z1)));
                 }
                 case PROGRAM_TYPE_FORK: {
                     // F rule - Δ(Δwx)yz = zwx
-                    struct Program* x =
-                        program_copy(
-                            program_get_child(program_get_child(prg0, 0), 1));
+                    // struct Program* x =
+                    //     program_copy(
+                    //         program_get_child(program_get_child(prg0, 0), 1));
+                    // struct Program* z = prg1;
+                    // struct Program* w =
+                    //     program_copy(
+                    //         program_get_child(program_get_child(prg0, 0), 0));
+                    // program_free(prg0);
+                    // return
+                    //     tree_make_apply(tree_make_apply(
+                    //         tree_make_program(z), tree_make_program(w)),
+                    //         tree_make_program(x));
+                    printf("F rule\n");
+                    struct ProgramPair subprograms =
+                        program_extract_subprograms(prg0);
+                    struct ProgramPair sub_subprograms =
+                        program_extract_subprograms(subprograms.prg0);
+                    struct Program* w = sub_subprograms.prg0;
+                    struct Program* x = sub_subprograms.prg1;
+                    program_free(subprograms.prg1);
                     struct Program* z = prg1;
-                    struct Program* w =
-                        program_copy(
-                            program_get_child(program_get_child(prg0, 0), 0));
-                    program_free(prg0);
                     return
-                        tree_make_apply(tree_make_apply(
-                            tree_make_program(z), tree_make_program(w)),
+                        tree_make_apply(tree_apply_programs(z, w),
                             tree_make_program(x));
+                        // tree_make_apply(tree_make_apply(
+                        //     tree_make_program(z), tree_make_program(w)),
+                        //     tree_make_program(x));
                 }
                 default: {
                     fatal("tree_apply_programs: Invalid program type: %d\n",
@@ -214,6 +263,22 @@ size_t tree_get_size(struct Tree* tree) {
             return 0;
         }
     }
+}
+
+struct TreePair tree_extract_subtrees(struct Tree* tree) {
+    assert(tree->type == TREE_TYPE_APPLY);
+    struct TreePair result;
+    result.tree0 = tree->apply[0];
+    result.tree1 = tree->apply[1];
+    free_mem("tree_extract_subtrees", tree);
+    return result;
+}
+
+struct Program* tree_extract_program(struct Tree* tree) {
+    assert(tree->type == TREE_TYPE_PROGRAM);
+    struct Program* result = tree->program;
+    free_mem("tree_extract_program", tree);
+    return result;
 }
 
 BOOL tree_is_reference(struct Tree* tree) {

@@ -32,15 +32,20 @@ void vm_populate(struct VM* vm, struct Tree* tree) {
         vm->stack = stack_make();
     }
     while (tree_get_type(tree) == TREE_TYPE_APPLY) {
-        struct Kin* kin = kin_make(FALSE, tree_copy(tree_get_apply(tree, 1)));
+        // struct Kin* kin = kin_make(FALSE, tree_copy(tree_get_apply(tree, 1)));
+        // stack_push(vm->stack, kin);
+        // struct Tree* temp = tree_copy(tree_get_apply(tree, 0));
+        // tree_free(tree);
+        // tree = temp;
+        struct TreePair subtrees = tree_extract_subtrees(tree);
+        struct Kin* kin = kin_make(FALSE, subtrees.tree1);
         stack_push(vm->stack, kin);
-        struct Tree* temp = tree_copy(tree_get_apply(tree, 0));
-        tree_free(tree);
-        tree = temp;
+        tree = subtrees.tree0;
     }
     if (tree_get_type(tree) == TREE_TYPE_PROGRAM) {
-        vm->control = program_copy(tree_get_program(tree));
-        tree_free(tree);
+        // vm->control = program_copy(tree_get_program(tree));
+        // tree_free(tree);
+        vm->control = tree_extract_program(tree);
     } else {
         fatal("vm_populate: invalid tree type %d\n", tree_get_type(tree));
     }
@@ -57,13 +62,20 @@ enum EvalState vm_step(struct VM* vm) {
         switch (tree_get_type(kin_get_tree(kin))) {
             case TREE_TYPE_PROGRAM: {
                 // Swap control and top of stack
+                // struct Program* new_control =
+                //     program_copy(tree_get_program(kin_get_tree(kin)));
+                // struct Kin* new_kin =
+                //     kin_make(FALSE, tree_make_program(vm->control));
+                // stack_push(vm->stack, new_kin);
+                // vm->control = new_control;
+                // kin_free(kin);
+                // break;
                 struct Program* new_control =
-                    program_copy(tree_get_program(kin_get_tree(kin)));
+                    tree_extract_program(kin_extract_tree(kin));
                 struct Kin* new_kin =
                     kin_make(FALSE, tree_make_program(vm->control));
                 stack_push(vm->stack, new_kin);
                 vm->control = new_control;
-                kin_free(kin);
                 break;
             }
             default: {
@@ -81,12 +93,18 @@ enum EvalState vm_step(struct VM* vm) {
                 break;
             }
             case TREE_TYPE_APPLY: {
+                // struct Kin* new_kin =
+                //     kin_make(TRUE, tree_make_program(vm->control));
+                // stack_push(vm->stack, new_kin);
+                // vm->control = NULL;
+                // vm_populate(vm, tree_copy(kin_get_tree(kin)));
+                // kin_free(kin);
+                // break;
                 struct Kin* new_kin =
                     kin_make(TRUE, tree_make_program(vm->control));
                 stack_push(vm->stack, new_kin);
                 vm->control = NULL;
-                vm_populate(vm, tree_copy(kin_get_tree(kin)));
-                kin_free(kin);
+                vm_populate(vm, kin_extract_tree(kin));
                 break;
             }
             default: {
@@ -158,8 +176,7 @@ void vm_reset(struct VM* vm) {
     program_free(vm->control);
     vm->control = NULL;
     while (!stack_is_empty(vm->stack)) {
-        struct Kin* kin = stack_pop(vm->stack);
-        kin_free(kin);
+        kin_free(stack_pop(vm->stack));
     }
     stack_free(vm->stack);
     vm->stack = NULL;

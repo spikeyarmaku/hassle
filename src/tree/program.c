@@ -114,6 +114,15 @@ size_t program_get_size(struct Program* program) {
         program_get_size(program->children[1]);
 }
 
+struct ProgramPair program_extract_subprograms(struct Program* program) {
+    free_mem("program_extract_subprograms/label", program->label);
+    struct ProgramPair result;
+    result.prg0 = program->children[0];
+    result.prg1 = program->children[1];
+    free_mem("program_extract_subprograms", program);
+    return result;
+}
+
 void program_print(struct Program* program) {
     uint8_t type = program_get_type(program);
     if (type > 0) {
