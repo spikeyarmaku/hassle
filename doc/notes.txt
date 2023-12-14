@@ -19,3 +19,47 @@ interactive programming checklist:
     breakloop and ask you what to do about it?
 - You don’t want to have to kill your program and rebuild it from scratch just
     because you changed a definition
+
+---
+A note for tree calculus:
+
+Barry Jay (the author) claims it works using just one ternary operator (called
+delta, or Δ) with three rewrite rules:
+    ΔΔyz = y
+ Δ(Δx)yz = yz(xz)
+Δ(Δwx)yz = zwx
+
+However, when I tried to translate it to INets, I had to reformulate the system.
+In my variation, tree calculus is a system of four operators: K, S, F (when
+delta is applied to 0, 1 or 2 arguments, respectively), and @ (which is the
+application operator). The arities for the operators K, S, F and @ are 0, 1, 2
+and 2, respectively. The rules are then:
+
+@Kx = Sx
+@(Sx)y = Fxy
+
+(The original reduction rules, reformulated:)
+@(FKy)z = y
+@(F(Sx)y)z = @(@yz)(@xz)
+@(F(Fwx)y)z = @(@zw)x
+
+However, to translate to interaction nets, the depth of the left-hand side of
+the rules can't exceed two, so they have to be rearranged, and a new symbol #
+with arity 3 has to be introduced:
+
+@Kx = Sx
+@(Sx)y = Fxy
+@(Fxy)z = #xyz
+#Kyz = y
+#(Sx)yz = @(@yz)(@xz)
+#(Fwx)yz = @(@zw)x
+
+---
+Side effects
+
+print: prints the arg
+rand: takes an arg N, returns a random number between 0 and N
+encode `print(rand(5))`
+
+an effect is a function (arg, resource) -> (return value, another resource)
+resources cannot be copied, therefore resources cannot be first-class values

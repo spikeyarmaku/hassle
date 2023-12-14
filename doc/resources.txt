@@ -5,6 +5,9 @@ https://stackoverflow.com/questions/2158050/what-are-the-alternative-of-monads-t
 https://stackoverflow.com/questions/3850368/how-do-functional-languages-model-side-effects
 https://copyprogramming.com/howto/what-are-the-alternative-of-monads-to-use-io-in-pure-functional-programming
 https://crypto.stanford.edu/~blynn/haskell/io.html
+Extending Interaction Nets towards the Real World - https://repositum.tuwien.at/bitstream/20.500.12708/12949/2/Jiresch%20Eugen%20Robert%20Winfried%20-%202012%20-%20Extending%20interaction%20nets%20towards%20the...pdf
+https://math.stackexchange.com/questions/2714280/intro-to-computational-side-effects-from-an-algebraic-perspective
+https://github.com/yallop/effects-bibliography
 
 Shallow bindings in Lisp: https://sci-hub.se/https://doi.org/10.1145/359545.359566
 Abstract machines: https://www.inf.ed.ac.uk/teaching/courses/lsi/diehl_abstract_machines.pdf
@@ -46,3 +49,62 @@ relation to interaction nets:
 From Functional Programs to Interaction Nets via the Rewriting Calculus - https://sci-hub.se/10.1016/j.entcs.2007.02.046
 Interaction Nets vs. the ρ-calculus: Introducing Bigraphical Nets - https://sci-hub.se/10.1016/j.entcs.2006.05.004
 Interaction nets and term-rewriting systems - https://core.ac.uk/download/pdf/82175465.pdf
+Bigraphical Nets - https://arxiv.org/pdf/1302.6339.pdf
+From Term Rewriting to Generalised Interaction Nets - https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=6bb6602741eba025077042b78b302e71d2b1db65
+Term Rewriting as Interaction Nets Plus Hyperedge Replacement - https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=24b9053789157c3baef3f5c38d6108a7314e81ad
+Implementing Term Rewrite Languages in DACTL - https://sci-hub.se/https://doi.org/10.1016/0304-3975(90)90036-H
+
+For definitions:
+Rewriting Systems (slides) - https://users.dimi.uniud.it/~pietro.digianantonio/slides_didattica/rewriting_systems.pdf
+Term Rewriting Systems - https://www.cs.tau.ac.il/~nachum/papers/klop.pdf
+Modular Termination of r-Consistent and Left-Linear, Term Rewriting Systems - https://www.w3.org/People/Massimo/papers/tcs95.pdf
+Constructor Equivalent Term Rewriting Systems are Strongly Sequential: a direct proof - https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=afef93594f3ba11bc8980f834c350a66de552df7
+
+Optimal Sharing Graphs for Substructural Higher-order Rewriting Systems - https://kar.kent.ac.uk/63884/1/249thesis.pdf
+
+Interaction Combinators - https://sci-hub.se/10.1006/inco.1997.2643
+A Denotational Semantics for the Symmetric Interaction Combinators - https://www-lipn.univ-paris13.fr/~mazza/papers/CombSem-MSCS.pdf
+Encoding Linear Logic with Interaction Combinators - https://repositorium.sdum.uminho.pt/bitstream/1822/756/1/mackie-pinto.pdf
+From Proof-Nets to Interaction Nets - https://sci-hub.se/https://doi.org/10.1017/CBO9780511629150.012
+Interaction Nets, Combinators, and Calculus - https://zicklag.github.io/blog/interaction-nets-combinators-calculus/#combinator-rules
+HVM Wiki - https://github.com/HigherOrderCO/HVM/wiki/HVM-Wiki
+Inpla: Interaction nets as a programming language - https://github.com/inpla/inpla
+
+Other models of computation:
+Monoidal computer I: Basic computability by string diagrams - https://arxiv.org/pdf/1208.5205.pdf
+Local Reasoning for Robust Observational Equivalence - https://tnttodda.github.io/spartan.pdf
+Dusko Pavlovic --- Geometry of computation and string-diagram programming in a monoidal computer. - https://www.youtube.com/watch?v=vgxxBQusaUE
+
+--- These links are pulled from an earlier branch: ---
+
+interaction nets
+----------------
+Design and implementation of a low-level language for interaction nets - https://core.ac.uk/download/pdf/30611893.pdf
+An Implementation Model for Interaction Nets - https://arxiv.org/pdf/1505.07164.pdf
+Inpla: Interaction nets as a programming language - https://github.com/inpla/inpla
+A lightweight abstract machine for interaction nets - https://journal.ub.tu-berlin.de/eceasst/article/view/416/382
+Interaction Nets, Combinators, and Calculus - https://zicklag.github.io/blog/interaction-nets-combinators-calculus/
+The Symmetric Interaction Calculus - https://medium.com/@maiavictor/the-abstract-calculus-fe8c46bcf39c
+HVM - How.md - https://github.com/HigherOrderCO/HVM/blob/master/guide/HOW.md
+interaction Calculus - https://github.com/VictorTaelin/Interaction-Calculus
+Towards a Programming Language for Interaction Nets - https://sci-hub.se/10.1016/j.entcs.2005.02.015
+in2: A Graphical Interpreter for Interaction Nets - https://sci-hub.se/10.1007/3-540-45610-4_29
+Compilation of Interaction Nets - https://core.ac.uk/download/pdf/82756233.pdf
+Sequential and Concurrent Abstract Machines for Interaction Nets - https://link.springer.com/content/pdf/10.1007/3-540-46432-8_18.pdf
+A Denotational Semantics for the Symmetric Interaction Combinators - https://lipn.univ-paris13.fr/~mazza/papers/CombSem-MSCS.pdf
+In-place Graph Rewriting with Interaction Nets - https://arxiv.org/pdf/1609.03641.pdf
+
+cicada-lang/inet: An implementation of Interaction Nets, with sexp-based syntax. - https://www.reddit.com/r/lisp/comments/tg3owv/github_cicadalanginet_an_implementation_of/
+https://github.com/cicada-lang/inet
+
+IO
+Extending Interaction Nets towards the Real World - https://repositum.tuwien.at/bitstream/20.500.12708/12949/2/Jiresch%20Eugen%20Robert%20Winfried%20-%202012%20-%20Extending%20interaction%20nets%20towards%20the...pdf
+
+
+interpreter
+-----------
+Modeling an Algebraic Stepper - https://www2.ccs.neu.edu/racket/pubs/esop2001-cff.pdf
+THE DEBUGGABLE INTERPRETER DESIGN PATTERN - http://www.bergel.eu/download/papers/Berg07d-debugger.pdf
+Design and Implementation of Efficient Interpretation - http://www.cs.toronto.edu/~matz/dissertation/matzDissertation-latex2html/node7.html
+The Structure and Performance of Efficient Interpreters - https://jilp.org/vol5/v5paper12.pdf
+Interpreter with debug capability? - https://www.reddit.com/r/ProgrammingLanguages/comments/doiq6l/interpreter_with_debug_capability/

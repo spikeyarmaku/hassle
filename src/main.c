@@ -213,6 +213,11 @@ struct Tree* test_va() {
     return tree_apply(tree_apply(cK, nNat(3)), nNat(5));
 }
 
+struct Tree* test() {
+    // return tree_make_apply(tree_make_apply(and(), true()), false());
+    return tree_make_apply(cI(), _ref("x"));
+}
+
 Response_t* _execute_command(struct VM* vm, char* cmd) {
     int token_len = str_get_token_end(cmd);
     char* cmds[] = {"file", "expr", "step", "run", "reset", "get", "exit"};
@@ -237,7 +242,7 @@ Response_t* _execute_command(struct VM* vm, char* cmd) {
                     if (arg != NULL) {
                         // vm_set_term(vm, parse_from_str(arg));
                         // TODO convert Expr_t* to struct Tree*
-                        vm_populate(vm, test_va());
+                        vm_populate(vm, test());
                     }
                     free_mem("execute_command/expr", arg);
                     return response_make_void();
