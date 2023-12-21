@@ -15,17 +15,32 @@ struct Agent* agent_make(uint8_t type, uint8_t arity) {
     return agent;
 }
 
+// Name and indirection nodes are made the same way. The difference is that name
+// nodes have their port unconnected.
+struct Agent* agent_make_name() {
+    return agent_make(0, 1);
+}
+
+// struct Agent* agent_make_ind() {
+//     return agent_make(0, 1);
+// }
+
+uint8_t agent_get_type(struct Agent* agent) {
+    return agent->type;
+}
+
 void agent_free(struct Agent* agent) {
     assert(agent != NULL);
 
-    if (agent->ports != NULL) {
-        free_mem("agent_free/ports", agent->ports);
-    }
     free_mem("agent", agent);
 }
 
 void agent_set_port(struct Agent* agent, uint8_t port_num, struct Agent* dst) {
     agent->ports[port_num] = dst;
+}
+
+struct Agent* agent_get_port(struct Agent* agent, uint8_t port_num) {
+    return agent->ports[port_num];
 }
 
 void agent_set_type(struct Agent* agent, uint8_t type) {

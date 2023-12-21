@@ -14,8 +14,8 @@
 #include "network.h"
 #include "memory.h"
 
-#include "tree/vm.h"
-#include "tree/primop.h"
+// #include "tree/vm.h"
+#include "vm_simple/vm.h"
 
 // DEBUG
 // #include "tree/eval.h"

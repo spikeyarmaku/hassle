@@ -1,7 +1,8 @@
 #ifndef _RESPONSE_H_
 #define _RESPONSE_H_
 
-#include "tree/vm.h"
+// #include "tree/vm.h"
+#include "vm_simple/vm.h"
 #include "tree/program.h"
 
 enum ResponseType {EvalStateResponse, TermResponse, VMDataResponse,

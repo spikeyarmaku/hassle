@@ -23,6 +23,36 @@
 
 #define DEPTH uint32_t
 
+// interaction net
+#define MAX_AUX_PORT_NUM 3
+
+#define ID_NAME         0 // Name
+#define ID_K            1 // K, arity 0
+#define ID_S            2 // S, arity 1
+#define ID_F            3 // F, arity 2
+#define ID_APP          4 // @, arity 2
+#define ID_DELTA        5 // #, arity 3
+#define MAX_AGENT_ID    6
+
+// arities for bytecode ops
+#define OP_MKAGENT  0   // 2
+#define OP_MKNAME   1   // 1
+// #define OP_MKIND    2   // 1
+// #define OP_FREE     3   // 1
+#define OP_MOVEP    2   // 3
+// #define OP_CHGID    5   // 2
+#define OP_PUSH     3   // 2
+#define OP_RETURN   4   // 0
+
+#define CODE_TABLE_SIZE ((MAX_AGENT_ID - 1) * MAX_AGENT_ID / 2)
+
+#define VARIABLE_INDEX_START (MAX_AUX_PORT_NUM * 2)
+
+// TODO limit it to absolutely necessary: MAX_AUX_NUM * 2 + max number of agents
+// created in a rewrite rule
+// #define MAX_REG_SIZE 64
+#define MAX_REG_SIZE 13
+
 enum ErrorCode {Success, Error};
 typedef enum ErrorCode ErrorCode_t;
 

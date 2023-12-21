@@ -8,6 +8,7 @@ https://crypto.stanford.edu/~blynn/haskell/io.html
 Extending Interaction Nets towards the Real World - https://repositum.tuwien.at/bitstream/20.500.12708/12949/2/Jiresch%20Eugen%20Robert%20Winfried%20-%202012%20-%20Extending%20interaction%20nets%20towards%20the...pdf
 https://math.stackexchange.com/questions/2714280/intro-to-computational-side-effects-from-an-algebraic-perspective
 https://github.com/yallop/effects-bibliography
+Comprehending Pure Functional Effect Systems - https://www.dantb.dev/files/dissertation.pdf
 
 Shallow bindings in Lisp: https://sci-hub.se/https://doi.org/10.1145/359545.359566
 Abstract machines: https://www.inf.ed.ac.uk/teaching/courses/lsi/diehl_abstract_machines.pdf
