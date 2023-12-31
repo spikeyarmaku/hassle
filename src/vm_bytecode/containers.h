@@ -28,4 +28,10 @@ void                agent_heap_set
 struct Agent*       agent_heap_get          (struct AgentHeap*, size_t);
 void                agent_heap_free         (struct AgentHeap*);
 
+struct ByteArray*   byte_array_make         ();
+void                byte_array_add_byte     (struct ByteArray*, uint8_t);
+void                byte_array_add_word
+    (struct ByteArray*, size_t, uint8_t);
+uint8_t*            byte_array_get_bytes    (struct ByteArray*);
+
 #endif

@@ -35,14 +35,13 @@
 #define MAX_AGENT_ID    6
 
 // arities for bytecode ops
-#define OP_MKAGENT  0   // 2
-#define OP_MKNAME   1   // 1
-// #define OP_MKIND    2   // 1
-// #define OP_FREE     3   // 1
-#define OP_MOVEP    2   // 3
-// #define OP_CHGID    5   // 2
-#define OP_PUSH     3   // 2
-#define OP_RETURN   4   // 0
+#define OP_MKAGENT  0   // reg type - Create an agent of `type` at `reg`
+#define OP_MKNAME   1   // reg - Create a name at `reg`
+#define OP_CONNECT  2   // reg0 port_num reg1 - Connect reg1 to reg0's `port`
+#define OP_PUSH     3   // reg0 reg1 - Add reg0 and reg1 to the stack
+#define OP_STORE    4   // reg g - store reg's content in the global reg g
+#define OP_LOAD     5   // g reg - load global reg g's content into reg
+#define OP_RETURN   6   // --
 
 #define CODE_TABLE_SIZE ((MAX_AGENT_ID - 1) * MAX_AGENT_ID / 2)
 

@@ -1,8 +1,10 @@
 /*
+TODO
 - add Unicode support
 - add locale support (decimal separators, etc.)
 - use boehm's GC
 - Check if the input expression is well-formed (all parens match)
+- sprinkle `const` in appropriate places
 */
 
 #include "config.h"
@@ -15,7 +17,7 @@
 #include "memory.h"
 
 // #include "tree/vm.h"
-#include "vm_simple/vm.h"
+#include "vm_bytecode/vm.h"
 
 // DEBUG
 // #include "tree/eval.h"
@@ -83,7 +85,7 @@ ErrorCode_t _flag_handle(Config_t* config, char* flag) {
 
 void _interpreter_start(Config_t* config) {
     printf("Initializing VM\n");
-    struct VM* vm = vm_make();
+    struct VM* vm = vm_make(sizeof(size_t));
     
     if (config->log_memory == TRUE) {
         printf("Starting memory logger service\n");
@@ -215,7 +217,11 @@ struct Tree* test_va() {
 
 struct Tree* test() {
     // return tree_make_apply(tree_make_apply(and(), true()), false());
-    return tree_make_apply(cI(), _ref("x"));
+    // return tree_make_apply(cI(), _ref("x"));
+    
+    return tree_make_apply(cI(), true());
+    // return cK();
+    // return delta();
 }
 
 Response_t* _execute_command(struct VM* vm, char* cmd) {
@@ -242,7 +248,8 @@ Response_t* _execute_command(struct VM* vm, char* cmd) {
                     if (arg != NULL) {
                         // vm_set_term(vm, parse_from_str(arg));
                         // TODO convert Expr_t* to struct Tree*
-                        vm_populate(vm, test());
+                        // vm_populate(vm, test());
+                        vm_from_tree(vm, test());
                     }
                     free_mem("execute_command/expr", arg);
                     return response_make_void();
@@ -256,13 +263,17 @@ Response_t* _execute_command(struct VM* vm, char* cmd) {
                     char* arg = str_get_substr(cmd, 1, FALSE);
                     if (arg == NULL) {
                         printf("Arg is null\n");
-                        return response_make_program(vm_run(vm));
+                        // return response_make_program(vm_run(vm));
+                        // TODO
+                        return NULL;
                     } else {
                         printf("Arg is not null\n");
-                        size_t step_count = atoi(arg);
-                        return
-                            response_make_eval_state(
-                                vm_run_steps(vm, step_count));
+                        // size_t step_count = atoi(arg);
+                        // return
+                        //     response_make_eval_state(
+                        //         vm_run_steps(vm, step_count));
+                        // TODO
+                        return NULL;
                     }
                 }
                 case 4: {
@@ -272,15 +283,17 @@ Response_t* _execute_command(struct VM* vm, char* cmd) {
                 }
                 case 5: {
                     // get word_size
-                    char* arg = str_get_substr(cmd, 1, FALSE);
-                    uint8_t word_size;
-                    if (arg == NULL) {
-                        word_size = sizeof(size_t);
-                    } else {
-                        word_size = atoi(arg);
-                    }
-                    free_mem("execute_command/get", arg);
-                    return response_make_vm_data(vm_serialize(vm, word_size));
+                    // char* arg = str_get_substr(cmd, 1, FALSE);
+                    // uint8_t word_size;
+                    // if (arg == NULL) {
+                    //     word_size = sizeof(size_t);
+                    // } else {
+                    //     word_size = atoi(arg);
+                    // }
+                    // free_mem("execute_command/get", arg);
+                    // return response_make_vm_data(vm_serialize(vm, word_size));
+                    // TODO use vm_readback
+                    return NULL;
                 }
                 case 6: {
                     // exit
@@ -314,8 +327,10 @@ void _print_help_message() {
 struct Program* _interpret_file(struct VM* vm, char* file_name) {
     // struct Tree* term = parse_from_file(file_name);
     struct Tree* tree = NULL; // TODO convert it from Expr_t*
-    vm_populate(vm, tree);
-    return vm_run(vm);
+    vm_from_tree(vm, tree);
+    // return vm_run(vm);
+    // TODO
+    return NULL;
 }
 
 // If called with a file, run it, else start a REPL

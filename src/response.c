@@ -2,7 +2,8 @@
 
 #include "tree/tree.h"
 // #include "tree/vm.h"
-#include "vm_simple/vm.h"
+// #include "vm_simple/vm.h"
+#include "vm_bytecode/vm.h"
 
 // Return value of command execution
 
