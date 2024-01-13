@@ -53,7 +53,7 @@ struct Equation eq_stack_pop(struct EqStack* stack) {
 
 // Return a reference to the nth element counting from the top
 struct Equation eq_stack_peek(struct EqStack* stack, size_t index) {
-    return stack->elems[stack->count];
+    return stack->elems[index];
 }
 
 void eq_stack_free(struct EqStack* stack) {

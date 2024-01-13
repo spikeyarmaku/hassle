@@ -20,7 +20,7 @@ Y 2 | X  X  9 10 11
   3 | X  X  X 12 13
   4 | X  X  X  X 14
 
-First, we make sure that x <= y. If it's not true, we swap x and y.
+First, we make sure that x >= y. If it's not true, we swap x and y.
 Then we get the correct index by this formula: y * n + x - (y * (y + 1)) / 2)
 
 the size of the flattened array is n * (n + 1) / 2
@@ -38,17 +38,18 @@ Y F | X  X  FF F@ F#
 Rules SS, @@, @# and ## are not implemented
 
 The rules in inpla's notation (https://github.com/inpla/inpla):
-K >< K => ;
-K >< S(x) => x~K;
-K >< F(x,y) => x~K, y~K;
-K >< App(x, r) => r~S(x);
-K >< Delta(y, z, r) => y~r, z~K;
-S(x) >< F(y, z) => x~F(a, b), y~S(a), z~S(b);
-S(x) >< App(y, r) => r~F(x, y);
-S(x) >< Delta(y, z, r) => z~F(a, b), x~App(a, c), y~App(b, App(c, r));
-F(w, x) >< F(y, z) => w~F(a, c), x~F(d, b), y~F(d, a), z~F(b, c);
-F(x, y) >< App(z, r) => x~Delta(y, z, r);
-F(w, x) >< Delta(y, z, r) => z~App(w, App(x, r)), y~K;
+K >< E => ;
+K >< D(x, y) => K~x, K~y;
+K >< A(x, r) => S(x)~r;
+K >< T(y, z, r) => y~r, z~E;
+S(x) >< E => x~E;
+S(x) >< D(y, z) => x~D(a, b), S(a)~y, S(b)~z;
+S(x) >< A(y, r) => F(x, y)~r;
+S(x) >< T(y, z, r) => z~D(a, b), x~A(a, c), y~A(b, A(c, r));
+F(x, y) >< E => x~E, y~E;
+F(w, x) >< D(y, z) => F(a, b)~z, F(c, d)~y, w~D(c, a), x~D(d, b);
+F(x, y) >< A(z, r) => x~T(y, z, r);
+F(w, x) >< T(y, z, r) => z~A(w, A(x, r)), y~E;
 */
 
 #ifndef _CODE_H_
@@ -64,18 +65,20 @@ F(w, x) >< Delta(y, z, r) => z~App(w, App(x, r)), y~K;
 
 extern const uint8_t Arities[MAX_AGENT_ID];
 
-extern const uint8_t rule_k_k[];
-extern const uint8_t rule_k_s[];
-extern const uint8_t rule_k_f[];
-extern const uint8_t rule_k_app[];
-extern const uint8_t rule_k_delta[];
-extern const uint8_t rule_s_f[];
-extern const uint8_t rule_s_app[];
-extern const uint8_t rule_s_delta[];
-extern const uint8_t rule_f_f[];
-extern const uint8_t rule_f_app[];
-extern const uint8_t rule_f_delta[];
+extern const uint8_t rule_k_e[];
+extern const uint8_t rule_k_d[];
+extern const uint8_t rule_k_a[];
+extern const uint8_t rule_k_t[];
+extern const uint8_t rule_s_e[];
+extern const uint8_t rule_s_d[];
+extern const uint8_t rule_s_a[];
+extern const uint8_t rule_s_t[];
+extern const uint8_t rule_f_e[];
+extern const uint8_t rule_f_d[];
+extern const uint8_t rule_f_a[];
+extern const uint8_t rule_f_t[];
 
 extern const uint8_t* CodeTable[];
+extern const char* CodeNameTable[];
 
 #endif

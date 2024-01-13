@@ -219,7 +219,8 @@ struct Tree* test() {
     // return tree_make_apply(tree_make_apply(and(), true()), false());
     // return tree_make_apply(cI(), _ref("x"));
     
-    return tree_make_apply(cI(), true());
+    // return tree_make_apply(cI(), true());
+    return tree_make_apply(cI(), tree_make_apply(cI(), true()));
     // return cK();
     // return delta();
 }
@@ -250,6 +251,9 @@ Response_t* _execute_command(struct VM* vm, char* cmd) {
                         // TODO convert Expr_t* to struct Tree*
                         // vm_populate(vm, test());
                         vm_from_tree(vm, test());
+                        vm_eval(vm);
+                        struct Tree* debug = vm_readback(vm);
+                        tree_print(debug);
                     }
                     free_mem("execute_command/expr", arg);
                     return response_make_void();

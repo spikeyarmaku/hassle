@@ -26,13 +26,15 @@
 // interaction net
 #define MAX_AUX_PORT_NUM 3
 
-#define ID_NAME         0 // Name
-#define ID_K            1 // K, arity 0
-#define ID_S            2 // S, arity 1
-#define ID_F            3 // F, arity 2
-#define ID_APP          4 // @, arity 2
-#define ID_DELTA        5 // #, arity 3
-#define MAX_AGENT_ID    6
+#define ID_K            0 // K, arity 0
+#define ID_S            1 // S, arity 1
+#define ID_F            2 // F, arity 2
+#define ID_E            3 // Eraser, arity 0
+#define ID_D            4 // Duplicator, arity 2
+#define ID_A            5 // App, arity 2
+#define ID_T            6 // Ternary app, arity 3
+#define ID_NAME         7 // Name
+#define MAX_AGENT_ID    8
 
 // arities for bytecode ops
 #define OP_MKAGENT  0   // reg type - Create an agent of `type` at `reg`
@@ -43,7 +45,7 @@
 #define OP_LOAD     5   // g reg - load global reg g's content into reg
 #define OP_RETURN   6   // --
 
-#define CODE_TABLE_SIZE ((MAX_AGENT_ID - 1) * MAX_AGENT_ID / 2)
+#define CODE_TABLE_SIZE 12 // KE, KD, KA, KT, SE, SD, SA, ST, FE, FD, FA, FT
 
 #define VARIABLE_INDEX_START (MAX_AUX_PORT_NUM * 2)
 

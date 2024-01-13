@@ -3,6 +3,10 @@
 
 // --- SWITCHES ---
 
+// Comment this out to disable remote REPL support
+// For security reasons, disabling it is recommended for production
+#define REMOTE_REPL // TODO implement this switch
+
 // Comment this out to disable unicode support. Useful for low-memory
 // environments
 // TODO implement unicode support
