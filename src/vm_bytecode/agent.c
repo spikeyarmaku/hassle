@@ -18,12 +18,8 @@ struct Agent* agent_make(uint8_t type, uint8_t arity) {
 // Name and indirection nodes are made the same way. The difference is that name
 // nodes have their port unconnected.
 struct Agent* agent_make_name() {
-    return agent_make(0, 1);
+    return agent_make(ID_NAME, 1);
 }
-
-// struct Agent* agent_make_ind() {
-//     return agent_make(0, 1);
-// }
 
 uint8_t agent_get_type(struct Agent* agent) {
     return agent->type;
@@ -46,3 +42,6 @@ struct Agent* agent_get_port(struct Agent* agent, uint8_t port_num) {
 void agent_set_type(struct Agent* agent, uint8_t type) {
     agent->type = type;
 }
+
+const char* AgentNameTable[MAX_AGENT_ID] = {
+    "Name", "K", "S", "F", "Eraser", "Duplicator", "App", "Delta"};

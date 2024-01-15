@@ -26,14 +26,14 @@
 // interaction net
 #define MAX_AUX_PORT_NUM 3
 
-#define ID_K            0 // K, arity 0
-#define ID_S            1 // S, arity 1
-#define ID_F            2 // F, arity 2
-#define ID_E            3 // Eraser, arity 0
-#define ID_D            4 // Duplicator, arity 2
-#define ID_A            5 // App, arity 2
-#define ID_T            6 // Ternary app, arity 3
-#define ID_NAME         7 // Name
+#define ID_NAME         0 // Name
+#define ID_K            1 // K, arity 0
+#define ID_S            2 // S, arity 1
+#define ID_F            3 // F, arity 2
+#define ID_E            4 // Eraser, arity 0
+#define ID_D            5 // Duplicator, arity 2
+#define ID_A            6 // App, arity 2
+#define ID_T            7 // Ternary app, arity 3
 #define MAX_AGENT_ID    8
 
 // arities for bytecode ops

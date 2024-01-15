@@ -220,9 +220,9 @@ void vm_from_tree(struct VM* vm, struct Tree* tree) {
 
         // Connect
         byte_array_add_byte(byte_array, OP_CONNECT);
-        byte_array_add_byte(byte_array, 0);
-        byte_array_add_byte(byte_array, 0);
         byte_array_add_byte(byte_array, 1);
+        byte_array_add_byte(byte_array, 1);
+        byte_array_add_byte(byte_array, 0);
     } else {
         // Otherwise, push the root node and the interface
 
@@ -278,8 +278,11 @@ VM_WORD _vm_read_word(struct VM* vm) {
 // otherwise
 enum EvalState vm_step(struct VM* vm) {
     // Pop an equation from the stack
+    if (eq_stack_size(vm->active_pairs) == 0) {
+        return EvalFinished;
+    }
     struct Equation eq = eq_stack_pop(vm->active_pairs);
-    printf("OUT eq: %llu %llu\n", (size_t)eq.agent0, (size_t)eq.agent1);
+    printf("OUT eq: %llx %llx\n", (size_t)eq.agent0, (size_t)eq.agent1);
 
     // Check if any of the agents are names
     uint8_t agent0_type = agent_get_type(eq.agent0);
@@ -294,6 +297,8 @@ enum EvalState vm_step(struct VM* vm) {
                 // x is a name
                 // x = Alpha(x1, ..., xn)
                 agent_set_port(eq.agent0, 0, eq.agent1);
+                printf("Agent 0 (%llx) is a name, redirecting it to %llx\n",
+                    (size_t)eq.agent0, (size_t)eq.agent1);
             } else {
                 // x is an indirection
                 struct Equation new_eq;
@@ -301,12 +306,16 @@ enum EvalState vm_step(struct VM* vm) {
                 new_eq.agent1 = eq.agent1;
                 eq_stack_push(vm->active_pairs, new_eq);
                 agent_free(eq.agent0);
+                printf("Agent 0 (%llx) is an indirection to %llx. Pushing new equation with %llx.\n",
+                    (size_t)eq.agent0, (size_t)new_eq.agent0, (size_t)eq.agent1);
             }
         }
     } else {
         if (agent_get_port(eq.agent1, 0) == NULL) {
             // y is a name
             agent_set_port(eq.agent1, 0, eq.agent0);
+            printf("Agent 1 (%llx) is a name, redirecting it to %llx\n",
+                    (size_t)eq.agent1, (size_t)eq.agent0);
         } else {
             // y is an indirection
             // Alpha(x1, ..., xn) = y and x = y
@@ -315,6 +324,8 @@ enum EvalState vm_step(struct VM* vm) {
             new_eq.agent1 = agent_get_port(eq.agent1, 0);
             eq_stack_push(vm->active_pairs, new_eq);
             agent_free(eq.agent1);
+            printf("Agent 1 (%llx) is an indirection to %llx. Pushing new equation with %llx.\n",
+                    (size_t)eq.agent1, (size_t)new_eq.agent1, (size_t)eq.agent0);
         }
     }
 
@@ -322,15 +333,16 @@ enum EvalState vm_step(struct VM* vm) {
         return EvalRunning;
     }
 
+    assert(agent0_type < agent1_type);
+
     // Set up registers
-    if (agent0_type > agent1_type) {
-        // This might be unnecessary
-        printf("WARNING: agent0_type (%d) > agent1_type (%d)\n", agent0_type,
-            agent1_type);
-        struct Agent* temp = eq.agent0;
-        eq.agent0 = eq.agent1;
-        eq.agent1 = temp;
-    }
+    // if (agent0_type > agent1_type) {
+    //     printf("WARNING: agent0_type (%d) > agent1_type (%d)\n", agent0_type,
+    //         agent1_type);
+    //     struct Agent* temp = eq.agent0;
+    //     eq.agent0 = eq.agent1;
+    //     eq.agent1 = temp;
+    // }
     for (uint8_t i = 0; i < MAX_AUX_PORT_NUM; i++) {
         vm->reg[i] = agent_get_port(eq.agent0, i);
         vm->reg[MAX_AUX_PORT_NUM + i] = agent_get_port(eq.agent1, i);
@@ -341,15 +353,14 @@ enum EvalState vm_step(struct VM* vm) {
     }
 
     // Load the instructions for this pair
-    if (agent0_type > agent1_type) {
-        // This might be unnecessary
-        printf("WARNING: agent0_type (%d) > agent1_type (%d)\n", agent0_type,
-            agent1_type);
-        uint8_t temp = agent0_type;
-        agent0_type = agent1_type;
-        agent1_type = temp;
-    }
-    uint8_t code_index = agent0_type * 4 + agent1_type - 3;
+    // if (agent0_type > agent1_type) {
+    //     printf("WARNING: agent0_type (%d) > agent1_type (%d)\n", agent0_type,
+    //         agent1_type);
+    //     uint8_t temp = agent0_type;
+    //     agent0_type = agent1_type;
+    //     agent1_type = temp;
+    // }
+    uint8_t code_index = (agent0_type - ID_K) * 4 + (agent1_type - ID_E);
     tape_set(vm->tape, CodeTable[code_index]);
     if (CodeNameTable[code_index] == NULL) {
         printf("ERROR: no rule found for %d - %d\n", agent0_type, agent1_type);
@@ -389,11 +400,15 @@ void _vm_exec_instruction(struct VM* vm, uint8_t instruction) {
             uint8_t type = _vm_read_byte(vm);
             uint8_t arity = Arities[type];
             vm->reg[index] = agent_make(type, arity);
+            printf("\tCreated agent at %llx with type %s\n",
+                (size_t)vm->reg[index], AgentNameTable[type]);
             break;
         }
         case OP_MKNAME: {
             uint8_t index = _vm_read_byte(vm);
             vm->reg[index] = agent_make_name();
+            printf("\tCreated name at %llx\n",
+                (size_t)vm->reg[index]);
             break;
         }
         case OP_CONNECT: {
@@ -413,7 +428,7 @@ void _vm_exec_instruction(struct VM* vm, uint8_t instruction) {
             eq.agent0 = vm->reg[index0];
             eq.agent1 = vm->reg[index1];
             eq_stack_push(vm->active_pairs, eq);
-            printf("IN eq: %llu %llu\n", (size_t)eq.agent0, (size_t)eq.agent1);
+            printf("\tIN eq: %llx %llx\n", (size_t)eq.agent0, (size_t)eq.agent1);
             break;
         }
         case OP_STORE: {

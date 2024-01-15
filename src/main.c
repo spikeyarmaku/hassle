@@ -219,8 +219,8 @@ struct Tree* test() {
     // return tree_make_apply(tree_make_apply(and(), true()), false());
     // return tree_make_apply(cI(), _ref("x"));
     
-    // return tree_make_apply(cI(), true());
-    return tree_make_apply(cI(), tree_make_apply(cI(), true()));
+    return tree_make_apply(cI(), true());
+    // return tree_make_apply(cI(), tree_make_apply(cI(), true()));
     // return cK();
     // return delta();
 }
