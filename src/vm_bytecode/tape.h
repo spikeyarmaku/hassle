@@ -5,6 +5,7 @@
 #include "memory.h"
 
 #include "code.h"
+#include "agent.h"
 
 struct Tape {
     size_t pc;

@@ -18,10 +18,12 @@ TODO
 
 // #include "tree/vm.h"
 #include "vm_bytecode/vm.h"
+#include "vm_bytecode/readback.h"
 
 // DEBUG
 // #include "tree/eval.h"
 #include "tree/combinators.h"
+
 
 #include "response.h"
 
@@ -197,6 +199,8 @@ void _repl_start_remote(struct VM* vm, Connection_t conn) {
 }
 
 struct Tree* test_va() {
+    // return tree_apply(tree_apply(cA(), cV()), cA());
+    
     // K combinator in VA-calculus:
     // (A((V((V(VA))((V(VV))V)))(V((AV)A))))((AV)A)
     struct Tree* cK =
@@ -216,10 +220,11 @@ struct Tree* test_va() {
 }
 
 struct Tree* test() {
+    return test_va();
     // return tree_make_apply(tree_make_apply(and(), true()), false());
     // return tree_make_apply(cI(), _ref("x"));
     
-    return tree_make_apply(cI(), true());
+    // return tree_make_apply(cI(), true());
     // return tree_make_apply(cI(), tree_make_apply(cI(), true()));
     // return cK();
     // return delta();
@@ -251,9 +256,7 @@ Response_t* _execute_command(struct VM* vm, char* cmd) {
                         // TODO convert Expr_t* to struct Tree*
                         // vm_populate(vm, test());
                         vm_from_tree(vm, test());
-                        vm_eval(vm);
-                        struct Tree* debug = vm_readback(vm);
-                        tree_print(debug);
+                        // vm_eval(vm);
                     }
                     free_mem("execute_command/expr", arg);
                     return response_make_void();
@@ -268,7 +271,9 @@ Response_t* _execute_command(struct VM* vm, char* cmd) {
                     if (arg == NULL) {
                         printf("Arg is null\n");
                         // return response_make_program(vm_run(vm));
-                        // TODO
+                        vm_eval(vm);
+                        return response_make_vm_data(vm_serialize(vm, 8));
+                        // TODO use response_make_program instead
                         return NULL;
                     } else {
                         printf("Arg is not null\n");
@@ -296,8 +301,18 @@ Response_t* _execute_command(struct VM* vm, char* cmd) {
                     // }
                     // free_mem("execute_command/get", arg);
                     // return response_make_vm_data(vm_serialize(vm, word_size));
-                    // TODO use vm_readback
-                    return NULL;
+                    // TODO use readback
+                    
+                    char* arg = str_get_substr(cmd, 1, FALSE);
+                    uint8_t word_size;
+                    if (arg == NULL) {
+                        word_size = sizeof(size_t);
+                    } else {
+                        word_size = atoi(arg);
+                    }
+                    free_mem("execute_command/get", arg);
+                    return response_make_vm_data(vm_serialize(vm, word_size));
+                    // TODO use response_make_program instead
                 }
                 case 6: {
                     // exit

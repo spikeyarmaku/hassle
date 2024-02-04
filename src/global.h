@@ -26,7 +26,7 @@
 // interaction net
 #define MAX_AUX_PORT_NUM 3
 
-#define ID_NAME         0 // Name
+#define ID_NAME         0 // Name / indirection
 #define ID_K            1 // K, arity 0
 #define ID_S            2 // S, arity 1
 #define ID_F            3 // F, arity 2
@@ -52,7 +52,7 @@
 // TODO limit it to absolutely necessary: MAX_AUX_NUM * 2 + max number of agents
 // created in a rewrite rule
 // #define MAX_REG_SIZE 64
-#define MAX_REG_SIZE 13
+#define MAX_REG_SIZE 14
 
 enum ErrorCode {Success, Error};
 typedef enum ErrorCode ErrorCode_t;

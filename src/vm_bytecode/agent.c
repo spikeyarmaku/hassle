@@ -1,5 +1,7 @@
 #include "agent.h"
 
+#include <stdio.h>
+
 struct Agent {
     uint8_t type;
     struct Agent* ports[MAX_AUX_PORT_NUM];
@@ -41,6 +43,33 @@ struct Agent* agent_get_port(struct Agent* agent, uint8_t port_num) {
 
 void agent_set_type(struct Agent* agent, uint8_t type) {
     agent->type = type;
+}
+
+void agent_print(struct Agent* agent) {
+    if (agent->type == ID_NAME) {
+        if (agent->ports[0] == NULL) {
+            printf(" <%llx>", (size_t)agent);
+        } else {
+            // printf(" [%llx] ", (size_t)agent);
+            agent_print(agent->ports[0]);
+        }
+    } else {
+        printf("%s", AgentNameTable[agent->type]);
+        if (agent->ports[0] != NULL) {
+            printf("(");
+        }
+        for (uint8_t i = 0; i < MAX_AUX_PORT_NUM; i++) {
+            if (agent->ports[i] != NULL) {
+                if (i > 0) {
+                    printf(", ");
+                }
+                agent_print(agent->ports[i]);
+            }
+        }
+        if (agent->ports[0] != NULL) {
+            printf(")");
+        }
+    }
 }
 
 const char* AgentNameTable[MAX_AGENT_ID] = {

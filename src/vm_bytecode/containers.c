@@ -9,8 +9,8 @@ struct EqStack {
 };
 
 struct AgentHeap {
-    uint8_t capacity;
-    uint8_t count;
+    size_t capacity;
+    size_t count;
     struct Agent** elems;
 };
 
@@ -28,7 +28,7 @@ void _eq_stack_grow(struct EqStack* stack) {
     stack->capacity = new_size;
 }
 
-struct EqStack* eq_stack_make(size_t elem_size) {
+struct EqStack* eq_stack_make() {
     struct EqStack* stack = allocate_mem("bytestack_make", NULL,
         sizeof(struct EqStack));
     stack->capacity = 0;

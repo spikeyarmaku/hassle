@@ -11,7 +11,7 @@ struct Equation {
     struct Agent* agent1;
 };
 
-struct EqStack*     eq_stack_make           (size_t);
+struct EqStack*     eq_stack_make           ();
 void                eq_stack_push           (struct EqStack*, struct Equation);
 struct Equation     eq_stack_pop            (struct EqStack*);
 struct Equation     eq_stack_peek           (struct EqStack*, size_t);

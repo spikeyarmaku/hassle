@@ -32,15 +32,13 @@ void tape_free(struct Tape* tape) {
     free_mem("tape_free", tape);
 }
 
-char* agent_names[] = {"NAME", "K", "S", "F", "APP", "DELTA"};
-
 void tape_print(struct Tape* tape) {
     for (size_t i = 0; tape->code[i] != OP_RETURN;) {
         printf("%llu: ", i);
         switch (tape->code[i]) {
             case OP_MKAGENT: {
                 printf("MKAGENT r%d %s\n",
-                    tape->code[i + 1], agent_names[tape->code[i + 2]]);
+                    tape->code[i + 1], AgentNameTable[tape->code[i + 2]]);
                 i += 3;
                 break;
             }

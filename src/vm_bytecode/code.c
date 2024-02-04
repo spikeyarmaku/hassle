@@ -143,48 +143,48 @@ const uint8_t rule_f_e[] = {
 
 // F(w, x) >< D(y, z) => F(a, b)~z, F(c, d)~y, w~D(c, a), x~D(d, b);
 const uint8_t rule_f_d[] = {
-    // struct Agent* agent_F0 = agent_make(ID_F);
+    // 0 struct Agent* agent_F0 = agent_make(ID_F);
     OP_MKAGENT, VAR(0), ID_F,
-    // struct Agent* name_a = agent_make_name();
+    // 3 struct Agent* name_a = agent_make_name();
     OP_MKNAME, VAR(1),
-    // struct Agent* name_b = agent_make_name();
+    // 5 struct Agent* name_b = agent_make_name();
     OP_MKNAME, VAR(2),
-    // agent_F0->ports[0] = name_a;
+    // 7 agent_F0->ports[0] = name_a;
     OP_CONNECT, VAR(0), 0, VAR(1),
-    // agent_F0->ports[1] = name_b;
+    // 11 agent_F0->ports[1] = name_b;
     OP_CONNECT, VAR(0), 1, VAR(2),
-    // vm_push_eq(vm, agent_F0, agent1->ports[1]);
+    // 15 vm_push_eq(vm, agent_F0, agent1->ports[1]);
     OP_PUSH, VAR(0), R(1),
 
-    // struct Agent* agent_F1 = agent_make(ID_F);
+    // 18 struct Agent* agent_F1 = agent_make(ID_F);
     OP_MKAGENT, VAR(3), ID_F,
-    // struct Agent* name_c = agent_make_name();
+    // 21 struct Agent* name_c = agent_make_name();
     OP_MKNAME, VAR(4),
-    // struct Agent* name_d = agent_make_name();
+    // 23 struct Agent* name_d = agent_make_name();
     OP_MKNAME, VAR(5),
-    // agent_F1->ports[0] = name_c;
+    // 25 agent_F1->ports[0] = name_c;
     OP_CONNECT, VAR(3), 0, VAR(4),
-    // agent_F1->ports[1] = name_d;
+    // 29 agent_F1->ports[1] = name_d;
     OP_CONNECT, VAR(3), 1, VAR(5),
-    // vm_push_eq(vm, agent_F1, agent1->ports[0]);
+    // 33 vm_push_eq(vm, agent_F1, agent1->ports[0]);
     OP_PUSH, VAR(3), R(0),
 
-    // struct Agent* agent_D0 = agent_make(ID_D);
+    // 36 struct Agent* agent_D0 = agent_make(ID_D);
     OP_MKAGENT, VAR(6), ID_D,
-    // agent_D0->ports[0] = name_c;
+    // 39 agent_D0->ports[0] = name_c;
     OP_CONNECT, VAR(6), 0, VAR(4),
-    // agent_D0->ports[1] = name_a;
+    // 43 agent_D0->ports[1] = name_a;
     OP_CONNECT, VAR(6), 1, VAR(1),
-    // vm_push_eq(vm, agent0->ports[0], agent_D0);
+    // 47 vm_push_eq(vm, agent0->ports[0], agent_D0);
     OP_PUSH, L(0), VAR(6),
 
-    // struct Agent* agent_D1 = agent_make(ID_F);
+    // 50 struct Agent* agent_D1 = agent_make(ID_F);
     OP_MKAGENT, VAR(7), ID_D,
-    // agent_D1->ports[0] = name_d;
+    // 53 agent_D1->ports[0] = name_d;
     OP_CONNECT, VAR(7), 0, VAR(5),
-    // agent_D1->ports[1] = name_b;
+    // 57 agent_D1->ports[1] = name_b;
     OP_CONNECT, VAR(7), 1, VAR(2),
-    // vm_push_eq(vm, agent0->ports[1], agent_D1);
+    // 61 vm_push_eq(vm, agent0->ports[1], agent_D1);
     OP_PUSH, L(1), VAR(7),
     OP_RETURN};
 
