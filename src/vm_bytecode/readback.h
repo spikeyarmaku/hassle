@@ -6,7 +6,7 @@
 #include "tree/program.h"
 #include "tree/tree.h"
 
-struct Program* readback        (struct VM*);
+struct Tree*    readback        (struct VM*);
 struct VMData   vm_serialize    (struct VM*, uint8_t);
 
 #endif

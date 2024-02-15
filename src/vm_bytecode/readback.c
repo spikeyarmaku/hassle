@@ -36,8 +36,8 @@ struct Program* readback_agent(struct Agent* agent) {
     // return NULL;
 }
 
-struct Program* readback(struct VM* vm) {
-    return readback_agent(vm_get_interface(vm));
+struct Tree* readback(struct VM* vm) {
+    return tree_make_program(readback_agent(vm_get_interface(vm)));
 }
 
 // TODO figure out a better way - this is from the old kin-using variation
@@ -46,8 +46,8 @@ struct VMData vm_serialize(struct VM* vm, uint8_t word_size) {
     printf("Serializing VM\n");
     Serializer_t* serializer = serializer_init(word_size);
 
-    program_serialize(serializer, readback(vm));
-    serializer_write_word(serializer, 0);
+    tree_serialize(serializer, readback(vm));
+    // serializer_write_word(serializer, 0);
     
     struct VMData vm_data;
     vm_data.data = serializer_get_data(serializer);

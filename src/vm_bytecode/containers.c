@@ -24,7 +24,7 @@ void _eq_stack_grow(struct EqStack* stack) {
     size_t new_size = stack->capacity < BUFFER_SIZE ?
         BUFFER_SIZE : stack->capacity * BUFFER_SIZE_MULTIPLY_FACTOR;
     stack->elems = allocate_mem("_stack_grow", stack->elems,
-        sizeof(struct EqStack) * new_size);
+        sizeof(struct Equation) * new_size);
     stack->capacity = new_size;
 }
 

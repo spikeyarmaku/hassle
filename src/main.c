@@ -23,6 +23,7 @@ TODO
 // DEBUG
 // #include "tree/eval.h"
 #include "tree/combinators.h"
+#include "tree/tree_parse.h"
 
 
 #include "response.h"
@@ -232,7 +233,8 @@ struct Tree* test() {
 
 Response_t* _execute_command(struct VM* vm, char* cmd) {
     int token_len = str_get_token_end(cmd);
-    char* cmds[] = {"file", "expr", "step", "run", "reset", "get", "exit"};
+    char* cmds[] = {"file", "expr", "tree", "step", "run", "reset", "get",
+        "exit"};
     int cmd_count = sizeof(cmds) / sizeof(cmds[0]);
     for (int i = 0; i < cmd_count; i++) {
         if (strlen(cmds[i]) == token_len &&
@@ -255,17 +257,29 @@ Response_t* _execute_command(struct VM* vm, char* cmd) {
                         // vm_set_term(vm, parse_from_str(arg));
                         // TODO convert Expr_t* to struct Tree*
                         // vm_populate(vm, test());
-                        vm_from_tree(vm, test());
+                        // vm_from_tree(vm, test());
+                        printf("Not implemented");
                         // vm_eval(vm);
                     }
                     free_mem("execute_command/expr", arg);
                     return response_make_void();
                 }
                 case 2: {
+                    // tree
+                    // TODO parse a tree expression
+                    // every character that is not one of `[]{}()<>` is treated
+                    // as a delta
+                    // Otherwise, same result as calling "expr"
+                    // vm_from_tree(parse_tree(...))
+                    char* arg = str_get_substr(cmd, 1, TRUE);
+                    vm_from_tree(vm, tree_from_string(arg));
+                    return response_make_void();
+                }
+                case 3: {
                     // step
                     return response_make_eval_state(vm_step(vm));
                 }
-                case 3: {
+                case 4: {
                     // run
                     char* arg = str_get_substr(cmd, 1, FALSE);
                     if (arg == NULL) {
@@ -285,12 +299,12 @@ Response_t* _execute_command(struct VM* vm, char* cmd) {
                         return NULL;
                     }
                 }
-                case 4: {
+                case 5: {
                     // reset
                     vm_reset(vm);
                     return response_make_void();
                 }
-                case 5: {
+                case 6: {
                     // get word_size
                     // char* arg = str_get_substr(cmd, 1, FALSE);
                     // uint8_t word_size;
@@ -314,7 +328,7 @@ Response_t* _execute_command(struct VM* vm, char* cmd) {
                     return response_make_vm_data(vm_serialize(vm, word_size));
                     // TODO use response_make_program instead
                 }
-                case 6: {
+                case 7: {
                     // exit
                     return response_make_exit();
                 }

@@ -29,30 +29,55 @@ delta, or Δ) with three rewrite rules:
  Δ(Δx)yz = yz(xz)
 Δ(Δwx)yz = zwx
 
-However, when I tried to translate it to INets, I had to reformulate the system.
-In my variation, tree calculus is a system of four operators: K, S, F (when
-delta is applied to 0, 1 or 2 arguments, respectively), and @ (which is the
-application operator). The arities for the operators K, S, F and @ are 0, 1, 2
-and 2, respectively. The rules are then:
+However, when I tried to translate it to interaction nets, I had to reformulate
+the system. In my variation, tree calculus is a system of four operators: K, S,
+F (when delta is applied to 0, 1 or 2 arguments, respectively), and A (which is
+the application operator). The arities for the operators K, S, F and A are 0, 1,
+2 and 2, respectively. The rules are then:
 
-@Kx = Sx
-@(Sx)y = Fxy
+(Reduction rules to construct S and F from applications:)
+AKx = Sx
+A(Sx)y = Fxy
 
 (The original reduction rules, reformulated:)
-@(FKy)z = y
-@(F(Sx)y)z = @(@yz)(@xz)
-@(F(Fwx)y)z = @(@zw)x
+A(FKy)z = y
+A(F(Sx)y)z = A(Ayz)(Axz)
+A(F(Fwx)y)z = A(Azw)x
 
 However, to translate to interaction nets, the depth of the left-hand side of
-the rules can't exceed two, so they have to be rearranged, and a new symbol #
-with arity 3 has to be introduced:
+the rules can't exceed two, so they have to be rearranged, and a new symbol T
+("ternary application") with arity 3 has to be introduced:
 
-@Kx = Sx
-@(Sx)y = Fxy
-@(Fxy)z = #xyz
-#Kyz = y
-#(Sx)yz = @(@yz)(@xz)
-#(Fwx)yz = @(@zw)x
+AKx = Sx
+A(Sx)y = Fxy
+(The rearranged rules:)
+A(Fxy)z = Txyz
+TKyz = y
+T(Sx)yz = T(Tyz)(Txz)
+T(Fwx)yz = T(Tzw)x
+
+This can now be translated to interaction nets. A visualization of the rewrite
+rules can be found in inet.png or inet.svg. The complete formulation consists of
+7 agent types (the five operators of the system above, and to support
+incremental copying, the agents Duplicator (D) and Eraser (E) are also added),
+of which K, S and F can only stand on the left-hand side of an equation, while
+T, A, D and E can only stand on the right-hand side. This gives rise to 12
+interaction rules in total. Here they are listed in inpla-notation:
+
+K >< E => ;
+K >< D(x, y) => K~x, K~y;
+K >< A(x, r) => S(x)~r;
+K >< T(y, z, r) => y~r, z~E;
+
+S(x) >< E => x~E;
+S(x) >< D(y, z) => x~D(a, b), S(a)~y, S(b)~z;
+S(x) >< A(y, r) => F(x, y)~r;
+S(x) >< T(y, z, r) => z~D(a, b), x~A(a, c), y~A(b, A(c, r));
+
+F(x, y) >< E => x~E, y~E;
+F(w, x) >< D(y, z) => F(a, b)~z, F(c, d)~y, w~D(c, a), x~D(d, b);
+F(x, y) >< A(z, r) => x~T(y, z, r);
+F(w, x) >< T(y, z, r) => z~A(w, A(x, r)), y~E;
 
 ---
 Side effects

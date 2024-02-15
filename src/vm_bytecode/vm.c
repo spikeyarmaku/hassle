@@ -23,7 +23,8 @@ size_t  _vm_code_from_program
 size_t  _vm_code_from_tree
     (struct ByteArray*, struct Tree*, size_t, size_t);
 void    _vm_exec_instruction    (struct VM*, uint8_t);
-void    _vm_exec                (struct VM* vm);
+void    _vm_exec                (struct VM*);
+void    _vm_resolve_names       (struct VM*);
 
 struct VM* vm_make(uint8_t word_size) {
     struct VM* vm = allocate_mem("vm_make", NULL, sizeof(struct VM));
@@ -67,6 +68,8 @@ void vm_from_tree(struct VM* vm, struct Tree* tree) {
     // Free the code
     free_mem("vm_from_tree", vm->tape->code);
     tape_set(vm->tape, NULL);
+
+    _vm_resolve_names(vm);
 }
 
 void vm_eval(struct VM* vm) {
@@ -90,56 +93,70 @@ VM_WORD _vm_read_word(struct VM* vm) {
     return tape_read_word(vm->tape, vm->word_size);
 }
 
+void _vm_resolve_names(struct VM* vm) {
+    BOOL resolved_names = FALSE;
+
+    while (resolved_names == FALSE) {
+        // Pop an equation from the stack
+        if (eq_stack_size(vm->active_pairs) == 0) {
+            resolved_names = TRUE;
+            return;
+        }
+        struct Equation eq = eq_stack_pop(vm->active_pairs);
+
+        // Check if any of the agents are names
+        uint8_t agent0_type = agent_get_type(eq.agent0);
+        uint8_t agent1_type = agent_get_type(eq.agent1);
+
+        if (agent1_type != ID_NAME) {
+            if (agent0_type != ID_NAME) {
+                // Continue with evaluation
+                eq_stack_push(vm->active_pairs, eq);
+                resolved_names = TRUE;
+            } else {
+                if (agent_get_port(eq.agent0, 0) == NULL) {
+                    // x is a name
+                    // x = Alpha(x1, ..., xn)
+                    agent_set_port(eq.agent0, 0, eq.agent1);
+                } else {
+                    // x is an indirection
+                    struct Equation new_eq;
+                    new_eq.agent0 = agent_get_port(eq.agent0, 0);
+                    new_eq.agent1 = eq.agent1;
+                    eq_stack_push(vm->active_pairs, new_eq);
+                    agent_free(eq.agent0);
+                }
+            }
+        } else {
+            if (agent_get_port(eq.agent1, 0) == NULL) {
+                // y is a name
+                agent_set_port(eq.agent1, 0, eq.agent0);
+            } else {
+                // y is an indirection
+                // Alpha(x1, ..., xn) = y and x = y
+                struct Equation new_eq;
+                new_eq.agent0 = eq.agent0;
+                new_eq.agent1 = agent_get_port(eq.agent1, 0);
+                eq_stack_push(vm->active_pairs, new_eq);
+                agent_free(eq.agent1);
+            }
+        }
+    }
+}
+
 // Evaluate by one step, return true if OP_RETURN is encountered, FALSE
 // otherwise
 enum EvalState vm_step(struct VM* vm) {
+    _vm_resolve_names(vm);
+
     // Pop an equation from the stack
     if (eq_stack_size(vm->active_pairs) == 0) {
         return EvalFinished;
     }
     struct Equation eq = eq_stack_pop(vm->active_pairs);
 
-    // Check if any of the agents are names
     uint8_t agent0_type = agent_get_type(eq.agent0);
     uint8_t agent1_type = agent_get_type(eq.agent1);
-    BOOL continue_eval = FALSE;
-    if (agent1_type != ID_NAME) {
-        if (agent0_type != ID_NAME) {
-            // Continue with evaluation
-            continue_eval = TRUE;
-        } else {
-            if (agent_get_port(eq.agent0, 0) == NULL) {
-                // x is a name
-                // x = Alpha(x1, ..., xn)
-                agent_set_port(eq.agent0, 0, eq.agent1);
-            } else {
-                // x is an indirection
-                struct Equation new_eq;
-                new_eq.agent0 = agent_get_port(eq.agent0, 0);
-                new_eq.agent1 = eq.agent1;
-                eq_stack_push(vm->active_pairs, new_eq);
-                agent_free(eq.agent0);
-            }
-        }
-    } else {
-        if (agent_get_port(eq.agent1, 0) == NULL) {
-            // y is a name
-            agent_set_port(eq.agent1, 0, eq.agent0);
-        } else {
-            // y is an indirection
-            // Alpha(x1, ..., xn) = y and x = y
-            struct Equation new_eq;
-            new_eq.agent0 = eq.agent0;
-            new_eq.agent1 = agent_get_port(eq.agent1, 0);
-            eq_stack_push(vm->active_pairs, new_eq);
-            agent_free(eq.agent1);
-        }
-    }
-
-    if (continue_eval == FALSE) {
-        return EvalRunning;
-    }
-
     assert(agent0_type < agent1_type);
 
     // Set up registers
