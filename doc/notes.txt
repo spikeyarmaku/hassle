@@ -53,8 +53,8 @@ A(Sx)y = Fxy
 (The rearranged rules:)
 A(Fxy)z = Txyz
 TKyz = y
-T(Sx)yz = T(Tyz)(Txz)
-T(Fwx)yz = T(Tzw)x
+T(Sx)yz = A(Ayz)(Axz)
+T(Fwx)yz = A(Azw)x
 
 This can now be translated to interaction nets. A visualization of the rewrite
 rules can be found in inet.png or inet.svg. The complete formulation consists of
